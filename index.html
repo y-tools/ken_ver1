@@ -12,7 +12,8 @@
 <script src="./data/japanese-catalog-loader.js?v=20261105-300k-v1" defer></script>
 <script src="./data/musicbrainz-search.js?v=20261105-field-tabs-v1" defer></script>
 <script src="./data/musicbrainz-search-2m.js?v=20261105-field-tabs-v1" defer></script>
-<script src="./app.js?v=20261105-karaoke-official-v1" defer></script>
+<script src="./data/karaoke-coverage.js?v=20261106-karaoke-v1" defer></script>
+<script src="./app.js?v=20261106-karaoke-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -212,6 +213,7 @@
             <button type="submit" class="button primary">確認結果を保存</button>
             <button type="button" class="button subtle" id="karaokeClear">フォームをクリア</button>
             <button type="button" class="button" id="karaokeExport">照合データを書き出す</button>
+            <label class="button subtle karaoke-csv-import">CSVを読み込む<input id="karaokeImport" type="file" accept=".csv,text/csv" hidden></label>
           </div>
           <p id="karaokeRecordCount" class="helper" aria-live="polite">照合記録 0曲</p>
         </form>

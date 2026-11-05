@@ -21,7 +21,7 @@
  async function combinedCatalog(url,options){
   if(!mergedResponse){
    mergedResponse=(async()=>{
-    const [japan,world,extra]=await Promise.allSettled([
+    const [japan,world,extra,extension]=await Promise.allSettled([
      originalFetch("./data/japanese_popular_10000.json",{cache:"force-cache"}).then(async r=>{
       if(!r.ok)throw new Error("Japanese catalog HTTP "+r.status);
       return r.json();
@@ -52,24 +52,61 @@
        }
       }
       return rows.length===manifest.count?rows:[];
+     })(),
+     (async()=>{
+      const response=await originalFetch("./data/extra_to_300k/manifest.json",{cache:"no-cache"});
+      if(!response.ok)return {rows:[],manifest:null};
+      const manifest=await response.json();
+      if(manifest.schema!=="vocadb-to-300k-v1"||manifest.targetUnique!==300000||
+         !Number.isInteger(manifest.count)||manifest.count<1||
+         !Array.isArray(manifest.files)||manifest.files.length!==Math.ceil(manifest.count/5000)){
+       throw new Error("Invalid 300k extension manifest");
+      }
+      const songs=[];
+      for(let i=0;i<manifest.files.length;i+=6){
+       const names=manifest.files.slice(i,i+6);
+       const batch=await Promise.all(names.map(async name=>{
+        if(typeof name!=="string"||!/^data\\/extra_to_300k\\/part_[0-9]{3}\\.json$/.test(name)){
+         throw new Error("Invalid extension file path");
+        }
+        const resp=await originalFetch("./"+name,{cache:"force-cache"});
+        if(!resp.ok)throw new Error("300k extension shard missing: "+name);
+        const parsed=await resp.json();
+        if(!Array.isArray(parsed))throw new Error("Invalid 300k extension shard");
+        return parsed;
+       }));
+       for(const rows of batch)songs.push(...rows);
+      }
+      if(songs.length!==manifest.count)throw new Error("300k extension row count differs from manifest");
+      return {rows:songs,manifest};
      })()
     ]);
     const jRows=japan.status==="fulfilled" && japan.value?.schema==="jp-catalog-v1" && Array.isArray(japan.value.songs)
       ?japan.value.songs:[];
     const wRows=world.status==="fulfilled"&&Array.isArray(world.value)?world.value:[];
     const xRows=extra.status==="fulfilled"&&Array.isArray(extra.value)?extra.value:[];
+    const ext=extension.status==="fulfilled"?extension.value:null;
+    const yRows=ext?.rows||[];
     const merged=[],seen=new Set();
-    for(const row of [...jRows,...wRows,...xRows]){
+    for(const row of [...jRows,...wRows,...xRows,...yRows]){
      if(!Array.isArray(row)||typeof row[0]!=="string"||!row[0].trim()||typeof row[1]!=="string"||!row[1].trim())continue;
      const k=key(row);if(seen.has(k))continue;seen.add(k);
      merged.push([row[0],row[1],row[2]||null]);
     }
     if(!merged.length)throw new Error("Both song catalogs are unavailable");
+    const reachedTarget=merged.length===300000;
+    if(ext?.manifest&&!reachedTarget){
+     console.warn("300k extension loaded but total unique count is",merged.length,"instead of 300000");
+    }
+    if(extension.status==="rejected")console.warn("300k extension unavailable",extension.reason);
     window.KEN_CATALOG_STATS=Object.freeze({
       japaneseSourceCount:jRows.length,
       worldSourceCount:wRows.length,
       vocadbSourceCount:xRows.length,
-      searchableUniqueCount:merged.length
+      extensionSourceCount:yRows.length,
+      searchableUniqueCount:merged.length,
+      targetUniqueCount:300000,
+      targetReached:reachedTarget
     });
     return JSON.stringify(merged);
    })();

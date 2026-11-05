@@ -1,0 +1,26 @@
+# Copy after replacing /opt/ken-song-api paths and user.
+# Run as a dedicated unprivileged service account; do not use root.
+[Unit]
+Description=Ken Song Search API
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=kenapi
+Group=kenapi
+WorkingDirectory=/opt/ken-song-api
+EnvironmentFile=/etc/ken-song-api.env
+ExecStart=/opt/ken-song-api/.venv/bin/uvicorn server.api.main:app --host 127.0.0.1 --port 8787 --workers 1
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/tmp
+MemoryMax=350M
+TasksMax=100
+
+[Install]
+WantedBy=multi-user.target

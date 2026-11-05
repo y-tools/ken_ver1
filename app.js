@@ -64,8 +64,8 @@ function formatDuration(ms){const s=Math.max(0,Math.round((ms||0)/1000));return 
 function lookupCatalog(q,limit=60){
  const term=norm(q);if(!term||!catalog.ready)return [];
  const prefix=[],middle=[];
- for(let i=0;i<catalog.rows.length;i++){
-  const r=catalog.rows[i],title=norm(r[0]),artist=norm(r[1]);
+ for(let i=0;i<catalog.idx.length;i++){
+  const [title,artist]=catalog.idx[i];
   if(title.startsWith(term)||artist.startsWith(term)){prefix.push(i);if(prefix.length>=limit)break;}
   else if((title.includes(term)||artist.includes(term))&&middle.length<limit)middle.push(i);
  }
@@ -427,7 +427,9 @@ async function loadCatalog(){
   const res=await fetch("./catalog.json",{cache:"force-cache"});
   if(!res.ok)throw Error("HTTP "+res.status);
   const rows=await res.json();if(!Array.isArray(rows))throw Error("Invalid catalog");
-  catalog.rows=rows;catalog.ready=true;
+  catalog.rows=rows;
+  catalog.idx=rows.map(r=>[norm(r[0]),norm(r[1])]);
+  catalog.ready=true;
  }catch(e){catalog.error=true;console.warn("Catalog unavailable",e);}
  render();
 }
@@ -534,7 +536,11 @@ function setupAdminUnlock(){
  });
 }
 function attach(){
- $("#searchInput").addEventListener("input",renderSearch);
+ let searchTimer=null;
+ $("#searchInput").addEventListener("input",()=>{
+  clearTimeout(searchTimer);
+  searchTimer=setTimeout(renderSearch,160);
+ });
  $("#searchResults").addEventListener("click",e=>{
   const btn=e.target.closest("[data-select-index]");if(!btn)return;
   const s=window.__searchResults?.[Number(btn.dataset.selectIndex)];

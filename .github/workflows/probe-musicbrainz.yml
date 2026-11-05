@@ -1,0 +1,34 @@
+name: Probe MusicBrainz canonical source
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/probe-musicbrainz.yml"
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect canonical dump layout
+        run: |
+          python - <<'PY'
+          import urllib.request, re
+          urls = [
+            "https://ftp.musicbrainz.org/pub/musicbrainz/canonical_data/musicbrainz-canonical-dump-20261103-080003/",
+            "https://data.metabrainz.org/pub/musicbrainz/canonical_data/musicbrainz-canonical-dump-20261103-080003/"
+          ]
+          for url in urls:
+            try:
+              with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent":"KenDenmokuDatasetBuilder/1.0 (public metadata research)"}),timeout=40) as r:
+                html = r.read(80000).decode("utf-8","replace")
+              print("INDEX",url)
+              print(html[:16000])
+              for candidate in sorted(set(re.findall(r'href="([^"]+)"',html))):
+                if candidate.endswith((".zst",".csv",".xz",".tar",".gz",".bz2")):
+                  print("DATA",candidate)
+              break
+            except Exception as exc:
+              print("INDEX_ERROR",url,repr(exc))
+          PY

@@ -130,9 +130,9 @@ async def search(
         return {"items": [], "query": q, "mode": mode}
     if len(term) > 120:
         raise HTTPException(status_code=422, detail="Query is too long")
-    pattern = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+    pattern = term.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"
     statement = (SEARCH_ARTIST if mode == "artist" else SEARCH_TITLE).replace(
-        "LIKE %s", "LIKE %s ESCAPE '\\\\'"
+        "LIKE %s", "LIKE %s ESCAPE '!'"
     )
     try:
         async with request.app.state.pool.connection() as conn:

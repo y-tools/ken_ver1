@@ -7,10 +7,10 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261105-listener-onair-v1">
+<link rel="stylesheet" href="./styles.css?v=20261105-gpt-queue-v1">
 <script src="./config.js?v=20261105-live-practice-modal-v1" defer></script>
 <script src="./data/japanese-catalog-loader.js?v=20261105-vocadb100k-v1" defer></script>
-<script src="./app.js?v=20261105-listener-onair-v1" defer></script>
+<script src="./app.js?v=20261105-gpt-queue-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -32,7 +32,7 @@
     <div class="home-lead" style="margin-top:18px">
       <div><h2>ホーム</h2><p>曲を探して、リクエストを送ろう。</p></div>
       <nav class="quick-nav" aria-label="ホームメニュー">
-        <a href="#singing-section">歌唱中</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#practice-section">練習中楽曲</a>
+        <a href="#singing-section">歌唱中</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#today-history-section">本日の歌唱履歴</a><a href="#practice-section">練習中楽曲</a>
         <button type="button" class="button primary" id="openRequestDialog">リクエストする</button>
       </nav>
     </div>
@@ -72,9 +72,17 @@
         </div>
         <div class="queue-list" id="waitingList"></div>
       </section>
-      <section class="home-card" id="practice-section" aria-labelledby="practice-heading">
+      <section class="home-card" id="today-history-section" aria-labelledby="today-history-heading">
         <div class="section-head">
           <span class="section-no">03</span>
+          <div><h3 id="today-history-heading">本日の歌唱履歴</h3><p>本日歌い終わった楽曲の記録です。</p></div>
+          <span class="count"><span id="todaySingingCount">0</span> 曲</span>
+        </div>
+        <div class="queue-list" id="todaySingingList" aria-live="polite"></div>
+      </section>
+      <section class="home-card" id="practice-section" aria-labelledby="practice-heading">
+        <div class="section-head">
+          <span class="section-no">04</span>
           <div><h3 id="practice-heading">練習中楽曲</h3><p>練習中の曲を一覧で表示します。</p></div>
           <span class="count"><span id="practiceCount">0</span> 曲</span>
         </div>
@@ -107,9 +115,33 @@
           <div id="adminRequests" class="queue-list"></div>
         </div>
       </section>
-      <section class="admin-panel reserve-panel" aria-label="予備の列">
-        <div class="admin-panel-head"><h3>予備エリア</h3><small>04 / 右端</small></div>
-        <div class="admin-empty">この列は空けてあります。</div>
+      <section class="admin-panel chat-tools-panel" aria-label="チャットとChatGPT調査">
+        <div class="admin-panel-head"><h3>チャット / ChatGPT</h3><small>04 / 右端</small></div>
+        <div class="split-tools">
+          <section class="tool-chat" aria-label="チャット画面">
+            <div class="tool-subheading"><h4>チャット画面</h4><small>調査指示・メモ履歴</small></div>
+            <div id="adminChatHistory" class="tool-chat-history" role="log" aria-live="polite"></div>
+            <form id="adminChatForm" class="tool-chat-form">
+              <label for="adminChatInput" class="visually-hidden">メッセージを入力</label>
+              <textarea id="adminChatInput" rows="2" maxlength="1500" placeholder="調査メモを入力"></textarea>
+              <button type="submit" class="button">メモを追加</button>
+            </form>
+            <p class="tool-notice">ここは端末内のメモ欄です。ChatGPTの回答は自動表示されません。</p>
+          </section>
+          <section class="tool-gpt" aria-label="ChatGPTを開くブラウザ連携">
+            <div class="tool-subheading"><h4>ChatGPTブラウザ</h4><small>別タブ連携</small></div>
+            <div class="browser-address"><span aria-hidden="true">🔒</span> chatgpt.com</div>
+            <p class="tool-notice">ChatGPTはサイト内表示が制限されるため、調査指示を作成して別タブで開きます。</p>
+            <label for="gptResearchPrompt" class="tool-field-label">送信用の調査指示</label>
+            <textarea id="gptResearchPrompt" rows="5" readonly placeholder="「さらに調べる」を押すと指示が表示されます。"></textarea>
+            <div class="tool-gpt-actions">
+              <button type="button" class="button" id="gptCopy">指示をコピー</button>
+              <a class="button primary" id="gptOpen" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPTを開く</a>
+              <a class="button subtle" id="lyricsSearch" href="https://www.google.com/" target="_blank" rel="noopener noreferrer">歌詞URLを検索</a>
+            </div>
+            <p class="tool-notice">指示が入力されない場合は「指示をコピー」してChatGPTに貼り付けてください。</p>
+          </section>
+        </div>
       </section>
     </div>
     <details class="admin-tools">

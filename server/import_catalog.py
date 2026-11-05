@@ -17,7 +17,7 @@ from pathlib import Path
 
 import psycopg
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 DATASETS = {
     "world": ("catalog.json", "wikidata", "Wikidata", "CC0", "https://www.wikidata.org"),
     "japanese": ("data/japanese_popular_10000.json", "wikidata", "Wikidata", "CC0", "https://www.wikidata.org"),

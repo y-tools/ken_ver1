@@ -7,12 +7,12 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261105-2m-phonetic-v1">
+<link rel="stylesheet" href="./styles.css?v=20261105-field-tabs-v1">
 <script src="./config.js?v=20261105-live-practice-modal-v1" defer></script>
 <script src="./data/japanese-catalog-loader.js?v=20261105-300k-v1" defer></script>
-<script src="./data/musicbrainz-search.js?v=20261105-million-v1" defer></script>
-<script src="./data/musicbrainz-search-2m.js?v=20261105-2m-phonetic-v1" defer></script>
-<script src="./app.js?v=20261105-2m-phonetic-v1" defer></script>
+<script src="./data/musicbrainz-search.js?v=20261105-field-tabs-v1" defer></script>
+<script src="./data/musicbrainz-search-2m.js?v=20261105-field-tabs-v1" defer></script>
+<script src="./app.js?v=20261105-field-tabs-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -58,10 +58,14 @@
           <span class="section-no">01</span>
           <div><h3 id="search-heading">楽曲検索</h3><p>曲名・アーティスト・歌える曲をまとめて検索できます。</p></div>
         </div>
-        <label for="searchInput" class="field">検索キーワード</label>
+        <div class="song-search-tabs" role="group" aria-label="検索対象の切り替え">
+          <button type="button" class="active" data-search-mode="title" aria-pressed="true">曲名検索</button>
+          <button type="button" data-search-mode="artist" aria-pressed="false">アーティスト検索</button>
+        </div>
+        <label for="searchInput" id="searchInputLabel" class="field">曲名で検索</label>
         <div class="searchbox">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
-          <input type="search" id="searchInput" placeholder="曲名・アーティスト・かな・ローマ字で検索" autocomplete="off">
+          <input type="search" id="searchInput" placeholder="曲名・かな・ローマ字で検索" autocomplete="off">
         </div>
         <div class="helper" id="searchHelper" aria-live="polite">曲カタログを読み込み中です…</div>
         <div class="result-list" id="searchResults"></div>

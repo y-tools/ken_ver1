@@ -193,25 +193,35 @@ def import_readings(conn, max_files):
                         copy.write_row((normalize(row[0]),normalize(row[1]),
                             *values,*(normalize(v) for v in values)))
                         scanned+=1
-                for col,side,kind in NAME_COLUMNS:
-                    if kind=="english":
-                        # No machine-translated or guessed official English titles.
-                        continue
-                    if side=="title":
-                        sql=f"""INSERT INTO song_names(song_id,kind,value,search_key,verification)
-                          SELECT DISTINCT s.id,%s::text,st.{col},st.{col}_key
-                          FROM ken_reading_stage st
-                          JOIN artists a ON a.name_key=st.artist_key
-                          JOIN songs s ON s.title_key=st.title_key AND s.primary_artist_id=a.id
-                          WHERE st.{col}<>'' ON CONFLICT(song_id,kind,search_key) DO NOTHING"""
-                    else:
-                        sql=f"""INSERT INTO artist_names(artist_id,kind,value,search_key,verification)
-                          SELECT DISTINCT a.id,%s::text,st.{col},st.{col}_key
-                          FROM ken_reading_stage st JOIN artists a ON a.name_key=st.artist_key
-                          WHERE st.{col}<>'' ON CONFLICT(artist_id,kind,search_key) DO NOTHING"""
-                    # Stored readings are explicitly estimated. Do not promote them to verified aliases.
-                    sql=sql.replace(f"st.{col},st.{col}_key", f"st.{col},st.{col}_key,'estimated'")
-                    cur.execute(sql,(kind,))
+                # Single-pass insertion is substantially cheaper than 6 separate
+                # joins against 2M songs on a 4GB shared VPS.
+                cur.execute("""
+                    INSERT INTO song_names(song_id,kind,value,search_key,verification)
+                    SELECT DISTINCT s.id,v.kind,v.value,v.search_key,'estimated'
+                    FROM ken_reading_stage st
+                    JOIN artists a ON a.name_key=st.artist_key
+                    JOIN songs s ON s.title_key=st.title_key AND s.primary_artist_id=a.id
+                    CROSS JOIN LATERAL (VALUES
+                      ('hiragana',st.title_hira,st.title_hira_key),
+                      ('katakana',st.title_kata,st.title_kata_key),
+                      ('romaji',st.title_romaji,st.title_romaji_key)
+                    ) AS v(kind,value,search_key)
+                    WHERE v.value <> '' AND v.search_key <> ''
+                    ON CONFLICT(song_id,kind,search_key) DO NOTHING
+                """)
+                cur.execute("""
+                    INSERT INTO artist_names(artist_id,kind,value,search_key,verification)
+                    SELECT DISTINCT a.id,v.kind,v.value,v.search_key,'estimated'
+                    FROM ken_reading_stage st
+                    JOIN artists a ON a.name_key=st.artist_key
+                    CROSS JOIN LATERAL (VALUES
+                      ('hiragana',st.artist_hira,st.artist_hira_key),
+                      ('katakana',st.artist_kata,st.artist_kata_key),
+                      ('romaji',st.artist_romaji,st.artist_romaji_key)
+                    ) AS v(kind,value,search_key)
+                    WHERE v.value <> '' AND v.search_key <> ''
+                    ON CONFLICT(artist_id,kind,search_key) DO NOTHING
+                """)
         print(f"readings: processed {path.name}; rows={scanned:,}",flush=True)
 
 

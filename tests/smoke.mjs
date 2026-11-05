@@ -38,6 +38,7 @@ try{
  await page.locator("#adminRequests [data-dest=ready]").check();
  await page.locator("#adminRequests [data-do=classify]").click();
  await check((await page.locator("#adminWaiting .song-title").allTextContents()).includes("統合テスト曲"),"Dual classification: waiting");
+ await page.locator(".admin-tools summary").click();
  await page.locator("#adminSongSearch").fill("統合テスト曲");
  await check((await page.locator("#adminSongList").textContent()).includes("統合テスト曲"),"Dual classification: singable");
  await page.locator("#adminWaiting [data-do=research]").click();
@@ -49,7 +50,6 @@ try{
  await page.locator("#adminChatInput").fill("テスト用の管理メモ");
  await page.locator("#adminChatForm button[type=submit]").click();
  await check((await page.locator("#adminChatHistory").textContent()).includes("テスト用の管理メモ"),"Chat note is saved");
- await page.locator(".admin-tools summary").click();
  await page.locator("#adminSongList [data-song-edit]").first().click();
  await page.locator("#songMemo").fill("テスト用メモ保存");
  await page.locator("#songSaveButton").click();

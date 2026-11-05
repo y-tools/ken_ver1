@@ -53,8 +53,9 @@
   }
   return cache.get(b);
  }
- async function search(q,limit=30){
+ async function search(q,limit=30,mode="all"){
   const term=norm(q);
+  const fields=mode==="title"?[0]:mode==="artist"?[1]:[0,1];
   if(Array.from(term).length<2||!await ready())return [];
   const buckets=[...new Set([bucket(q)])];
   const lists=await Promise.all(buckets.map(loadBucket));
@@ -62,7 +63,7 @@
   for(const list of lists)for(const row of list){
    if(!Array.isArray(row)||!row[0]||!row[1])continue;
    const title=norm(row[0]),artist=norm(row[1]);
-   if(!title.startsWith(term)&&!artist.startsWith(term))continue;
+   if(!fields.some(index=>norm(row[index]).startsWith(term)))continue;
    const key=title+"|"+artist;
    if(seen.has(key))continue;
    seen.add(key);

@@ -458,3 +458,13 @@ body.embed-mode .listener-broadcast-detail{font-size:11px;flex-basis:100%}
 .karaoke-management .field input,.karaoke-management .field select,.karaoke-management .field textarea{width:100%;min-width:0}
 .song-manage-row .song-form-actions{flex-wrap:nowrap}
 @media(max-width:680px){.karaoke-provider-grid{grid-template-columns:1fr}}
+
+/* Listeners can inspect source-linked karaoke coverage but cannot edit it. */
+#listenerView [data-karaoke-edit]{display:none!important}
+.karaoke-csv-import{cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.karaoke-csv-import:focus-within{outline:2px solid var(--blue);outline-offset:2px}
+.karaoke-provider-result{padding:6px 0;border-top:1px solid var(--edge);overflow-wrap:anywhere}
+.karaoke-provider-result:first-of-type{border-top:0}
+.karaoke-provider-result strong{font-weight:900}
+#adminRequests .karaoke-provider-links,#adminWaiting .karaoke-provider-links,#adminSinging .karaoke-provider-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+#adminRequests .karaoke-provider-links a,#adminWaiting .karaoke-provider-links a,#adminSinging .karaoke-provider-links a{text-align:center;padding:5px 4px;font-size:10px}

@@ -10,6 +10,8 @@ import os
 import re
 import unicodedata
 from contextlib import asynccontextmanager
+from collections import OrderedDict, deque
+from time import monotonic
 from datetime import date
 from typing import Literal
 
@@ -60,6 +62,36 @@ app.add_middleware(
     allow_credentials=False,
     max_age=1800,
 )
+
+# Single-worker in-memory burst limit; Caddy remains the only public reverse proxy.
+# Explicit rate limiting avoids accidental overload of the shared VPS.
+_SEARCH_REQUESTS = OrderedDict()
+_MAX_REQUESTS_PER_MINUTE = 60
+_MAX_TRACKED_CLIENTS = 5000
+
+
+@app.middleware("http")
+async def search_rate_limit(request: Request, call_next):
+    if request.url.path != "/api/v1/search":
+        return await call_next(request)
+    ip = request.client.host if request.client else "unknown"
+    now = monotonic()
+    bucket = _SEARCH_REQUESTS.setdefault(ip, deque())
+    _SEARCH_REQUESTS.move_to_end(ip)
+    while bucket and now - bucket[0] > 60:
+        bucket.popleft()
+    if len(bucket) >= _MAX_REQUESTS_PER_MINUTE:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Too many searches. Please retry shortly."},
+            headers={"Retry-After": "10"},
+        )
+    bucket.append(now)
+    while len(_SEARCH_REQUESTS) > _MAX_TRACKED_CLIENTS:
+        _SEARCH_REQUESTS.popitem(last=False)
+    return await call_next(request)
+
 
 # IDs are not sequential public data paths; API exposes only read-only search.
 SEARCH_TITLE = """

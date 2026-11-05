@@ -66,7 +66,7 @@
       for(let i=0;i<manifest.files.length;i+=6){
        const names=manifest.files.slice(i,i+6);
        const batch=await Promise.all(names.map(async name=>{
-        if(typeof name!=="string"||!/^data\\/extra_to_300k\\/part_[0-9]{3}\\.json$/.test(name)){
+        if(typeof name!=="string"||!name.startsWith("data/extra_to_300k/")||!name.endsWith(".json")||!/^part_[0-9]{3}\.json$/.test(name.split("/").pop())){
          throw new Error("Invalid extension file path");
         }
         const resp=await originalFetch("./"+name,{cache:"force-cache"});

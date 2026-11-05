@@ -174,7 +174,7 @@ function renderSearch(){
  if(!q||Array.from(norm(q)).length<2||!window.KEN_MB_SEARCH)return;
  window.KEN_MB_SEARCH.search(q,30,mode).then(rows=>{
   if(sequence!==extendedSearchSequence||searchMode!==mode||$("#searchInput").value.trim()!==q)return;
-  const combined=[...initial],indexByKey=new Map(combined.map((entry,i)=>[readyKey(entry.title,entry.artist),i]));
+  const combined=[...(window.__searchResults||initial)],indexByKey=new Map(combined.map((entry,i)=>[readyKey(entry.title,entry.artist),i]));
   for(const row of rows){
    const [title,artist,year,,readings]=row;
    if(!title||!artist)continue;

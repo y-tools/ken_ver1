@@ -1,0 +1,21 @@
+name: DAM JOYSOUND coverage unit tests
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "data/karaoke-coverage.js"
+      - "tests/karaoke-unit.mjs"
+      - ".github/workflows/karaoke-unit.yml"
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate karaoke coverage and CSV import
+        run: node tests/karaoke-unit.mjs

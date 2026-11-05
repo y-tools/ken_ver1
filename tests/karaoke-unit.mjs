@@ -5,9 +5,9 @@ import vm from "node:vm";
 const content=readFileSync("data/karaoke-coverage.js","utf8");
 const memory=new Map();
 const context={
- window:{},document:{readyState:"loading",addEventListener(){}},
+ window:{},document:{readyState:"loading",addEventListener(){},querySelector(){return null;},dispatchEvent(){}},
  localStorage:{getItem:k=>memory.get(k)||null,setItem:(k,v)=>memory.set(k,v)},
- URL,console,Date,alert(){},setTimeout,Blob
+ URL,console,Date,alert(){},setTimeout,Blob,Event:class Event{constructor(type){this.type=type;}}
 };
 vm.createContext(context);
 vm.runInContext(content,context,{filename:"karaoke-coverage.js"});

@@ -371,26 +371,30 @@ async def update_song(song_id: int, body: SongUpdate, request: Request, token_ha
                     key = normalized(body.title)
                     if not key:
                         raise HTTPException(422, "曲名が空です")
-                    await cur.execute("""
-                      UPDATE songs SET title=%s,title_key=%s,release_year=%s,release_month=%s,
-                        release_day=%s,release_precision=%s,identity_status='human_confirmed',
-                        updated_at=now() WHERE id=%s
-                      RETURNING id,title,release_year,release_month,release_day,release_precision,updated_at
-                    """, (body.title.strip(), key, body.releaseYear, body.releaseMonth, body.releaseDay,
-                          body.releasePrecision, song_id))
-                    after = await cur.fetchone()
-                    before_data = {k: before[k] for k in ("title","release_year","release_month","release_day","release_precision")}
-                    after_data = {k: after[k] for k in ("title","release_year","release_month","release_day","release_precision")}
+                    source_id = None
                     if body.releaseSourceUrl and body.releasePrecision != "unknown":
                         await cur.execute("SELECT id FROM source_catalogs WHERE code='ken_admin_manual'")
                         source = await cur.fetchone()
                         if not source:
                             raise HTTPException(503, "管理データソース未設定です")
+                        source_id = source["id"]
+                    await cur.execute("""
+                      UPDATE songs SET title=%s,title_key=%s,release_year=%s,release_month=%s,
+                        release_day=%s,release_precision=%s,release_source_id=%s,
+                        identity_status='human_confirmed',updated_at=now()
+                      WHERE id=%s
+                      RETURNING id,title,release_year,release_month,release_day,release_precision,updated_at
+                    """, (body.title.strip(), key, body.releaseYear, body.releaseMonth, body.releaseDay,
+                          body.releasePrecision, source_id, song_id))
+                    after = await cur.fetchone()
+                    before_data = {k: before[k] for k in ("title","release_year","release_month","release_day","release_precision")}
+                    after_data = {k: after[k] for k in ("title","release_year","release_month","release_day","release_precision")}
+                    if body.releaseSourceUrl and body.releasePrecision != "unknown":
                         await cur.execute("""
                            INSERT INTO release_evidence(song_id,source_id,release_year,release_month,
                              release_day,precision,reference_url)
                            VALUES (%s,%s,%s,%s,%s,%s,%s)
-                        """, (song_id, source["id"],body.releaseYear,body.releaseMonth,body.releaseDay,
+                        """, (song_id, source_id,body.releaseYear,body.releaseMonth,body.releaseDay,
                               body.releasePrecision,clean_url(body.releaseSourceUrl)))
                     await audit(cur,"song_update","song",song_id,before_data,after_data)
     except UniqueViolation:

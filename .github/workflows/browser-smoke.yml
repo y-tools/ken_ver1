@@ -1,0 +1,31 @@
+name: Browser smoke test
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "index.html"
+      - "app.js"
+      - "styles.css"
+      - "tests/**"
+      - ".github/workflows/browser-smoke.yml"
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.58.2
+          npx playwright install --with-deps chromium
+      - name: Start local web server
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/ken-server.log 2>&1 &
+          sleep 3
+      - name: Run UI smoke test
+        run: node tests/smoke.mjs

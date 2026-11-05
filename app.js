@@ -93,7 +93,7 @@ function displayRow(s,actions="",status=""){
  const tag=status?'<span class="tag '+(status==="ready"?"ready":"")+'">'+(status==="ready"?"歌える曲":"カタログ")+'</span>':"";
  return '<div class="song-row"><div class="song-info"><div class="song-title">'+esc(s.title)+'</div><div class="song-artist">'+esc(s.artist)+
  (s.year?' · '+esc(s.year):'')+'</div>'+ (tag?'<div class="song-meta">'+tag+'</div>':"")+
- formatSongReadings(s)+'</div>'+ (actions?'<div class="song-actions">'+actions+'</div>':"")+'</div>';
+ formatSongReadings(s)+(window.KEN_KARAOKE?.render(s)||"")+'</div>'+ (actions?'<div class="song-actions">'+actions+'</div>':"")+'</div>';
 }
 function openRequestDialog(song){
  if(!state.streamLive){toast("現在は配信終了中です。リクエストを送信できません");return;}
@@ -208,7 +208,7 @@ function requestItem(r,controls=""){
   '<div class="song-title" title="'+esc(r.title)+'">'+esc(r.title)+'</div>'+
   '<div class="song-artist" title="'+esc(r.artist)+'">'+esc(r.artist)+'</div>'+
   '<div class="admin-song-byline" title="'+esc(byline)+'">'+esc(byline)+'</div>'+
-  message+'</div>'+(controls?'<div class="song-actions">'+controls+'</div>':"")+'</div>';
+  message+(window.KEN_KARAOKE?.render(r)||"")+'</div>'+(controls?'<div class="song-actions">'+controls+'</div>':"")+'</div>';
 }
 function waitingRequests(){return state.requests.filter(r=>r.status==="waiting").sort((a,b)=>(a.waitOrder||a.createdAt)-(b.waitOrder||b.createdAt));}
 function singingRequest(){return state.requests.find(r=>r.status==="singing")||null;}
@@ -345,7 +345,8 @@ function renderAdminSongList(){
  $("#adminSongCount").textContent="登録済み "+state.songs.length+"曲 / 表示 "+Math.min(150,rows.length)+"曲";
  $("#adminSongList").innerHTML=rows.length?rows.slice(0,150).map(s=>
   '<div class="song-manage-row"><div class="song-info"><strong>'+esc(s.title)+'</strong><div class="song-artist">'+esc(s.artist)+' ・ '+(s.status==="ready"?"歌える曲":"練習中")+'</div>'+
-  (s.memo?'<div class="song-memo">'+esc(s.memo)+'</div>':'<div class="song-memo song-memo-empty">メモなし</div>')+'</div>'+
+  (s.memo?'<div class="song-memo">'+esc(s.memo)+'</div>':'<div class="song-memo song-memo-empty">メモなし</div>')+
+  (window.KEN_KARAOKE?.render(s)||"")+'</div>'+
   '<button type="button" class="button" data-song-edit="'+esc(s.id)+'">編集</button></div>').join("")
   :'<div class="empty">一致する曲はありません。</div>';
 }
@@ -658,6 +659,9 @@ function attach(){
  });
  $("#toListener").addEventListener("click",()=>{adminMode=false;render();$("#adminTitle").focus();});
  setupAdminUnlock();
+ document.addEventListener("ken:karaoke-updated",()=>{
+  renderSearch();renderSinging();renderQueue();renderAdminRequests();renderAdminSongList();
+ });
  $("#adminSongSearch").addEventListener("input",renderAdminSongList);
  $("#adminSongList").addEventListener("click",e=>{
   const button=e.target.closest("[data-song-edit]");if(button)startSongEdit(button.dataset.songEdit);

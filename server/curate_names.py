@@ -53,12 +53,14 @@ def apply(conn, items, reviewer, commit):
     missing=[]
     with conn.transaction():
         with conn.cursor() as cur:
-            cur.execute("""INSERT INTO source_catalogs(code,display_name,source_url,license_id,attribution)
-                           VALUES('official_reviewed','Manually checked official artist/label sources',
-                                  NULL,'source_reference','Official source URLs stored per alias')
-                           ON CONFLICT(code) DO UPDATE SET display_name=EXCLUDED.display_name
-                           RETURNING id""")
-            source_id=cur.fetchone()[0]
+            source_id=None
+            if commit:
+                cur.execute("""INSERT INTO source_catalogs(code,display_name,source_url,license_id,attribution)
+                               VALUES('official_reviewed','Manually checked official artist/label sources',
+                                      NULL,'source_reference','Official source URLs stored per alias')
+                               ON CONFLICT(code) DO UPDATE SET display_name=EXCLUDED.display_name
+                               RETURNING id""")
+                source_id=cur.fetchone()[0]
             for row in items:
                 cur.execute("""SELECT s.id,a.id FROM songs s JOIN artists a ON a.id=s.primary_artist_id
                                WHERE s.title_key=%s AND a.name_key=%s""",
@@ -68,6 +70,9 @@ def apply(conn, items, reviewer, commit):
                     missing.append(f'{row["title"]} / {row["artist"]}')
                     continue
                 song_id,artist_id=record
+                if not commit:
+                    found+=1
+                    continue
                 table="song_names" if row["target"]=="title" else "artist_names"
                 id_col="song_id" if row["target"]=="title" else "artist_id"
                 entity_id=song_id if row["target"]=="title" else artist_id
@@ -87,8 +92,6 @@ def apply(conn, items, reviewer, commit):
                      source_id,row["url"],datetime.now(timezone.utc),reviewer)
                 )
                 found+=1
-        if not commit:
-            conn.rollback()
     return found, missing
 
 

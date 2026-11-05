@@ -1,0 +1,24 @@
+[Unit]
+Description=Ken Denmoku authenticated music database editor API
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=keneditor
+Group=keneditor
+WorkingDirectory=/opt/ken-song-api
+EnvironmentFile=/etc/ken-song-admin.env
+ExecStart=/opt/ken-song-api/.venv/bin/uvicorn server.admin_api:app --host 127.0.0.1 --port 8788 --workers 1
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=220M
+TasksMax=60
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

@@ -229,6 +229,16 @@ function attach(){
  });
  try{const nick=localStorage.getItem("ken-nickname")||localStorage.getItem("utabox-nick");if(nick)$("#reqName").value=nick;}catch(_){}
  $("#newName").value=state.name;
+ window.addEventListener("storage",event=>{
+  if(event.key!==storageKey || !event.newValue)return;
+  try{
+   const updated=JSON.parse(event.newValue);
+   if(updated && Array.isArray(updated.requests) && Array.isArray(updated.songs)){
+    state={...initial,...updated};
+    render();
+   }
+  }catch(_){}
+ });
  if(preview){
   const header=$("#siteHeader");header.hidden=true;
   adminMode=false;$("#adminView").hidden=true;$("#listenerView").hidden=false;

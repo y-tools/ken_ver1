@@ -99,6 +99,17 @@ function requestItem(r,controls=""){
  '<div class="song-meta">'+esc(when)+'</div></div>'+(controls?'<div class="song-actions">'+controls+'</div>':"")+'</div>';
 }
 function waitingRequests(){return state.requests.filter(r=>r.status==="waiting").sort((a,b)=>(a.waitOrder||a.createdAt)-(b.waitOrder||b.createdAt));}
+function singingRequest(){return state.requests.find(r=>r.status==="singing")||null;}
+function renderSinging(){
+ const singing=singingRequest();
+ $("#singingNow").innerHTML=singing
+  ? '<div class="singing-song-title">'+esc(singing.title)+'</div><div class="singing-song-artist">'+esc(singing.artist)+'</div><div class="singing-song-requester">リクエスト者：'+esc(singing.nickname||"匿名")+'</div>'
+  : '<div class="singing-empty">現在、歌唱中の曲はありません。</div>';
+ $("#adminSinging").innerHTML=singing?requestItem(singing,
+  '<button type="button" class="button primary" data-do="done" data-id="'+esc(singing.id)+'">歌唱完了</button>'+
+  '<button type="button" class="button subtle" data-do="waiting" data-id="'+esc(singing.id)+'">待機に戻す</button>')
+  :'<div class="empty">歌唱中の曲はありません。</div>';
+}
 function renderQueue(){
  const waiting=waitingRequests();
  $("#waitingCount").textContent=waiting.length;
@@ -108,7 +119,7 @@ function renderQueue(){
  $("#adminWaiting").innerHTML=waiting.length?waiting.map(r=>requestItem(r,
   '<button type="button" class="button" data-do="up" data-id="'+esc(r.id)+'">↑</button>'+
   '<button type="button" class="button" data-do="down" data-id="'+esc(r.id)+'">↓</button>'+
-  '<button type="button" class="button primary" data-do="done" data-id="'+esc(r.id)+'">歌唱完了</button>'+
+  '<button type="button" class="button primary" data-do="singing" data-id="'+esc(r.id)+'">歌唱開始</button>'+
   '<button type="button" class="button subtle" data-do="new" data-id="'+esc(r.id)+'">受付へ戻す</button>')).join("")
   :'<div class="empty">待機曲はありません。受付中のリクエストから追加できます。</div>';
 }
@@ -122,11 +133,15 @@ function renderAdminRequests(){
    actions='<button class="button primary" data-do="waiting"'+key+'>待機楽曲に追加</button>'+
     '<button class="button" data-do="practice"'+key+'>練習楽曲に追加</button>';
   }else if(r.status==="waiting"){
-   actions='<button class="button" data-do="practice"'+key+'>練習楽曲に追加</button>'+
+   actions='<button class="button" data-do="singing"'+key+'>歌唱開始</button>'+
+    '<button class="button" data-do="practice"'+key+'>練習楽曲に追加</button>'+
     '<button class="button subtle" data-do="new"'+key+'>受付へ戻す</button>';
   }else if(r.status==="practice"){
    actions='<button class="button primary" data-do="waiting"'+key+'>待機楽曲に追加</button>'+
     '<button class="button subtle" data-do="new"'+key+'>受付へ戻す</button>';
+  }else if(r.status==="singing"){
+   actions='<button class="button primary" data-do="done"'+key+'>歌唱完了</button>'+
+    '<button class="button subtle" data-do="waiting"'+key+'>待機に戻す</button>';
   }else{
    actions='<button class="button" data-do="new"'+key+'>再受付</button>';
   }
@@ -155,7 +170,7 @@ function setStreamLive(live){
 function render(){
  $("#streamerName").textContent=state.name;
  document.title=state.name+"のデンモク";
- renderSearch();renderQueue();renderPractice();renderAdminRequests();renderStreamStatus();
+ renderSearch();renderSinging();renderQueue();renderPractice();renderAdminRequests();renderStreamStatus();
  $("#catalogStatus").textContent=catalog.ready?"楽曲検索利用可":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  $("#toListener").hidden=!adminMode || preview;
@@ -163,6 +178,11 @@ function render(){
 }
 function changeRequestStatus(id,status){
  const r=state.requests.find(x=>x.id===id);if(!r)return;
+ if(status==="singing"){
+  const current=singingRequest();
+  if(current && current.id!==id){toast("先に歌唱中の曲を完了、または待機に戻してください");return;}
+  if(r.status!=="waiting" && r.status!=="singing"){toast("歌唱開始は待機楽曲から操作してください");return;}
+ }
  r.status=status;
  if(status==="waiting")r.waitOrder=Math.max(Date.now(),...state.requests.map(x=>x.waitOrder||0))+1;
  if(status==="practice"){
@@ -204,7 +224,7 @@ function adminAction(event){
  const b=event.target.closest("[data-do]");
  if(!b)return;
  const id=b.dataset.id,act=b.dataset.do;
- if(act==="waiting"||act==="new"||act==="practice"||act==="done"){changeRequestStatus(id,act);return;}
+ if(act==="waiting"||act==="new"||act==="practice"||act==="singing"||act==="done"){changeRequestStatus(id,act);return;}
  if(act==="up"||act==="down"){reorder(id,act==="up"?-1:1);return;}
  if(act==="delete"){
   if(!confirm("このリクエストを削除しますか？"))return;

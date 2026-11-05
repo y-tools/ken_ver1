@@ -4,5 +4,5 @@ window.KEN_CONFIG = Object.freeze({
   supabaseUrl: "",
   supabasePublishableKey: "",
   // VPSの公開HTTPS検索API。未設定の場合は従来の静的楽曲検索を継続します。
-  apiBaseUrl: ""
+  apiBaseUrl: "https://kenapi.153-127-64-17.sslip.io"
 });

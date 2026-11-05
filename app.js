@@ -8,12 +8,12 @@ const preview = params.get("embed")==="1";
 if(preview) document.body.classList.add("embed-mode");
 const config = window.KEN_CONFIG || {};
 const storageKey = "ken-denmoku-v2";
-const initial = {songs:[],requests:[],name:"Ken",streamLive:false};
+const initial = {songs:[],requests:[],name:"Ken",streamLive:false,sessions:[],activeSessionId:null};
 let state = initial;
 try {
  const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
  if(saved && typeof saved==="object") {
-  state = {...initial, songs:Array.isArray(saved.songs)?saved.songs:[], requests:Array.isArray(saved.requests)?saved.requests:[], name:typeof saved.name==="string"?saved.name:"Ken",streamLive:saved.streamLive===true};
+  state = {...initial, songs:Array.isArray(saved.songs)?saved.songs:[], requests:Array.isArray(saved.requests)?saved.requests:[], name:typeof saved.name==="string"?saved.name:"Ken",streamLive:saved.streamLive===true,sessions:Array.isArray(saved.sessions)?saved.sessions:[],activeSessionId:typeof saved.activeSessionId==="string"?saved.activeSessionId:null};
  }
 } catch(_) {}
 const catalog = {rows:[],idx:[],ready:false,error:false};
@@ -21,7 +21,7 @@ const catalog = {rows:[],idx:[],ready:false,error:false};
 let adminMode=false;
 let editingId=null;
 let selected=null;
-let activeFilter="new";
+
 let isSending=false;
 function persist(){
  try{localStorage.setItem(storageKey,JSON.stringify(state));return true;}
@@ -33,6 +33,34 @@ function toast(message){
 }
 function readyKey(t,a){return norm(t)+"|"+norm(a);}
 function readySet(){return new Set(state.songs.filter(x=>x.status==="ready").map(x=>readyKey(x.title,x.artist)));}
+function makeId(prefix){return prefix+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);}
+function currentSession(){return state.sessions.find(x=>x.id===state.activeSessionId&&!x.endedAt)||null;}
+function logEvent(type,details={},at=Date.now()){
+ const session=currentSession();
+ if(session)session.events.push({id:makeId("e"),type,at,...details});
+}
+function songSnapshot(s){return {title:s.title,artist:s.artist,requestId:s.id||null,nickname:s.nickname||null};}
+function upsertSong(title,artist,status,memo="",source="classify"){
+ const found=state.songs.find(s=>readyKey(s.title,s.artist)===readyKey(title,artist));
+ const now=Date.now();
+ if(found){
+  const prior=found.status;
+  if(prior!==status){
+   found.status=status;
+   if(status==="practice"||status==="ready")logEvent(status==="ready"?"ready_added":"practice_added",{title,artist,source,from:prior},now);
+  }
+  if(memo)found.memo=memo;
+  return found;
+ }
+ const next={id:makeId("s"),title,artist,status,memo,year:null,createdAt:now};
+ state.songs.push(next);
+ if(status==="ready"||status==="practice")logEvent(status==="ready"?"ready_added":"practice_added",{title,artist,source},now);
+ return next;
+}
+function timeLabel(at){return at?new Date(at).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit",second:"2-digit"}):"記録なし";}
+function clockLabel(at){return at?new Date(at).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"—";}
+function formatDuration(ms){const s=Math.max(0,Math.round((ms||0)/1000));return Math.floor(s/60)+"分"+String(s%60).padStart(2,"0")+"秒";}
+
 function lookupCatalog(q,limit=60){
  const term=norm(q);if(!term||!catalog.ready)return [];
  const prefix=[],middle=[];
@@ -124,29 +152,34 @@ function renderQueue(){
   :'<div class="empty">待機曲はありません。受付中のリクエストから追加できます。</div>';
 }
 function renderAdminRequests(){
- const reqs=state.requests.filter(r=>activeFilter==="all"||r.status===activeFilter).sort((a,b)=>b.createdAt-a.createdAt);
- $("#adminRequestCount").textContent=state.requests.filter(r=>r.status==="new").length;
+ const reqs=state.requests.filter(r=>r.status==="new").sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+ $("#adminRequestCount").textContent=reqs.length;
  $("#adminRequests").innerHTML=reqs.length?reqs.map(r=>{
-  const key=' data-id="'+esc(r.id)+'"';
-  let actions="";
-  if(r.status==="new"){
-   actions='<button class="button primary" data-do="waiting"'+key+'>待機楽曲に追加</button>'+
-    '<button class="button" data-do="practice"'+key+'>練習楽曲に追加</button>';
-  }else if(r.status==="waiting"){
-   actions='<button class="button" data-do="singing"'+key+'>歌唱開始</button>'+
-    '<button class="button" data-do="practice"'+key+'>練習楽曲に追加</button>'+
-    '<button class="button subtle" data-do="new"'+key+'>受付へ戻す</button>';
-  }else if(r.status==="practice"){
-   actions='<button class="button primary" data-do="waiting"'+key+'>待機楽曲に追加</button>'+
-    '<button class="button subtle" data-do="new"'+key+'>受付へ戻す</button>';
-  }else if(r.status==="singing"){
-   actions='<button class="button primary" data-do="done"'+key+'>歌唱完了</button>'+
-    '<button class="button subtle" data-do="waiting"'+key+'>待機に戻す</button>';
-  }else{
-   actions='<button class="button" data-do="new"'+key+'>再受付</button>';
-  }
-  return requestItem(r,actions+'<button class="button warning" data-do="delete"'+key+'>削除</button>');
- }).join(""):'<div class="empty">該当するリクエストはありません。</div>';
+  const key=esc(r.id);
+  const form='<div class="classify-box" data-classify-id="'+key+'">'+
+    '<div class="classify-choices" role="group" aria-label="振り分け先を選択">'+
+    '<label><input type="checkbox" data-dest="waiting"> 歌唱待機</label>'+
+    '<label><input type="checkbox" data-dest="practice"> 練習中</label>'+
+    '<label><input type="checkbox" data-dest="ready"> 歌える曲</label></div>'+
+    '<button type="button" class="button primary" data-do="classify" data-id="'+key+'">振り分けを送信</button></div>';
+  return requestItem(r,form);
+ }).join(""):'<div class="empty">未分類のリクエストはありません。</div>';
+}
+function classifyRequest(id,flags){
+ const r=state.requests.find(x=>x.id===id&&x.status==="new");if(!r)return;
+ const waiting=flags.includes("waiting"),practice=flags.includes("practice"),ready=flags.includes("ready");
+ if(!waiting&&!practice&&!ready){toast("振り分け先を1つ以上選んでください");return;}
+ if(waiting&&practice){toast("歌唱待機と練習中は同時に選べません");return;}
+ if(practice&&ready){toast("練習中と歌える曲は同時に選べません");return;}
+ const now=Date.now();
+ if(ready)upsertSong(r.title,r.artist,"ready","","request");
+ else if(practice)upsertSong(r.title,r.artist,"practice","","request");
+ r.status=waiting?"waiting":practice?"practice":"classified";
+ r.classifiedAt=now;
+ r.classifications=flags.slice();
+ if(waiting)r.waitOrder=Math.max(now,...state.requests.map(x=>x.waitOrder||0))+1;
+ logEvent("classified",{...songSnapshot(r),categories:flags.slice()},now);
+ persist();render();toast("リクエストを振り分けました");
 }
 function renderStreamStatus(){
  const live=state.streamLive===true;
@@ -155,22 +188,91 @@ function renderStreamStatus(){
  $("#requestAvailability").textContent=live?"配信中・リクエスト受付中":"配信終了中・リクエスト受付停止";
  $("#requestAvailability").classList.toggle("live",live);
  $("#adminStreamStatus").textContent=live?"配信中・受付中":"配信終了中";
+ $("#adminOnAir").hidden=!live;
  $("#startStream").disabled=live;
  $("#endStream").disabled=!live;
  $("#openRequestDialog").disabled=!live;
  $("#sendRequest").disabled=!live;
 }
 function setStreamLive(live){
- if(!adminMode||preview)return;
- if(state.streamLive===live)return;
- state.streamLive=live;
+ if(!adminMode||preview||state.streamLive===live)return;
+ const now=Date.now();
+ if(live){
+  const session={id:makeId("session"),startedAt:now,endedAt:null,events:[]};
+  state.sessions.push(session);
+  state.activeSessionId=session.id;
+  state.streamLive=true;
+ }else{
+  const singing=singingRequest();
+  if(singing){
+   logEvent("singing_end",{...songSnapshot(singing),startedAt:singing.singingStartedAt||null,reason:"stream_end"},now);
+   singing.status="done";singing.singingEndedAt=now;delete singing.singingStartedAt;
+  }
+  const session=currentSession();
+  if(session)session.endedAt=now;
+  state.activeSessionId=null;state.streamLive=false;
+ }
  persist();render();
- toast(live?"配信を開始しました。リクエスト受付中です":"配信を終了しました。リクエスト受付を停止しました");
+ toast(live?"配信開始：リクエスト受付中":"配信終了：レポートを保存しました");
+}
+function renderReports(){
+ const sessions=[...state.sessions].sort((a,b)=>(b.startedAt||0)-(a.startedAt||0));
+ $("#reportCount").textContent=sessions.length+" 回";
+ const active=currentSession();
+ $("#reportCurrent").innerHTML=active?'<div class="report-live">現在の配信を記録中：'+esc(timeLabel(active.startedAt))+' 〜</div>':"";
+ $("#reportHistory").innerHTML=sessions.length?sessions.map((session,i)=>{
+  const events=Array.isArray(session.events)?session.events:[];
+  const received=events.filter(e=>e.type==="request");
+  const starts=events.filter(e=>e.type==="singing_start");
+  const ends=events.filter(e=>e.type==="singing_end");
+  const added=events.filter(e=>e.type==="practice_added"||e.type==="ready_added");
+  const renderList=(items,kind)=>items.length?items.map(e=>{
+   const title='<strong>'+esc(e.title||"未登録")+'</strong> / '+esc(e.artist||"");
+   if(kind==="received")return '<li><time>'+esc(clockLabel(e.at))+'</time>'+title+'<small>リクエスト者 '+esc(e.nickname||"匿名")+'</small></li>';
+   if(kind==="performed"){
+    const end=ends.find(x=>x.requestId===e.requestId&&x.at>=e.at&&(x.startedAt==null||x.startedAt===e.at));
+    return '<li>'+title+'<small>'+esc(clockLabel(e.at))+' 〜 '+esc(end?clockLabel(end.at):session.endedAt?"終了記録なし":"歌唱中")+(end?'（'+esc(formatDuration(end.at-e.at))+'）':"")+'</small></li>';
+   }
+   return '<li><time>'+esc(clockLabel(e.at))+'</time>'+title+'<small>'+(e.type==="ready_added"?"歌える曲に追加":"練習中に追加")+'</small></li>';
+  }).join(""):'<li>記録なし</li>';
+  const duration=session.endedAt?formatDuration(session.endedAt-session.startedAt):"配信中";
+  return '<details class="session-report"'+(i===0?' open':'')+'><summary><span>第'+(state.sessions.indexOf(session)+1)+'回 '+esc(timeLabel(session.startedAt))+'</span><span>'+esc(duration)+' / '+received.length+'件受付 / '+starts.length+'曲歌唱</span></summary>'+
+   '<div class="report-grid"><section><h3>受付リクエスト（'+received.length+'件）</h3><ul>'+renderList(received,"received")+'</ul></section>'+
+   '<section><h3>歌唱曲と開始・終了時刻（'+starts.length+'曲）</h3><ul>'+renderList(starts,"performed")+'</ul></section>'+
+   '<section><h3>新規練習中・歌える曲（'+added.length+'件）</h3><ul>'+renderList(added,"added")+'</ul></section></div>'+
+   '<p class="report-foot">配信 '+esc(timeLabel(session.startedAt))+' 〜 '+esc(session.endedAt?timeLabel(session.endedAt):"進行中")+'</p></details>';
+ }).join(""):'<div class="empty">配信を開始すると、レポートがここに表示されます。</div>';
+}
+function renderAdminSongList(){
+ const q=norm($("#adminSongSearch").value);
+ const rows=state.songs.filter(s=>!q||norm(s.title+s.artist+(s.memo||"")).includes(q)).sort((a,b)=>a.title.localeCompare(b.title,"ja"));
+ $("#adminSongCount").textContent="登録済み "+state.songs.length+"曲 / 表示 "+Math.min(150,rows.length)+"曲";
+ $("#adminSongList").innerHTML=rows.length?rows.slice(0,150).map(s=>
+  '<div class="song-manage-row"><div class="song-info"><strong>'+esc(s.title)+'</strong><div class="song-artist">'+esc(s.artist)+' ・ '+(s.status==="ready"?"歌える曲":"練習中")+'</div>'+
+  (s.memo?'<div class="song-memo">'+esc(s.memo)+'</div>':'<div class="song-memo song-memo-empty">メモなし</div>')+'</div>'+
+  '<button type="button" class="button" data-song-edit="'+esc(s.id)+'">編集</button></div>').join("")
+  :'<div class="empty">一致する曲はありません。</div>';
+}
+function resetSongEditor(){
+ editingId=null;$("#songForm").reset();$("#songSaveButton").textContent="楽曲を登録";$("#songEditCancel").hidden=true;
+}
+function startSongEdit(id){
+ const s=state.songs.find(x=>x.id===id);if(!s)return;
+ editingId=id;
+ $("#songTitle").value=s.title||"";
+ $("#songArtist").value=s.artist||"";
+ $("#songStatus").value=s.status||"ready";
+ $("#songYear").value=s.year||"";
+ $("#songMemo").value=s.memo||"";
+ $("#songSaveButton").textContent="変更を保存";
+ $("#songEditCancel").hidden=false;
+ $("#songForm").scrollIntoView({behavior:"smooth",block:"center"});
+ $("#songMemo").focus();
 }
 function render(){
  $("#streamerName").textContent=state.name;
  document.title=state.name+"のデンモク";
- renderSearch();renderSinging();renderQueue();renderPractice();renderAdminRequests();renderStreamStatus();
+ renderSearch();renderSinging();renderQueue();renderPractice();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();
  $("#catalogStatus").textContent=catalog.ready?"楽曲検索利用可":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  $("#toListener").hidden=!adminMode || preview;
@@ -183,13 +285,19 @@ function changeRequestStatus(id,status){
   if(current && current.id!==id){toast("先に歌唱中の曲を完了、または待機に戻してください");return;}
   if(r.status!=="waiting" && r.status!=="singing"){toast("歌唱開始は待機楽曲から操作してください");return;}
  }
- r.status=status;
- if(status==="waiting")r.waitOrder=Math.max(Date.now(),...state.requests.map(x=>x.waitOrder||0))+1;
- if(status==="practice"){
-  const existing=state.songs.find(s=>readyKey(s.title,s.artist)===readyKey(r.title,r.artist));
-  if(existing){if(existing.status!=="ready")existing.status="practice";}
-  else state.songs.push({id:"p-"+Date.now(),title:r.title,artist:r.artist,status:"practice",year:null});
+ const now=Date.now();
+ if(r.status==="singing"&&status!=="singing"){
+  logEvent("singing_end",{...songSnapshot(r),startedAt:r.singingStartedAt||null},now);
+  r.singingEndedAt=now;delete r.singingStartedAt;
  }
+ r.status=status;
+ if(status==="singing"){
+  r.singingStartedAt=now;
+  logEvent("singing_start",songSnapshot(r),now);
+ }
+ if(status==="waiting")r.waitOrder=Math.max(now,...state.requests.map(x=>x.waitOrder||0))+1;
+ if(status==="practice")upsertSong(r.title,r.artist,"practice","","request");
+ logEvent("status_change",{...songSnapshot(r),status},now);
  persist();render();
 }
 function reorder(id,dir){
@@ -211,7 +319,8 @@ function requestSubmit(event){
   const r={id:"r-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),title,artist,nickname,
    message:$("#reqMessage").value.trim().slice(0,200),status:"new",createdAt:Date.now(),songId:null};
   state.requests.push(r);
-  if(!persist()){state.requests.pop();return;}
+  logEvent("request",songSnapshot(r),r.createdAt);
+  if(!persist()){state.requests.pop();const current=currentSession();if(current)current.events.pop();return;}
   $("#reqMessage").value="";$("#reqTitle").value="";$("#reqArtist").value="";selected=null;
   $("#chosenSong").hidden=true;
   const dlg=$("#requestDialog");if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");
@@ -224,6 +333,11 @@ function adminAction(event){
  const b=event.target.closest("[data-do]");
  if(!b)return;
  const id=b.dataset.id,act=b.dataset.do;
+ if(act==="classify"){
+  const box=b.closest("[data-classify-id]");
+  if(box)classifyRequest(id,[...box.querySelectorAll("input[data-dest]:checked")].map(x=>x.dataset.dest));
+  return;
+ }
  if(act==="waiting"||act==="new"||act==="practice"||act==="singing"||act==="done"){changeRequestStatus(id,act);return;}
  if(act==="up"||act==="down"){reorder(id,act==="up"?-1:1);return;}
  if(act==="delete"){
@@ -357,13 +471,13 @@ function attach(){
  $("#startStream").addEventListener("click",()=>setStreamLive(true));
  $("#endStream").addEventListener("click",()=>setStreamLive(false));
  $("#adminView").addEventListener("click",adminAction);
- document.querySelectorAll("[data-filter]").forEach(b=>b.addEventListener("click",()=>{
-  activeFilter=b.dataset.filter;
-  document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));
-  renderAdminRequests();
- }));
  $("#toListener").addEventListener("click",()=>{adminMode=false;render();$("#adminTitle").focus();});
  setupAdminUnlock();
+ $("#adminSongSearch").addEventListener("input",renderAdminSongList);
+ $("#adminSongList").addEventListener("click",e=>{
+  const button=e.target.closest("[data-song-edit]");if(button)startSongEdit(button.dataset.songEdit);
+ });
+ $("#songEditCancel").addEventListener("click",resetSongEditor);
  $("#nameForm").addEventListener("submit",e=>{
   e.preventDefault();state.name=$("#newName").value.trim().slice(0,30)||"Ken";persist();render();toast("この端末の表示名を変更しました");
  });
@@ -371,10 +485,20 @@ function attach(){
   e.preventDefault();
   const title=$("#songTitle").value.trim(),artist=$("#songArtist").value.trim();
   if(!title||!artist)return;
-  const old=state.songs.find(s=>readyKey(s.title,s.artist)===readyKey(title,artist));
-  if(old){old.status=$("#songStatus").value;old.year=$("#songYear").value||null;}
-  else state.songs.push({id:"s-"+Date.now(),title,artist,status:$("#songStatus").value,year:$("#songYear").value||null});
-  persist();e.target.reset();render();toast("端末内の歌える曲リストを更新しました");
+  const status=$("#songStatus").value,year=$("#songYear").value||null,memo=$("#songMemo").value.trim();
+  const clash=state.songs.find(s=>readyKey(s.title,s.artist)===readyKey(title,artist)&&s.id!==editingId);
+  if(clash){toast("同名曲が登録済みです。既存曲を編集してください");return;}
+  if(editingId){
+   const row=state.songs.find(s=>s.id===editingId);
+   if(!row){resetSongEditor();return;}
+   const previous=row.status;
+   Object.assign(row,{title,artist,status,year,memo});
+   if(previous!==status && (status==="ready"||status==="practice"))logEvent(status==="ready"?"ready_added":"practice_added",{title,artist,source:"manual_edit",from:previous});
+  }else{
+   const row=upsertSong(title,artist,status,memo,"manual");
+   row.year=year;row.memo=memo;
+  }
+  persist();resetSongEditor();render();toast("楽曲とメモを保存しました");
  });
  $("#songImport").addEventListener("change",async e=>{
   const f=e.target.files[0];if(!f)return;
@@ -385,13 +509,19 @@ function attach(){
    if(!title||!artist||/^(曲|title)/i.test(title))continue;
    const k=readyKey(title,artist);
    if(state.songs.some(s=>readyKey(s.title,s.artist)===k))continue;
-   state.songs.push({id:"imp-"+Date.now()+"-"+count,title,artist,status:/練習/.test(status)?"practice":"ready",year:year||null});
+   const newStatus=/練習/.test(status)?"practice":"ready";
+   state.songs.push({id:"imp-"+Date.now()+"-"+count,title,artist,status:newStatus,year:year||null,memo:""});
+   logEvent(newStatus==="ready"?"ready_added":"practice_added",{title,artist,source:"csv_import"});
    count++;
   }
   persist();render();toast(count+"曲を端末内に読み込みました");e.target.value="";
  });
  try{const nick=localStorage.getItem("ken-nickname")||localStorage.getItem("utabox-nick");if(nick)$("#reqName").value=nick;}catch(_){}
  $("#newName").value=state.name;
+ if(state.streamLive&&!currentSession()){
+  const session={id:makeId("session"),startedAt:Date.now(),endedAt:null,events:[],recovered:true};
+  state.sessions.push(session);state.activeSessionId=session.id;persist();
+ }
  window.addEventListener("storage",event=>{
   if(event.key!==storageKey || !event.newValue)return;
   try{

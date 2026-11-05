@@ -435,3 +435,26 @@ body.embed-mode .listener-broadcast-detail{font-size:11px;flex-basis:100%}
 }
 .song-search-tabs button:focus-visible{outline:3px solid #8acaff;outline-offset:2px}
 @media(max-width:480px){.song-search-tabs button{font-size:12px;min-height:40px;padding:7px 6px}}
+
+
+/* Official DAM / JOYSOUND lookup and individually verified status */
+.karaoke-coverage{margin:5px 0 0;max-width:100%;font-size:11px;line-height:1.45;color:var(--soft)}
+.karaoke-coverage summary{display:list-item;list-style:disclosure-closed inside;cursor:pointer;font-size:11px;font-weight:800;color:var(--soft);width:fit-content;max-width:100%}
+.karaoke-coverage[open] summary{list-style:disclosure-open inside}
+.karaoke-coverage .karaoke-status-live{color:#93ffcb;font-weight:900}
+.karaoke-coverage .karaoke-status-unknown{color:var(--muted)}
+.karaoke-coverage .karaoke-status-searched{color:#ffce8b}
+.karaoke-provider-links{display:flex;flex-wrap:wrap;gap:6px;padding:7px 0 3px}
+.karaoke-provider-links a{font-size:11px;font-weight:800;text-decoration:none;color:#bdd9ff;border:1px solid #456b8b;background:rgba(55,100,160,.10);border-radius:8px;padding:5px 8px}
+.karaoke-provider-links a:hover{background:rgba(69,124,186,.21)}
+.karaoke-verification-note{font-size:10px;line-height:1.5;color:var(--muted);margin:3px 0}
+.karaoke-management{margin:22px 0;border-top:1px solid var(--edge);padding-top:16px}
+.karaoke-management h3{font-size:17px;margin:0 0 8px}
+.karaoke-management form{display:grid;gap:12px;margin-top:12px}
+.karaoke-provider-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.karaoke-provider-box{display:flex;flex-direction:column;gap:9px;min-width:0;border:1px solid var(--edge);border-radius:12px;padding:12px;background:var(--bg2)}
+.karaoke-provider-box legend{font-size:14px;font-weight:900;color:var(--text);padding:0 7px}
+.karaoke-provider-box .button{align-self:start;white-space:normal;text-align:center}
+.karaoke-management .field input,.karaoke-management .field select,.karaoke-management .field textarea{width:100%;min-width:0}
+.song-manage-row .song-form-actions{flex-wrap:nowrap}
+@media(max-width:680px){.karaoke-provider-grid{grid-template-columns:1fr}}

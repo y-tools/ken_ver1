@@ -7,9 +7,9 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261105-now-singing-v1">
+<link rel="stylesheet" href="./styles.css?v=20261105-reports-v2">
 <script src="./config.js?v=20261105-live-practice-modal-v1" defer></script>
-<script src="./app.js?v=20261105-now-singing-v1" defer></script>
+<script src="./app.js?v=20261105-reports-v2" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -26,7 +26,7 @@
   </div>
 </header>
 <main>
-  <div class="notice" id="storageNotice">現在は端末内プレビューです。リクエスト・待機曲・歌える曲リストは、このブラウザ内だけに保存されます。ほかの人と共有するにはデータベース接続と管理者認証が必要です。</div>
+  <div class="notice" id="storageNotice" hidden>現在は端末内プレビューです。リクエスト・待機曲・歌える曲リストは、このブラウザ内だけに保存されます。ほかの人と共有するにはデータベース接続と管理者認証が必要です。</div>
   <div id="listenerView">
     <div class="home-lead" style="margin-top:18px">
       <div><h2>ホーム</h2><p>曲を探して、リクエストを送ろう。</p></div>
@@ -35,7 +35,7 @@
         <button type="button" class="button primary" id="openRequestDialog">リクエストする</button>
       </nav>
     </div>
-    <div id="streamStatus" class="stream-status" role="status" aria-live="polite">配信終了中・リクエスト受付停止</div>
+    <div id="streamStatus" class="visually-hidden" role="status" aria-live="polite">配信終了中・リクエスト受付停止</div>
     <div class="home-stack">
       <section class="now-singing-card" id="singing-section" aria-labelledby="singing-heading">
         <div class="now-singing-head">
@@ -80,7 +80,7 @@
   </div>
   <div id="adminView" hidden>
     <div class="admin-heading" style="margin-top:17px">
-      <div><h2>管理画面</h2><p>左からリスナー・歌唱待機楽曲・リクエスト・空き枠の4列です。</p></div>
+      <div><div class="admin-title-line"><h2>管理画面</h2><span id="adminOnAir" class="onair-indicator" hidden><span class="onair-dot"></span>ON AIR</span></div><p>左からリスナー・歌唱待機楽曲・リクエスト・空き枠の4列です。</p></div>
       <div class="stream-controls">
         <span class="tag wait" id="adminStreamStatus">配信終了中</span>
         <button type="button" id="startStream" class="button primary">配信開始</button>
@@ -99,14 +99,7 @@
       <section class="admin-panel" aria-label="受付リクエスト">
         <div class="admin-panel-head"><h3>リクエスト楽曲</h3><small><span id="adminRequestCount">0</span> 件受付</small></div>
         <div class="admin-panel-body">
-          <div class="mode-options" role="group" aria-label="受付の絞り込み">
-            <button type="button" data-filter="new" class="active">受付中</button>
-            <button type="button" data-filter="waiting">待機</button>
-            <button type="button" data-filter="singing">歌唱中</button>
-            <button type="button" data-filter="practice">練習中</button>
-            <button type="button" data-filter="done">完了</button>
-            <button type="button" data-filter="all">すべて</button>
-          </div>
+          <p class="admin-intake-note">未分類の受付曲を振り分けてください。</p>
           <div id="adminRequests" class="queue-list"></div>
         </div>
       </section>
@@ -129,12 +122,23 @@
           <label class="field">区分<select id="songStatus"><option value="ready">歌える曲</option><option value="practice">練習中</option></select></label>
           <label class="field">リリース年（任意）<input id="songYear" inputmode="numeric" maxlength="4"></label>
         </div>
-        <div><button type="submit" class="button primary">歌える曲リストに登録</button></div>
+        <label class="field">楽曲メモ（管理画面専用）
+          <textarea id="songMemo" maxlength="2000" rows="3" placeholder="歌い方・キー・練習メモ・注意事項など"></textarea>
+        </label>
+        <div class="song-form-actions"><button type="submit" class="button primary" id="songSaveButton">楽曲を登録</button><button type="button" class="button subtle" id="songEditCancel" hidden>編集を取り消す</button></div>
       </form>
+      <div class="song-manage-area"><h3>登録曲とメモの確認・編集</h3>
+        <input type="search" id="adminSongSearch" placeholder="曲名・アーティスト・メモで検索" aria-label="登録曲を検索">
+        <p id="adminSongCount" class="helper"></p><div id="adminSongList" class="song-manage-list"></div>
+      </div>
       <label class="field" style="margin-top:14px">CSV一括取り込み（楽曲名,アーティスト,JASRAC,NexTone,区分,発売年）
         <input type="file" id="songImport" accept=".csv,text/csv">
       </label>
     </details>
+    <section class="report-section" id="streamReports" aria-labelledby="reportHeading">
+      <div class="report-heading"><div><h2 id="reportHeading">配信レポート</h2><p>配信開始から終了までを1回として記録します。</p></div><span id="reportCount" class="count">0 回</span></div>
+      <div id="reportCurrent"></div><div class="report-history" id="reportHistory"></div>
+    </section>
   </div>
 </main>
 <dialog id="requestDialog" class="request-dialog" aria-labelledby="requestDialogTitle">

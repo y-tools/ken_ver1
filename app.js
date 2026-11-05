@@ -8,16 +8,16 @@ const preview = params.get("embed")==="1";
 if(preview) document.body.classList.add("embed-mode");
 const config = window.KEN_CONFIG || {};
 const storageKey = "ken-denmoku-v2";
-const initial = {songs:[],requests:[],name:"Ken"};
+const initial = {songs:[],requests:[],name:"Ken",streamLive:false};
 let state = initial;
 try {
  const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
  if(saved && typeof saved==="object") {
-  state = {...initial, songs:Array.isArray(saved.songs)?saved.songs:[], requests:Array.isArray(saved.requests)?saved.requests:[], name:typeof saved.name==="string"?saved.name:"Ken"};
+  state = {...initial, songs:Array.isArray(saved.songs)?saved.songs:[], requests:Array.isArray(saved.requests)?saved.requests:[], name:typeof saved.name==="string"?saved.name:"Ken",streamLive:saved.streamLive===true};
  }
 } catch(_) {}
 const catalog = {rows:[],idx:[],ready:false,error:false};
-let searchMode="title";
+
 let adminMode=false;
 let editingId=null;
 let selected=null;
@@ -33,19 +33,15 @@ function toast(message){
 }
 function readyKey(t,a){return norm(t)+"|"+norm(a);}
 function readySet(){return new Set(state.songs.filter(x=>x.status==="ready").map(x=>readyKey(x.title,x.artist)));}
-function lookupCatalog(q,kind="title",limit=60){
- const normalized=norm(q);
- if(!normalized||!catalog.ready)return [];
- const indexed=[];
- const fallback=[];
+function lookupCatalog(q,limit=60){
+ const term=norm(q);if(!term||!catalog.ready)return [];
+ const prefix=[],middle=[];
  for(let i=0;i<catalog.rows.length;i++){
-  const r=catalog.rows[i];
-  const name=norm(kind==="artist"?r[1]:r[0]);
-  const pos=name.indexOf(normalized);
-  if(pos===0){indexed.push(i);if(indexed.length>=limit)break;}
-  else if(pos>0 && fallback.length<limit)fallback.push(i);
+  const r=catalog.rows[i],title=norm(r[0]),artist=norm(r[1]);
+  if(title.startsWith(term)||artist.startsWith(term)){prefix.push(i);if(prefix.length>=limit)break;}
+  else if((title.includes(term)||artist.includes(term))&&middle.length<limit)middle.push(i);
  }
- return indexed.concat(fallback).slice(0,limit);
+ return prefix.concat(middle).slice(0,limit);
 }
 function displayRow(s,actions="",status=""){
  const tag=status?'<span class="tag '+(status==="ready"?"ready":"")+'">'+(status==="ready"?"歌える曲":"カタログ")+'</span>':"";
@@ -53,40 +49,48 @@ function displayRow(s,actions="",status=""){
  (s.year?' · '+esc(s.year):'')+'</div>'+ (tag?'<div class="song-meta">'+tag+'</div>':"")+
  '</div>'+ (actions?'<div class="song-actions">'+actions+'</div>':"")+'</div>';
 }
-function selectSong(title,artist,source){
- selected={title,artist,source};
- $("#reqTitle").value=title;$("#reqArtist").value=artist;
- $("#chosenSong").hidden=false;
- $("#chosenSong").textContent="選択中："+title+" / "+artist;
- document.querySelector("#request-section").scrollIntoView({behavior:"smooth",block:"start"});
- toast("曲を選択しました。お名前を入力して送信してください");
+function openRequestDialog(song){
+ if(!state.streamLive){toast("現在は配信終了中です。リクエストを送信できません");return;}
+ selected=song||null;
+ $("#reqTitle").value=song?.title||"";
+ $("#reqArtist").value=song?.artist||"";
+ $("#chosenSong").hidden=!song;
+ $("#chosenSong").textContent=song?"選択中："+song.title+" / "+song.artist:"";
+ const dlg=$("#requestDialog");
+ if(typeof dlg.showModal==="function")dlg.showModal();else dlg.setAttribute("open","");
+ (song?$("#reqName"):$("#reqTitle")).focus();
 }
+function selectSong(title,artist,source){openRequestDialog({title,artist,source});}
 function renderSearch(){
  const q=$("#searchInput").value.trim();
- const type=searchMode;
- const readySongs=state.songs.filter(x=>x.status==="ready");
+ const ready=state.songs.filter(s=>s.status==="ready");
+ const statusLookup=new Map(state.songs.map(s=>[readyKey(s.title,s.artist),s.status]));
  $("#searchHelper").textContent=catalog.ready
-  ? "曲カタログ "+catalog.rows.length.toLocaleString("ja-JP")+"曲。歌える曲は配信者の登録分のみです。"
-  : catalog.error?"曲カタログの取得に失敗しました。":"曲カタログを読み込み中です…";
- const readyKeys=readySet();
- let list=[];
- if(type==="ready"){
-  list=q?readySongs.filter(x=>norm(x.title+x.artist).includes(norm(q))):readySongs;
-  list=list.slice(0,60).map(x=>({...x,source:"ready"}));
- }else if(q){
-  list=lookupCatalog(q,type,60).map(i=>{
-   const [title,artist,year]=catalog.rows[i];
-   return {title,artist,year,source:readyKeys.has(readyKey(title,artist))?"ready":"catalog"};
-  });
-  const matching=readySongs.filter(x=>norm(type==="title"?x.title:x.artist).includes(norm(q)));
-  const seen=new Set(list.map(x=>readyKey(x.title,x.artist)));
-  for(const s of matching)if(!seen.has(readyKey(s.title,s.artist)))list.unshift({...s,source:"ready"});
-  list=list.slice(0,60);
+  ?"楽曲カタログ "+catalog.rows.length.toLocaleString("ja-JP")+"曲。曲名・アーティスト名をまとめて検索できます。"
+  : catalog.error?"カタログを読み込めませんでした。登録済み曲は検索できます。":"楽曲カタログを読み込み中です…";
+ const list=[],seen=new Set();
+ const add=s=>{const k=readyKey(s.title,s.artist);if(!seen.has(k)){seen.add(k);list.push(s);}};
+ for(const s of ready.filter(s=>!q||norm(s.title).includes(norm(q))||norm(s.artist).includes(norm(q))).slice(0,60))add({...s,source:"ready"});
+ if(q&&catalog.ready)for(const i of lookupCatalog(q,60)){
+  const [title,artist,year]=catalog.rows[i];
+  add({title,artist,year,source:statusLookup.get(readyKey(title,artist))||"catalog"});
+  if(list.length>=60)break;
  }
- $("#searchResults").innerHTML = list.length ? list.map((s,i)=>displayRow(s,
-  '<button class="button primary" data-select-index="'+i+'" type="button">リクエストに選ぶ</button>',s.source==="ready"?"ready":"catalog")).join("")
-  : '<div class="empty">'+(q||type==="ready"?"検索に一致する曲はありません。曲名とアーティストを直接入力することもできます。":"曲名またはアーティストを入力すると候補を表示します。")+'</div>';
- window.__searchResults=list;
+ const result=list.slice(0,60);
+ $("#searchResults").innerHTML=result.length?result.map((s,i)=>displayRow(s,
+  '<button class="button primary" data-select-index="'+i+'" type="button"'+(!state.streamLive?' disabled title="配信中のみリクエスト受付"':'')+'>リクエスト</button>',s.source==="ready"?"ready":"catalog")).join("")
+  :'<div class="empty">'+(q?"一致する曲がありません。別の表記でも検索してください。":"歌える曲の登録はまだありません。曲名やアーティスト名で検索してください。")+'</div>';
+ window.__searchResults=result;
+}
+function renderPractice(){
+ const list=new Map();
+ const add=(title,artist,year)=>{const k=readyKey(title,artist);if(!list.has(k))list.set(k,{title,artist,year,count:0});return list.get(k)};
+ for(const s of state.songs.filter(s=>s.status==="practice"))add(s.title,s.artist,s.year);
+ for(const r of state.requests.filter(r=>r.status==="practice"))add(r.title,r.artist,null).count++;
+ const rows=[...list.values()].sort((a,b)=>a.title.localeCompare(b.title,"ja"));
+ $("#practiceCount").textContent=rows.length;
+ $("#practiceList").innerHTML=rows.length?rows.map(s=>'<div class="song-row"><div class="song-info"><div class="song-title">'+esc(s.title)+'</div><div class="song-artist">'+esc(s.artist)+'</div><div class="song-meta"><span class="tag wait">練習中</span>'+ (s.count?' リクエスト '+s.count+'件':'')+'</div></div></div>').join("")
+  :'<div class="empty">練習中の楽曲はまだありません。</div>';
 }
 function requestItem(r,controls=""){
  const when=r.createdAt?new Date(r.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
@@ -112,16 +116,46 @@ function renderAdminRequests(){
  const reqs=state.requests.filter(r=>activeFilter==="all"||r.status===activeFilter).sort((a,b)=>b.createdAt-a.createdAt);
  $("#adminRequestCount").textContent=state.requests.filter(r=>r.status==="new").length;
  $("#adminRequests").innerHTML=reqs.length?reqs.map(r=>{
-  const actions=r.status==="new"?'<button class="button primary" data-do="waiting" data-id="'+esc(r.id)+'">待機曲に追加</button>'
-    :r.status==="waiting"?'<button class="button" data-do="new" data-id="'+esc(r.id)+'">受付に戻す</button>'
-    :'<button class="button" data-do="new" data-id="'+esc(r.id)+'">再受付</button>';
-  return requestItem(r,actions+'<button class="button warning" data-do="delete" data-id="'+esc(r.id)+'">削除</button>');
+  const key=' data-id="'+esc(r.id)+'"';
+  let actions="";
+  if(r.status==="new"){
+   actions='<button class="button primary" data-do="waiting"'+key+'>待機楽曲に追加</button>'+
+    '<button class="button" data-do="practice"'+key+'>練習楽曲に追加</button>';
+  }else if(r.status==="waiting"){
+   actions='<button class="button" data-do="practice"'+key+'>練習楽曲に追加</button>'+
+    '<button class="button subtle" data-do="new"'+key+'>受付へ戻す</button>';
+  }else if(r.status==="practice"){
+   actions='<button class="button primary" data-do="waiting"'+key+'>待機楽曲に追加</button>'+
+    '<button class="button subtle" data-do="new"'+key+'>受付へ戻す</button>';
+  }else{
+   actions='<button class="button" data-do="new"'+key+'>再受付</button>';
+  }
+  return requestItem(r,actions+'<button class="button warning" data-do="delete"'+key+'>削除</button>');
  }).join(""):'<div class="empty">該当するリクエストはありません。</div>';
+}
+function renderStreamStatus(){
+ const live=state.streamLive===true;
+ $("#streamStatus").textContent=live?"配信中・楽曲リクエスト受付中":"配信終了中・リクエスト受付停止";
+ $("#streamStatus").classList.toggle("live",live);
+ $("#requestAvailability").textContent=live?"配信中・リクエスト受付中":"配信終了中・リクエスト受付停止";
+ $("#requestAvailability").classList.toggle("live",live);
+ $("#adminStreamStatus").textContent=live?"配信中・受付中":"配信終了中";
+ $("#startStream").disabled=live;
+ $("#endStream").disabled=!live;
+ $("#openRequestDialog").disabled=!live;
+ $("#sendRequest").disabled=!live;
+}
+function setStreamLive(live){
+ if(!adminMode||preview)return;
+ if(state.streamLive===live)return;
+ state.streamLive=live;
+ persist();render();
+ toast(live?"配信を開始しました。リクエスト受付中です":"配信を終了しました。リクエスト受付を停止しました");
 }
 function render(){
  $("#streamerName").textContent=state.name;
  document.title=state.name+"のデンモク";
- renderSearch();renderQueue();renderAdminRequests();
+ renderSearch();renderQueue();renderPractice();renderAdminRequests();renderStreamStatus();
  $("#catalogStatus").textContent=catalog.ready?"楽曲検索利用可":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  $("#toListener").hidden=!adminMode || preview;
@@ -130,7 +164,12 @@ function render(){
 function changeRequestStatus(id,status){
  const r=state.requests.find(x=>x.id===id);if(!r)return;
  r.status=status;
- if(status==="waiting"){r.waitOrder=Math.max(Date.now(),...state.requests.map(x=>x.waitOrder||0))+1;}
+ if(status==="waiting")r.waitOrder=Math.max(Date.now(),...state.requests.map(x=>x.waitOrder||0))+1;
+ if(status==="practice"){
+  const existing=state.songs.find(s=>readyKey(s.title,s.artist)===readyKey(r.title,r.artist));
+  if(existing){if(existing.status!=="ready")existing.status="practice";}
+  else state.songs.push({id:"p-"+Date.now(),title:r.title,artist:r.artist,status:"practice",year:null});
+ }
  persist();render();
 }
 function reorder(id,dir){
@@ -143,6 +182,7 @@ function reorder(id,dir){
 }
 function requestSubmit(event){
  event.preventDefault();if(isSending)return;
+ if(!state.streamLive){toast("配信終了中のため、リクエストを受け付けていません");return;}
  const title=$("#reqTitle").value.trim(),artist=$("#reqArtist").value.trim(),nickname=$("#reqName").value.trim();
  if(!title||!artist||!nickname){toast("曲名・アーティスト・お名前を入力してください");return;}
  if(title.length>120||artist.length>120||nickname.length>40){toast("入力文字数を確認してください");return;}
@@ -154,6 +194,7 @@ function requestSubmit(event){
   if(!persist()){state.requests.pop();return;}
   $("#reqMessage").value="";$("#reqTitle").value="";$("#reqArtist").value="";selected=null;
   $("#chosenSong").hidden=true;
+  const dlg=$("#requestDialog");if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");
   try{localStorage.setItem("ken-nickname",nickname)}catch(_){}
   toast("端末内プレビューに受付登録しました（他の端末には共有されません）");
   render();
@@ -163,7 +204,7 @@ function adminAction(event){
  const b=event.target.closest("[data-do]");
  if(!b)return;
  const id=b.dataset.id,act=b.dataset.do;
- if(act==="waiting"||act==="new"||act==="done"){changeRequestStatus(id,act);return;}
+ if(act==="waiting"||act==="new"||act==="practice"||act==="done"){changeRequestStatus(id,act);return;}
  if(act==="up"||act==="down"){reorder(id,act==="up"?-1:1);return;}
  if(act==="delete"){
   if(!confirm("このリクエストを削除しますか？"))return;
@@ -282,12 +323,6 @@ function setupAdminUnlock(){
  });
 }
 function attach(){
- document.querySelectorAll("[data-search-mode]").forEach(b=>b.addEventListener("click",()=>{
-  searchMode=b.dataset.searchMode;
-  document.querySelectorAll("[data-search-mode]").forEach(x=>x.classList.toggle("active",x===b));
-  $("#searchInput").placeholder=searchMode==="title"?"曲名で検索":searchMode==="artist"?"アーティスト名で検索":"歌える曲リストを検索";
-  renderSearch();
- }));
  $("#searchInput").addEventListener("input",renderSearch);
  $("#searchResults").addEventListener("click",e=>{
   const btn=e.target.closest("[data-select-index]");if(!btn)return;
@@ -295,6 +330,12 @@ function attach(){
   if(s)selectSong(s.title,s.artist,s.source);
  });
  $("#requestForm").addEventListener("submit",requestSubmit);
+ $("#openRequestDialog").addEventListener("click",()=>openRequestDialog(null));
+ $("#requestDialogClose").addEventListener("click",()=>{
+  const dlg=$("#requestDialog");if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");
+ });
+ $("#startStream").addEventListener("click",()=>setStreamLive(true));
+ $("#endStream").addEventListener("click",()=>setStreamLive(false));
  $("#adminView").addEventListener("click",adminAction);
  document.querySelectorAll("[data-filter]").forEach(b=>b.addEventListener("click",()=>{
   activeFilter=b.dataset.filter;

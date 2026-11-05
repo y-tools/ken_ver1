@@ -94,8 +94,6 @@ def main():
         if not isinstance(row,list) or len(row)<2 or not row[0] or not row[1]:
             continue
         identity=pair_key(row[0],row[1])
-        if identity in previous and identity in {""}:
-            continue
         if identity not in previous:
             previous.add(identity)
         # Only retain the Japanese-script subset of existing rows for
@@ -156,7 +154,8 @@ def main():
     reading_groups=[[] for _ in range(BATCH)]
     seen=set()
     reading_count=0
-    for item in originals+candidate_japanese:
+    from itertools import chain
+    for item in chain(originals,candidate_japanese):
         k=pair_key(item[0],item[1])
         if k in seen:
             continue

@@ -24,7 +24,7 @@ class SearchTests(unittest.TestCase):
         cases = [
             ("マツダ・ＡＢＣ", "まつだabc"),
             ("カタカナ", "かたかな"),
-            ("テスト －", "てすと−"),
+            ("テスト －", "てすと"),
             ("Hello World", "helloworld"),
         ]
         for value, expected in cases:

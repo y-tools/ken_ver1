@@ -28,6 +28,13 @@ try{
  await page.locator("#searchInput").fill("流恋情歌");
  await page.waitForFunction(()=>document.querySelector("#searchResults")?.textContent?.includes("流恋情歌"),null,{timeout:30000});
  await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),"Japanese song catalog search succeeds");
+ await check(await page.locator("#searchResults .karaoke-coverage").count()>0,"DAM and JOYSOUND verification panel shown on catalog results");
+ await check((await page.locator("#searchResults .karaoke-coverage").first().textContent()).includes("収録未確認"),
+  "Unverified titles do not claim karaoke availability");
+ await check(await page.locator("#searchResults .karaoke-coverage").first().locator('a[href*="clubdam.com"]').count()>0,
+  "DAM official lookup link included for each song");
+ await check(await page.locator("#searchResults .karaoke-coverage").first().locator('a[href*="joysound.com"]').count()>0,
+  "JOYSOUND official lookup link included for each song");
  await check(await page.locator('[data-search-mode="title"]').getAttribute("aria-pressed")==="true","Title search selected by default");
  const titleResult=await page.locator("#searchResults").textContent();
  await page.locator('[data-search-mode="artist"]').click();
@@ -88,6 +95,27 @@ try{
  await page.locator(".admin-tools summary").click();
  await page.locator("#adminSongSearch").fill("統合テスト曲");
  await check((await page.locator("#adminSongList").textContent()).includes("統合テスト曲"),"Dual classification: singable");
+ await check((await page.locator("#adminSongList .karaoke-coverage").first().textContent()).includes("収録未確認"),
+   "Local karaoke status starts unverified");
+ await page.locator("#karaokeTitle").fill("統合テスト曲");
+ await page.locator("#karaokeArtist").fill("テストアーティスト");
+ await page.locator("#karaokeDamStatus").selectOption("available");
+ await page.locator("#karaokeDamUrl").fill("https://www.clubdam.com/karaokesearch/song/sample-test");
+ await page.locator("#karaokeDamNumber").fill("1234-56");
+ await page.locator("#karaokeJoyStatus").selectOption("searched");
+ await page.locator("#karaokeNotes").fill("確認時のテスト用記録");
+ page.once("dialog", dialog=>dialog.accept());
+ await page.locator('#karaokeCheckForm button[type="submit"]').click();
+ const verification=await page.evaluate(()=>window.KEN_KARAOKE.lookup("統合テスト曲","テストアーティスト"));
+ await check(verification?.dam?.status==="available"&&verification?.joy?.status==="searched",
+   "DAM verified and JOYSOUND not found are stored separately");
+ await check(Boolean(verification?.dam?.checkedAt)&&Boolean(verification?.joy?.checkedAt),
+   "Verification saves checked dates");
+ await check((await page.locator("#adminSongList .karaoke-coverage").first().textContent()).includes("公式で配信確認済み"),
+   "Saved coverage appears on managed song list");
+ await check(await page.locator("#karaokeExport").isVisible(),"Karaoke CSV export control available");
+ await check(await page.locator("#karaokeImport").count()===1,"Karaoke CSV import control available");
+
  await check(await page.locator("#adminWaiting a.lyrics-action").count()===1,"Lyrics URL link visible on waiting song");
  await check(await page.locator("#adminWaiting [data-do=research]").count()===1,"GPT search button visible on waiting song");
  await page.locator("#adminWaiting [data-do=research]").click();

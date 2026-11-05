@@ -194,6 +194,9 @@ def import_readings(conn, max_files):
                             *values,*(normalize(v) for v in values)))
                         scanned+=1
                 for col,side,kind in NAME_COLUMNS:
+                    if kind=="english":
+                        # No machine-translated or guessed official English titles.
+                        continue
                     if side=="title":
                         sql=f"""INSERT INTO song_names(song_id,kind,value,search_key,verification)
                           SELECT DISTINCT s.id,%s::text,st.{col},st.{col}_key

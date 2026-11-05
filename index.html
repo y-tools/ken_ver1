@@ -16,14 +16,11 @@
   <div class="site-header-inner">
     <div>
       <div class="brand-small">REALITY / MUSIC REQUEST SYSTEM</div>
-      <h1 class="site-title"><span id="streamerName">Ken</span>のデンモク</h1>
+      <h1 class="site-title"><button type="button" class="title-hold-trigger" id="adminTitle" aria-label="長押しで管理画面のパスワード入力を開く"><span id="streamerName">Ken</span>のデンモク</button></h1>
       <div class="site-subtitle">楽曲検索・リクエスト・現在の待機曲</div>
     </div>
     <div class="header-actions">
-      <nav class="mode-switch" aria-label="画面の切り替え">
-        <button type="button" class="active" id="toListener">リスナー</button>
-        <button type="button" id="toAdmin">管理プレビュー</button>
-      </nav>
+      <button type="button" class="back-to-listener button" id="toListener" hidden>リスナー画面へ戻る</button>
       <div class="connection-status" id="catalogStatus" aria-live="polite">曲カタログ読込中</div>
     </div>
   </div>
@@ -136,6 +133,19 @@
     </details>
   </div>
 </main>
+<dialog id="adminPasswordDialog" class="admin-password-dialog" aria-labelledby="adminPasswordTitle" aria-describedby="adminPasswordDescription">
+  <form id="adminPasswordForm" class="admin-password-form">
+    <h2 id="adminPasswordTitle">管理画面へ移動</h2>
+    <p id="adminPasswordDescription">パスワードを入力してください。</p>
+    <label class="field" for="adminPasswordInput">パスワード</label>
+    <input type="password" id="adminPasswordInput" required maxlength="40" autocomplete="off" placeholder="パスワード" spellcheck="false">
+    <p id="adminPasswordError" class="password-error" role="alert" hidden>パスワードが違います。</p>
+    <div class="password-actions">
+      <button type="button" class="button subtle" id="adminPasswordCancel">キャンセル</button>
+      <button type="submit" class="button primary">管理画面を開く</button>
+    </div>
+  </form>
+</dialog>
 <div class="toast" id="toast" role="status" hidden></div>
 </body>
 </html>

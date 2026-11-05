@@ -19,6 +19,9 @@ h1,h2,h3,p{margin-top:0}
 .site-header-inner{max-width:1120px;min-height:96px;padding:18px 22px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:18px}
 .brand-small{font-weight:700;letter-spacing:.14em;font-size:11px}
 .site-title{font-size:clamp(22px,3vw,34px);font-weight:900;line-height:1.2;margin:3px 0 0}
+.title-hold-trigger{display:inline-block;appearance:none;border:0;padding:0;background:transparent;color:inherit;font:inherit;line-height:inherit;text-align:left;cursor:pointer;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+.title-hold-trigger:active{opacity:.85}
+.back-to-listener{font-size:12px!important}
 .site-subtitle{font-size:12px;opacity:.9;margin-top:5px}
 .header-actions{display:flex;flex-direction:column;align-items:flex-end;gap:7px}
 .mode-switch{display:flex;gap:4px;background:rgba(0,0,0,.26);border-radius:999px;padding:3px}
@@ -134,3 +137,13 @@ body.embed-mode .searchbox input{font-size:13px;padding:10px 0}
 body.embed-mode .song-row,body.embed-mode .queue-row{display:block}
 body.embed-mode .song-actions{justify-content:flex-start;margin-top:8px}
 body.embed-mode .quick-nav{display:none}
+
+/* Long-press admin unlock dialog (UI-only access gate, not server authentication). */
+.admin-password-dialog{width:min(400px,calc(100vw - 28px));max-height:calc(100dvh - 30px);overflow-y:auto;border:1px solid var(--edge);border-radius:18px;background:var(--surface);color:var(--text);padding:24px;box-shadow:0 28px 90px rgba(0,0,0,.55)}
+.admin-password-dialog::backdrop{background:rgba(2,5,11,.78);backdrop-filter:blur(5px)}
+.admin-password-form{display:grid;gap:14px}
+.admin-password-form h2{font-size:21px;margin:0;font-weight:900}
+.admin-password-form p{font-size:13px;color:var(--soft);margin:0}
+.admin-password-form input{background:var(--bg2);color:var(--text);border:1px solid var(--edge);border-radius:11px;padding:12px 14px;width:100%}
+.admin-password-form .password-error{color:#ff9bab;font-weight:800}
+.password-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:9px;margin-top:5px}

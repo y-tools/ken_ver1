@@ -219,3 +219,39 @@ body.embed-mode .singing-song-title{font-size:20px}
 .report-grid time,.report-grid small{display:block;color:var(--soft)}
 .report-foot{font-size:11px;color:var(--muted);padding:0 12px 12px;margin:0}
 @media(max-width:960px){.report-grid{grid-template-columns:1fr}}
+
+
+/* Prominent listener stream indicator on all screen sizes and preview iframe. */
+.listener-broadcast-status{
+ display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+ min-height:72px;margin:0 0 18px;padding:15px 19px;
+ border:1px solid var(--edge);border-radius:16px;
+ background:linear-gradient(135deg,#202c3b,#151e2d);
+ color:#e0e7f0;box-shadow:0 8px 22px rgba(0,0,0,.16)
+}
+.listener-broadcast-label{
+ display:inline-flex;align-items:center;justify-content:center;gap:10px;
+ min-width:136px;padding:9px 15px;border-radius:11px;
+ font-weight:900;font-size:clamp(17px,2vw,22px);line-height:1.1;
+ letter-spacing:.1em;white-space:nowrap;
+}
+.broadcast-status-dot{display:block;width:11px;height:11px;flex:none;border-radius:50%;background:currentColor}
+.listener-broadcast-detail{font-size:14px;font-weight:800;line-height:1.5;flex:1 1 205px}
+.listener-broadcast-status.is-live{
+ background:linear-gradient(120deg,#0d3b2f,#102b31);
+ border-color:#37bb82;color:#d4ffe8;
+ box-shadow:0 9px 26px rgba(6,112,66,.22),0 0 0 1px rgba(68,232,150,.10)
+}
+.is-live .listener-broadcast-label{background:#067d4c;border:2px solid #60f7a5;color:#f1fff7;box-shadow:0 0 20px rgba(77,247,142,.27)}
+.is-live .broadcast-status-dot{background:#9dffc8;box-shadow:0 0 12px #65ffc1}
+.listener-broadcast-status.is-offline{border-color:#596375;background:linear-gradient(135deg,#28303e,#191f2c)}
+.is-offline .listener-broadcast-label{background:#394354;border:2px solid #738091;color:#edf2f8}
+.is-offline .broadcast-status-dot{background:#adb8c7}
+@media(max-width:720px){
+ .listener-broadcast-status{padding:12px;gap:10px}
+ .listener-broadcast-label{min-width:124px;font-size:17px}
+ .listener-broadcast-detail{font-size:13px}
+}
+body.embed-mode .listener-broadcast-status{padding:10px;gap:8px;margin-bottom:11px;min-height:0}
+body.embed-mode .listener-broadcast-label{min-width:0;font-size:14px;padding:6px 10px}
+body.embed-mode .listener-broadcast-detail{font-size:11px;flex-basis:100%}

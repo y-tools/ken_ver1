@@ -32,10 +32,13 @@ PC画面は左から：リスナー画面プレビュー、歌唱待機曲（歌
 | `data/japanese_popular_10000.json` | 日本楽曲10,000件、1980–2026年（人気度の公式ランキングではない） | `data/songs_1980-2025.csv` / Wikidata（CC0） |
 | `data/vocadb_100k/` | ボーカロイド・UTAU等の楽曲100,000件。20分割・検証用manifest付き | VocaDBの公開メタデータ（CC BY。出典表記を維持） |
 | `data/extra_to_300k/` | 追加140,983曲。29分割・検証用manifest付き。重複除去後の検索対象をちょうど300,000曲に拡張 | VocaDBの公開メタデータ（CC BY。出典表記を維持） |
+| `data/musicbrainz_700k/` | 追加700,000件。256個の2文字検索用バケットに分割し、必要なものだけ取得 | MusicBrainz Canonical Data（CC0） |
 
-読み込み時に曲名＋アーティストを正規化して重複表示を抑えます。現在の検証済みユニーク楽曲数は **300,000曲**（既存159,017曲＋追加140,983曲）です。元データの合計と検索可能なユニーク曲数は異なります。日本楽曲の曲名・アーティストを優先して検索します。**カタログ掲載は「歌える曲」を意味しません**。歌える曲は管理者が個別に登録します。
+読み込み時に曲名＋アーティストを正規化して重複表示を抑えます。現在の検証済みユニーク楽曲数は **1,000,000曲**（以前の300,000曲＋MusicBrainz由来の追加700,000件）です。元データの合計と検索可能なユニーク曲数は異なります。日本楽曲の曲名・アーティストを優先して検索します。**カタログ掲載は「歌える曲」を意味しません**。歌える曲は管理者が個別に登録します。
 
-データ出典： https://vocadb.net/ 、 https://huggingface.co/datasets/amiadesu/VocaDBSongs 、 https://www.wikidata.org/
+追加700,000件のMusicBrainzデータは世界中の**録音メタデータ**であり、日本のヒット曲ランキングや歌唱可能曲を保証しません。公式データの曲名・アーティスト・録音IDを収録します。初回読み込み負荷を抑えるため、追加分は**曲名かアーティストの先頭2文字以上による前方一致**で検索します。元データから発売年を確実に検証できない曲の発売年は空欄です。
+
+データ出典： https://musicbrainz.org/doc/Canonical_MusicBrainz_data 、 https://vocadb.net/ 、 https://huggingface.co/datasets/amiadesu/VocaDBSongs 、 https://www.wikidata.org/
 
 JASRAC・NexToneの作品コードやカラオケ配信許可は未検証です。歌詞本文・音声は収録していません。
 
@@ -48,5 +51,6 @@ JASRAC・NexToneの作品コードやカラオケ配信許可は未検証です�
 ## 自動更新・検証
 
 - `.github/workflows/build-vocadb-catalog.yml`：当初10万曲の収集・検証・分割出力。
-- `.github/workflows/extend-catalog-to-300k.yml` と `scripts/extend_catalog_to_300k.py`：既存ファイルを維持し、総数ちょうど30万曲になる追加分のみ生成。既存曲との重複を検証します。
+- `.github/workflows/extend-catalog-to-300k.yml` と `scripts/extend_catalog_to_300k.py`：既存30万曲のユニーク化。
+- `.github/workflows/build-musicbrainz-1m.yml` と `scripts/build_musicbrainz_to_1m.py`：MusicBrainz公式データから重複なし700,000件を収集し、合計1,000,000件を検証。追加分は256個に分割し検索時のみ取得します。
 - `tests/smoke.mjs` と `.github/workflows/browser-smoke.yml`：Chromiumでリスナー画面、管理画面、配信切り替え、振り分け、歌唱履歴、調査指示、メモ、配信レポートを回帰テストします。

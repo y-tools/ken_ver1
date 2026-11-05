@@ -71,11 +71,28 @@ function lookupCatalog(q,limit=60){
  }
  return prefix.concat(middle).slice(0,limit);
 }
+function formatSongReadings(song){
+ const m=song.readings||{};
+ const formatField=(original,field)=>{
+  const item=m[field]||{};
+  const latin=/^[\x00-\x7f]+$/.test(original)&&/[A-Za-z]/.test(original);
+  const hira=item.hiragana||"";
+  const kata=item.katakana||"";
+  const romaji=item.romaji||(latin?original:"");
+  const english=item.english||(latin?original:"");
+  const one=(label,value,missing="未登録")=>'<span><b>'+label+'：</b>'+esc(value||missing)+'</span>';
+  return '<div class="reading-item"><strong>'+esc(field==="title"?"曲名":"アーティスト")+'</strong>'+
+   one("ひらがな",hira)+one("カタカナ",kata)+one("ローマ字",romaji)+
+   one("英語表記",english,"公式表記未確認")+'</div>';
+ };
+ return '<details class="song-reading-details"><summary>読み・英語表記'+(m.type==="automatic"?"（自動推定）":"")+'</summary>'+
+   '<div class="reading-grid">'+formatField(song.title,"title")+formatField(song.artist,"artist")+'</div></details>';
+}
 function displayRow(s,actions="",status=""){
  const tag=status?'<span class="tag '+(status==="ready"?"ready":"")+'">'+(status==="ready"?"歌える曲":"カタログ")+'</span>':"";
  return '<div class="song-row"><div class="song-info"><div class="song-title">'+esc(s.title)+'</div><div class="song-artist">'+esc(s.artist)+
  (s.year?' · '+esc(s.year):'')+'</div>'+ (tag?'<div class="song-meta">'+tag+'</div>':"")+
- '</div>'+ (actions?'<div class="song-actions">'+actions+'</div>':"")+'</div>';
+ formatSongReadings(s)+'</div>'+ (actions?'<div class="song-actions">'+actions+'</div>':"")+'</div>';
 }
 function openRequestDialog(song){
  if(!state.streamLive){toast("現在は配信終了中です。リクエストを送信できません");return;}
@@ -95,10 +112,11 @@ function renderSearch(){
  const q=$("#searchInput").value.trim();
  const ready=state.songs.filter(s=>s.status==="ready");
  const statusLookup=new Map(state.songs.map(s=>[readyKey(s.title,s.artist),s.status]));
- const extraAvailable=window.KEN_MB_CATALOG_STATS?.ready;
+ const oneMillion=window.KEN_MB_CATALOG_STATS?.ready;
+ const twoMillion=window.KEN_2M_STATS?.ready;
  $("#searchHelper").textContent=catalog.ready
-  ? "楽曲カタログ "+(extraAvailable?"1,000,000":catalog.rows.length.toLocaleString("ja-JP"))+
-    "曲。曲名・アーティスト名をまとめて検索できます。追加70万曲は2文字以上で前方一致検索。"
+  ? "楽曲カタログ "+(twoMillion?"2,000,000":oneMillion?"1,000,000":catalog.rows.length.toLocaleString("ja-JP"))+
+    "曲。曲名・アーティスト名・ひらがな・カタカナ・ローマ字で検索できます。大量追加分は先頭2文字以上で検索。"
   : catalog.error?"カタログを読み込めませんでした。登録済み曲は検索できます。":"楽曲カタログを読み込み中です…";
  const list=[],seen=new Set();
  const add=entry=>{
@@ -123,21 +141,27 @@ function renderSearch(){
  const initial=list.slice(0,window.KEN_MB_SEARCH&&q?40:60);
  show(initial);
  if(!q||Array.from(norm(q)).length<2||!window.KEN_MB_SEARCH)return;
- window.KEN_MB_SEARCH.search(q,20).then(rows=>{
+ window.KEN_MB_SEARCH.search(q,30).then(rows=>{
   if(sequence!==extendedSearchSequence||$("#searchInput").value.trim()!==q)return;
-  const combined=[...initial],seenNow=new Set(combined.map(s=>readyKey(s.title,s.artist)));
+  const combined=[...initial],indexByKey=new Map(combined.map((entry,i)=>[readyKey(entry.title,entry.artist),i]));
   for(const row of rows){
-   const [title,artist,year]=row;
+   const [title,artist,year,,readings]=row;
    if(!title||!artist)continue;
    const key=readyKey(title,artist);
-   if(seenNow.has(key))continue;
-   seenNow.add(key);
-   combined.push({title,artist,year,source:statusLookup.get(key)||"catalog"});
+   if(indexByKey.has(key)){
+    const previous=combined[indexByKey.get(key)];
+    if(readings)combined[indexByKey.get(key)]={...previous,readings};
+    continue;
+   }
    if(combined.length>=60)break;
+   indexByKey.set(key,combined.length);
+   combined.push({title,artist,year,readings:readings||null,source:statusLookup.get(key)||"catalog"});
   }
   show(combined);
-  if(window.KEN_MB_CATALOG_STATS?.ready)
-   $("#searchHelper").textContent="楽曲カタログ 1,000,000曲。追加70万曲は2文字以上の曲名・アーティスト前方一致で検索できます。";
+  if(window.KEN_2M_STATS?.ready)
+   $("#searchHelper").textContent="楽曲カタログ 2,000,000曲。読みの検索に対応。推定読みと正式な英語表記は区別しています。";
+  else if(window.KEN_MB_CATALOG_STATS?.ready)
+   $("#searchHelper").textContent="楽曲カタログ 1,000,000曲。追加分は先頭2文字以上の前方一致で検索できます。";
  }).catch(error=>console.warn("Extra song index unavailable",error));
 }
 

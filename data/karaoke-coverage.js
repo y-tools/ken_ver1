@@ -101,7 +101,7 @@ function refresh(){
  updateCount();
  document.dispatchEvent(new Event("ken:karaoke-updated"));
 }
-function validateAndSave({title,artist,dam,joy,notes}){
+function validateAndSave({title,artist,dam,joy,notes},{deferSave=false,checkedDates=null}={}){
  if(!title||!artist)throw Error("曲名・アーティストが必要です。");
  if(title.length>190||artist.length>150)throw Error("曲名またはアーティスト名が長すぎます。");
  const validate=(name,row)=>{
@@ -109,15 +109,29 @@ function validateAndSave({title,artist,dam,joy,notes}){
   const url=String(row.url||"").trim();
   if(url&&!allowed(url,name))throw Error(SOURCES[name].title+"のURLはその公式サイト内のHTTPS URLを入力してください。");
   if(status==="available"&&!url)throw Error(SOURCES[name].title+"の配信確認には根拠となる公式曲ページURLが必要です。");
+  if(status==="available"){
+   const parsed=new URL(url);
+   if((parsed.pathname==="/"||parsed.pathname==="/web/search"||parsed.pathname==="/karaokesearch/")&&!parsed.search)
+    throw Error(SOURCES[name].title+"の配信確認には検索トップではなく曲の個別公式ページURLを指定してください。");
+  }
   return {status,url:allowed(url,name),number:String(row.number||"").trim().slice(0,35),checkedAt:status==="unknown"?"":new Date().toISOString()};
  };
  const record={title:title.trim(),artist:artist.trim(),dam:validate("dam",dam),joy:validate("joy",joy),notes:String(notes||"").slice(0,400)};
+ if(checkedDates){
+  for(const provider of ["dam","joy"]){
+   const given=checkedDates[provider]||"";
+   if(record[provider].status!=="unknown"&&/^20\d{2}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)?$/.test(given))
+    record[provider].checkedAt=given;
+  }
+ }
  const key=songKey(title,artist);
  if(record.dam.status==="unknown"&&record.joy.status==="unknown"&&!record.notes)
   delete all[key];
  else all[key]=record;
- if(!save())throw Error("端末に保存できませんでした。");
- refresh();
+ if(!deferSave){
+  if(!save())throw Error("端末に保存できませんでした。");
+  refresh();
+ }
 }
 function getFormRecord(){
  const get=suffix=>({
@@ -150,7 +164,7 @@ function parseCsv(content){
   }else if(c==='"')inQuote=true;
   else if(c===','||c==='\n'||c==='\r'){
    fields.push(value);value="";
-   if(c!==" ,".trim()){
+   if(c!==","){
     if(c==='\r'&&content[i+1]==='\n')i++;
     rows.push(fields);fields=[];
    }
@@ -178,10 +192,13 @@ async function importCsv(file){
    number:read(fields,prefix+"_number")
   });
   try{
-   validateAndSave({title,artist,dam:provider("dam"),joy:provider("joysound"),notes:read(fields,"notes")});
+   validateAndSave({title,artist,dam:provider("dam"),joy:provider("joysound"),notes:read(fields,"notes")},{
+    deferSave:true,checkedDates:{dam:read(fields,"dam_checked_at"),joy:read(fields,"joysound_checked_at")}
+   });
    added++;
   }catch(error){skipped++;console.warn("Skipped karaoke CSV row:",error.message);}
  }
+ if(!save())throw Error("CSVの記録を保存できませんでした。");
  refresh();
  return {added,skipped};
 }
@@ -207,7 +224,7 @@ function init(){
   const editor=$("#karaokeCheckForm");
   if(!editor)return;
   const details=editor.closest(".admin-tools");
-  if(details && details.hidden===false){
+  if(details && $("#adminView")?.hidden===false){
    details.open=true;
    setForm(button.dataset.karaokeEdit||"",button.dataset.karaokeArtist||"");
    editor.scrollIntoView({behavior:"smooth",block:"center"});

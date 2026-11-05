@@ -1,0 +1,25 @@
+# Dedicated public read-only HTTPS endpoint for GitHub Pages.
+# Requires backend to listen on 127.0.0.1:8787 only.
+# Do not modify existing Y-OBS / Minecraft / AI site blocks.
+kenapi.153-127-64-17.sslip.io {
+    encode zstd gzip
+
+    header {
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer"
+    }
+
+    @song_api {
+        path /api/v1/search /api/v1/health
+        method GET OPTIONS
+    }
+
+    handle @song_api {
+        reverse_proxy 127.0.0.1:8787
+    }
+
+    handle {
+        respond "Not Found" 404
+    }
+}

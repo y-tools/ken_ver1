@@ -7,6 +7,9 @@ on:
       - "app.js"
       - "styles.css"
       - "tests/**"
+      - "database-editor.html"
+      - "database-editor.css"
+      - "database-editor.js"
       - ".github/workflows/browser-smoke.yml"
 permissions:
   contents: read
@@ -29,3 +32,5 @@ jobs:
           sleep 3
       - name: Run UI smoke test
         run: node tests/smoke.mjs
+      - name: Run administrator editor browser test
+        run: node tests/editor-smoke.mjs

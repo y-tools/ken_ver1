@@ -7,9 +7,9 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261105-pc-longpress-fix1">
-<script src="./config.js?v=20261105-pc-longpress-fix1" defer></script>
-<script src="./app.js?v=20261105-pc-longpress-fix1" defer></script>
+<link rel="stylesheet" href="./styles.css?v=20261105-live-practice-modal-v1">
+<script src="./config.js?v=20261105-live-practice-modal-v1" defer></script>
+<script src="./app.js?v=20261105-live-practice-modal-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -31,24 +31,21 @@
     <div class="home-lead" style="margin-top:18px">
       <div><h2>ホーム</h2><p>曲を探して、リクエストを送ろう。</p></div>
       <nav class="quick-nav" aria-label="ホームメニュー">
-        <a href="#search-section">楽曲検索</a><a href="#waiting-section">現在の受付曲</a><a href="#request-section">リクエスト</a>
+        <a href="#search-section">楽曲検索</a><a href="#waiting-section">待機曲</a><a href="#practice-section">練習中楽曲</a>
+        <button type="button" class="button primary" id="openRequestDialog">リクエストする</button>
       </nav>
     </div>
+    <div id="streamStatus" class="stream-status" role="status" aria-live="polite">配信終了中・リクエスト受付停止</div>
     <div class="home-stack">
       <section class="home-card" id="search-section" aria-labelledby="search-heading">
         <div class="section-head">
           <span class="section-no">01</span>
-          <div><h3 id="search-heading">楽曲検索</h3><p>検索方法を選び、曲を探してください。</p></div>
-        </div>
-        <div class="mode-options" role="group" aria-label="検索方法">
-          <button type="button" class="active" data-search-mode="title">曲名検索</button>
-          <button type="button" data-search-mode="artist">アーティスト検索</button>
-          <button type="button" data-search-mode="ready">歌える曲リスト検索</button>
+          <div><h3 id="search-heading">楽曲検索</h3><p>曲名・アーティスト・歌える曲をまとめて検索できます。</p></div>
         </div>
         <label for="searchInput" class="field">検索キーワード</label>
         <div class="searchbox">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
-          <input type="search" id="searchInput" placeholder="曲名で検索" autocomplete="off">
+          <input type="search" id="searchInput" placeholder="曲名・アーティストで検索" autocomplete="off">
         </div>
         <div class="helper" id="searchHelper" aria-live="polite">曲カタログを読み込み中です…</div>
         <div class="result-list" id="searchResults"></div>
@@ -61,34 +58,33 @@
         </div>
         <div class="queue-list" id="waitingList"></div>
       </section>
-      <section class="home-card" id="request-section" aria-labelledby="request-heading">
+      <section class="home-card" id="practice-section" aria-labelledby="practice-heading">
         <div class="section-head">
           <span class="section-no">03</span>
-          <div><h3 id="request-heading">リクエスト送信フォーム</h3><p>楽曲検索で選んだ曲、または直接入力した曲を送信できます。</p></div>
+          <div><h3 id="practice-heading">練習中楽曲</h3><p>練習中の曲を一覧で表示します。</p></div>
+          <span class="count"><span id="practiceCount">0</span> 曲</span>
         </div>
-        <form id="requestForm" class="request-form">
-          <div id="chosenSong" class="selection" hidden></div>
-          <div class="form-row">
-            <label class="field">曲名 <input id="reqTitle" name="title" required maxlength="120" placeholder="曲名を入力"></label>
-            <label class="field">アーティスト <input id="reqArtist" name="artist" required maxlength="120" placeholder="アーティスト名を入力"></label>
-          </div>
-          <label class="field">リクエスト者のお名前 <input id="reqName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
-          <label class="field">メッセージ（任意）<textarea id="reqMessage" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
-          <div><button type="submit" class="button primary large" id="sendRequest">リクエストを送信</button></div>
-          <p class="helper">※ 共有サーバー未接続のため、現在はこの端末にのみ登録されます。</p>
-        </form>
+        <div id="practiceList" class="queue-list"></div>
       </section>
     </div>
   </div>
   <div id="adminView" hidden>
     <div class="admin-heading" style="margin-top:17px">
-      <div><h2>管理画面</h2><p>PCは4列表示。右端にリスナー画面を配置しています。</p></div>
-      <span class="tag wait">端末内プレビュー / 認証未設定</span>
+      <div><h2>管理画面</h2><p>左からリスナー・待機楽曲・リクエスト・空き枠の4列です。</p></div>
+      <div class="stream-controls">
+        <span class="tag wait" id="adminStreamStatus">配信終了中</span>
+        <button type="button" id="startStream" class="button primary">配信開始</button>
+        <button type="button" id="endStream" class="button warning">配信終了</button>
+      </div>
     </div>
     <div class="admin-columns">
-      <section class="admin-panel reserve-panel" aria-label="予備の列">
-        <div class="admin-panel-head"><h3>予備エリア</h3><small>01 / 左端</small></div>
-        <div class="admin-empty">この列は空けてあります。</div>
+      <section class="admin-panel preview-panel" aria-label="リスナー画面のプレビュー">
+        <div class="admin-panel-head"><h3>通常リスナー画面</h3><small>01 / 左端</small></div>
+        <iframe class="admin-preview" src="./?embed=1" title="リスナー画面プレビュー" loading="lazy"></iframe>
+      </section>
+      <section class="admin-panel" aria-label="現在の待機楽曲">
+        <div class="admin-panel-head"><h3>現在の待機楽曲</h3><small><span id="adminWaitingCount">0</span> 曲</small></div>
+        <div class="admin-panel-body"><div id="adminWaiting" class="queue-list"></div></div>
       </section>
       <section class="admin-panel" aria-label="受付リクエスト">
         <div class="admin-panel-head"><h3>リクエスト楽曲</h3><small><span id="adminRequestCount">0</span> 件受付</small></div>
@@ -96,19 +92,16 @@
           <div class="mode-options" role="group" aria-label="受付の絞り込み">
             <button type="button" data-filter="new" class="active">受付中</button>
             <button type="button" data-filter="waiting">待機</button>
+            <button type="button" data-filter="practice">練習中</button>
             <button type="button" data-filter="done">完了</button>
             <button type="button" data-filter="all">すべて</button>
           </div>
           <div id="adminRequests" class="queue-list"></div>
         </div>
       </section>
-      <section class="admin-panel" aria-label="現在の待機楽曲">
-        <div class="admin-panel-head"><h3>現在の待機楽曲</h3><small><span id="adminWaitingCount">0</span> 曲</small></div>
-        <div class="admin-panel-body"><div id="adminWaiting" class="queue-list"></div></div>
-      </section>
-      <section class="admin-panel preview-panel" aria-label="リスナー画面のプレビュー">
-        <div class="admin-panel-head"><h3>通常リスナー画面</h3><small>右端 / 04</small></div>
-        <iframe class="admin-preview" src="./?embed=1" title="リスナー画面プレビュー" loading="lazy"></iframe>
+      <section class="admin-panel reserve-panel" aria-label="予備の列">
+        <div class="admin-panel-head"><h3>予備エリア</h3><small>04 / 右端</small></div>
+        <div class="admin-empty">この列は空けてあります。</div>
       </section>
     </div>
     <details class="admin-tools">
@@ -133,6 +126,24 @@
     </details>
   </div>
 </main>
+<dialog id="requestDialog" class="request-dialog" aria-labelledby="requestDialogTitle">
+  <div class="dialog-head">
+    <div><h2 id="requestDialogTitle">リクエストを送信</h2><p>曲名・アーティスト・お名前を入力してください。</p></div>
+    <button type="button" id="requestDialogClose" class="button subtle">閉じる</button>
+  </div>
+  <div id="requestAvailability" class="stream-status" role="status">配信開始まで受付停止中です。</div>
+  <form id="requestForm" class="request-form">
+          <div id="chosenSong" class="selection" hidden></div>
+          <div class="form-row">
+            <label class="field">曲名 <input id="reqTitle" name="title" required maxlength="120" placeholder="曲名を入力"></label>
+            <label class="field">アーティスト <input id="reqArtist" name="artist" required maxlength="120" placeholder="アーティスト名を入力"></label>
+          </div>
+          <label class="field">リクエスト者のお名前 <input id="reqName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
+          <label class="field">メッセージ（任意）<textarea id="reqMessage" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
+          <div><button type="submit" class="button primary large" id="sendRequest">リクエストを送信</button></div>
+          <p class="helper">※ 共有サーバー未接続のため、現在はこの端末にのみ登録されます。</p>
+        </form>
+</dialog>
 <dialog id="adminPasswordDialog" class="admin-password-dialog" aria-labelledby="adminPasswordTitle" aria-describedby="adminPasswordDescription">
   <form id="adminPasswordForm" class="admin-password-form">
     <h2 id="adminPasswordTitle">管理画面へ移動</h2>

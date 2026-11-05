@@ -37,7 +37,7 @@ try{
   if(!sample)return null;
   const normalized=sample[0].normalize("NFKC").toLowerCase()
    .replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-96))
-   .replace(/[\\s・ー‐-]/g,"");
+   .replace(/[\s・ー‐-]/g,"");
   const query=Array.from(normalized).slice(0,2).join("");
   const results=await window.KEN_MB_SEARCH.search(query,30);
   return {manifest,sample,query,results};

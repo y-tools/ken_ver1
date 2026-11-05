@@ -77,14 +77,18 @@ function formatSongReadings(song){
  const formatField=(original,field)=>{
   const item=m[field]||{};
   const latin=/^[\x00-\x7f]+$/.test(original)&&/[A-Za-z]/.test(original);
-  const hira=item.hiragana||"";
-  const kata=item.katakana||"";
-  const romaji=item.romaji||(latin?original:"");
-  const english=item.english||(latin?original:"");
-  const one=(label,value,missing="未登録")=>'<span><b>'+label+'：</b>'+esc(value||missing)+'</span>';
+  const one=(kind,label,missing="未登録")=>{
+   const value=item[kind]||(kind==="romaji"&&latin?original:"");
+   const verification=item[kind+"Verification"]||(m.type==="automatic"&&value?"estimated":"");
+   const suffix=verification==="estimated"?"（推定）":
+    verification==="source_confirmed"||verification==="human_confirmed"?"（確認済み）":
+    verification==="derived_from_confirmed"?"（確認済みから変換）":"";
+   return '<span><b>'+label+'：</b>'+esc(value||missing)+
+    (value&&suffix?'<small>'+suffix+'</small>':"")+'</span>';
+  };
   return '<div class="reading-item"><strong>'+esc(field==="title"?"曲名":"アーティスト")+'</strong>'+
-   one("ひらがな",hira)+one("カタカナ",kata)+one("ローマ字",romaji)+
-   one("英語表記",english,"公式表記未確認")+'</div>';
+   one("hiragana","ひらがな")+one("katakana","カタカナ")+
+   one("romaji","ローマ字")+one("english","英語表記","正式英語名未確認")+'</div>';
  };
  return '<details class="song-reading-details"><summary>読み・英語表記'+(m.type==="automatic"?"（自動推定）":"")+'</summary>'+
    '<div class="reading-grid">'+formatField(song.title,"title")+formatField(song.artist,"artist")+'</div></details>';

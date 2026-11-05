@@ -91,7 +91,8 @@ CREATE TABLE IF NOT EXISTS artist_names (
  UNIQUE(artist_id,kind,search_key),
  CHECK (length(btrim(value)) BETWEEN 1 AND 300),
  CHECK (verification='estimated' OR source_id IS NOT NULL OR reviewed_by IS NOT NULL OR derived_from_id IS NOT NULL),
- CHECK (verification <> 'derived_from_confirmed' OR derived_from_id IS NOT NULL)
+ CHECK (verification <> 'derived_from_confirmed' OR derived_from_id IS NOT NULL),
+ CHECK (kind <> 'english' OR verification IN ('source_confirmed','human_confirmed'))
 );
 CREATE INDEX IF NOT EXISTS artist_names_search_prefix ON artist_names(search_key text_pattern_ops);
 CREATE INDEX IF NOT EXISTS artist_names_artist ON artist_names(artist_id);
@@ -113,7 +114,8 @@ CREATE TABLE IF NOT EXISTS song_names (
  UNIQUE(song_id,kind,search_key),
  CHECK (length(btrim(value)) BETWEEN 1 AND 300),
  CHECK (verification='estimated' OR source_id IS NOT NULL OR reviewed_by IS NOT NULL OR derived_from_id IS NOT NULL),
- CHECK (verification <> 'derived_from_confirmed' OR derived_from_id IS NOT NULL)
+ CHECK (verification <> 'derived_from_confirmed' OR derived_from_id IS NOT NULL),
+ CHECK (kind <> 'english' OR verification IN ('source_confirmed','human_confirmed'))
 );
 CREATE INDEX IF NOT EXISTS song_names_search_prefix ON song_names(search_key text_pattern_ops);
 CREATE INDEX IF NOT EXISTS song_names_song ON song_names(song_id);

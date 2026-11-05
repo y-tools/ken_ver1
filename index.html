@@ -7,9 +7,9 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261105-live-practice-modal-v1">
+<link rel="stylesheet" href="./styles.css?v=20261105-now-singing-v1">
 <script src="./config.js?v=20261105-live-practice-modal-v1" defer></script>
-<script src="./app.js?v=20261105-live-practice-modal-v1" defer></script>
+<script src="./app.js?v=20261105-now-singing-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -31,12 +31,22 @@
     <div class="home-lead" style="margin-top:18px">
       <div><h2>ホーム</h2><p>曲を探して、リクエストを送ろう。</p></div>
       <nav class="quick-nav" aria-label="ホームメニュー">
-        <a href="#search-section">楽曲検索</a><a href="#waiting-section">待機曲</a><a href="#practice-section">練習中楽曲</a>
+        <a href="#singing-section">歌唱中</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#practice-section">練習中楽曲</a>
         <button type="button" class="button primary" id="openRequestDialog">リクエストする</button>
       </nav>
     </div>
     <div id="streamStatus" class="stream-status" role="status" aria-live="polite">配信終了中・リクエスト受付停止</div>
     <div class="home-stack">
+      <section class="now-singing-card" id="singing-section" aria-labelledby="singing-heading">
+        <div class="now-singing-head">
+          <span class="now-singing-marker" aria-hidden="true"></span>
+          <div>
+            <div class="now-singing-label">NOW SINGING</div>
+            <h3 id="singing-heading">歌唱中曲</h3>
+          </div>
+        </div>
+        <div id="singingNow" aria-live="polite"><div class="singing-empty">現在、歌唱中の曲はありません。</div></div>
+      </section>
       <section class="home-card" id="search-section" aria-labelledby="search-heading">
         <div class="section-head">
           <span class="section-no">01</span>
@@ -53,7 +63,7 @@
       <section class="home-card" id="waiting-section" aria-labelledby="waiting-heading">
         <div class="section-head">
           <span class="section-no">02</span>
-          <div><h3 id="waiting-heading">現在の受付曲</h3><p>現在の待機曲を順番に表示します。</p></div>
+          <div><h3 id="waiting-heading">歌唱待機楽曲</h3><p>歌唱を待っている楽曲を順番に表示します。</p></div>
           <span class="count"><span id="waitingCount">0</span> 曲</span>
         </div>
         <div class="queue-list" id="waitingList"></div>
@@ -70,7 +80,7 @@
   </div>
   <div id="adminView" hidden>
     <div class="admin-heading" style="margin-top:17px">
-      <div><h2>管理画面</h2><p>左からリスナー・待機楽曲・リクエスト・空き枠の4列です。</p></div>
+      <div><h2>管理画面</h2><p>左からリスナー・歌唱待機楽曲・リクエスト・空き枠の4列です。</p></div>
       <div class="stream-controls">
         <span class="tag wait" id="adminStreamStatus">配信終了中</span>
         <button type="button" id="startStream" class="button primary">配信開始</button>
@@ -82,9 +92,9 @@
         <div class="admin-panel-head"><h3>通常リスナー画面</h3><small>01 / 左端</small></div>
         <iframe class="admin-preview" src="./?embed=1" title="リスナー画面プレビュー" loading="lazy"></iframe>
       </section>
-      <section class="admin-panel" aria-label="現在の待機楽曲">
-        <div class="admin-panel-head"><h3>現在の待機楽曲</h3><small><span id="adminWaitingCount">0</span> 曲</small></div>
-        <div class="admin-panel-body"><div id="adminWaiting" class="queue-list"></div></div>
+      <section class="admin-panel" aria-label="歌唱待機楽曲">
+        <div class="admin-panel-head"><h3>歌唱待機楽曲</h3><small><span id="adminWaitingCount">0</span> 曲</small></div>
+        <div class="admin-panel-body"><div class="admin-singing-label">現在の歌唱中曲</div><div id="adminSinging"></div><div class="admin-singing-label">次の歌唱待機楽曲</div><div id="adminWaiting" class="queue-list"></div></div>
       </section>
       <section class="admin-panel" aria-label="受付リクエスト">
         <div class="admin-panel-head"><h3>リクエスト楽曲</h3><small><span id="adminRequestCount">0</span> 件受付</small></div>
@@ -92,6 +102,7 @@
           <div class="mode-options" role="group" aria-label="受付の絞り込み">
             <button type="button" data-filter="new" class="active">受付中</button>
             <button type="button" data-filter="waiting">待機</button>
+            <button type="button" data-filter="singing">歌唱中</button>
             <button type="button" data-filter="practice">練習中</button>
             <button type="button" data-filter="done">完了</button>
             <button type="button" data-filter="all">すべて</button>

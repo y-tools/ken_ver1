@@ -92,7 +92,7 @@ try{
  await page.locator("#adminRequests [data-dest=ready]").check();
  await page.locator("#adminRequests [data-do=classify]").click();
  await check((await page.locator("#adminWaiting .song-title").allTextContents()).includes("統合テスト曲"),"Dual classification: waiting");
- await page.locator(".admin-tools summary").click();
+ await page.locator(".admin-tools > summary").click();
  await page.locator("#adminSongSearch").fill("統合テスト曲");
  await check((await page.locator("#adminSongList").textContent()).includes("統合テスト曲"),"Dual classification: singable");
  await check((await page.locator("#adminSongList .karaoke-coverage").first().textContent()).includes("収録未確認"),

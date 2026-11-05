@@ -58,8 +58,9 @@
   while(cache.size>maxCacheEntries)cache.delete(cache.keys().next().value);
   return task;
  };
- const looksLikeMatch=(row,term)=>{
-  for(const idx of [0,1,3,4,5,7,8,9]){
+ const looksLikeMatch=(row,term,mode="all")=>{
+  const fields=mode==="title"?[0,3,4,5,6]:mode==="artist"?[1,7,8,9,10]:[0,1,3,4,5,6,7,8,9,10];
+  for(const idx of fields){
    if(row[idx]&&normalize(row[idx]).startsWith(term))return true;
   }
   return false;
@@ -69,7 +70,7 @@
   title:{hiragana:row[3]||"",katakana:row[4]||"",romaji:row[5]||"",english:row[6]||""},
   artist:{hiragana:row[7]||"",katakana:row[8]||"",romaji:row[9]||"",english:row[10]||""}
  });
- const readResults=async(type,query,limit)=>{
+ const readResults=async(type,query,limit,mode="all")=>{
   const manifest=await getManifest(type);
   if(!manifest)return [];
   const key=bucket(query);
@@ -77,8 +78,10 @@
   const term=normalize(query),output=[];
   for(const row of rows){
    if(!Array.isArray(row)||!row[0]||!row[1])continue;
-   if(type==="reading"?!looksLikeMatch(row,term):
-    !(normalize(row[0]).startsWith(term)||normalize(row[1]).startsWith(term)))continue;
+   if(type==="reading"?!looksLikeMatch(row,term,mode):
+    !(mode==="title"?normalize(row[0]).startsWith(term):
+      mode==="artist"?normalize(row[1]).startsWith(term):
+      normalize(row[0]).startsWith(term)||normalize(row[1]).startsWith(term)))continue;
    if(type==="reading"){
     output.push([row[0],row[1],row[2]||null,null,metaFromReading(row)]);
    }else{
@@ -103,13 +106,13 @@
   }
   return ok?{extra,readings}:null;
  }
- async function search(query,limit=24){
+ async function search(query,limit=24,mode="all"){
   const term=normalize(query);
-  if(Array.from(term).length<2)return originalSearch(query,limit);
+  if(Array.from(term).length<2)return originalSearch(query,limit,mode);
   const [phonetic,newSongs,oldSongs]=await Promise.allSettled([
-   readResults("reading",query,limit),
-   readResults("extra",query,limit),
-   originalSearch(query,limit)
+   readResults("reading",query,limit,mode),
+   readResults("extra",query,limit,mode),
+   originalSearch(query,limit,mode)
   ]);
   const groups=[
    phonetic.status==="fulfilled"?phonetic.value:[],

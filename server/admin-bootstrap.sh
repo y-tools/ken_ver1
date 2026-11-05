@@ -7,7 +7,7 @@ test -x .venv/bin/python
 if ! id keneditor >/dev/null 2>&1; then
  useradd --system --no-create-home --shell /usr/sbin/nologin keneditor
 fi
-if [[ "$(runuser -u postgres -- psql -Atc \"SELECT 1 FROM pg_roles WHERE rolname='keneditor'\")" != '1' ]]; then
+if ! runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='keneditor'" | grep -qx 1; then
  runuser -u postgres -- psql -v ON_ERROR_STOP=1 -c 'CREATE ROLE keneditor LOGIN'
 fi
 runuser -u kenimport -- psql -d ken_songs -v ON_ERROR_STOP=1 -f server/sql/003_admin_editor.sql

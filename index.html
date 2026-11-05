@@ -7,12 +7,12 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261105-field-tabs-v1">
+<link rel="stylesheet" href="./styles.css?v=20261105-karaoke-official-v1">
 <script src="./config.js?v=20261105-live-practice-modal-v1" defer></script>
 <script src="./data/japanese-catalog-loader.js?v=20261105-300k-v1" defer></script>
 <script src="./data/musicbrainz-search.js?v=20261105-field-tabs-v1" defer></script>
 <script src="./data/musicbrainz-search-2m.js?v=20261105-field-tabs-v1" defer></script>
-<script src="./app.js?v=20261105-field-tabs-v1" defer></script>
+<script src="./app.js?v=20261105-karaoke-official-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -169,6 +169,53 @@
         </label>
         <div class="song-form-actions"><button type="submit" class="button primary" id="songSaveButton">楽曲を登録</button><button type="button" class="button subtle" id="songEditCancel" hidden>編集を取り消す</button></div>
       </form>
+      <section class="karaoke-management" aria-labelledby="karaokeManagementHeading">
+        <h3 id="karaokeManagementHeading">DAM / JOYSOUND 配信情報の照合</h3>
+        <p class="helper">公式サイトで曲名・歌手名・対応機種を確認してから登録してください。カタログ収録だけでは配信済みを意味しません。確認情報はこの端末にのみ保存されます。</p>
+        <form id="karaokeCheckForm">
+          <div class="form-row">
+            <label class="field">曲名 <input id="karaokeTitle" required maxlength="190" placeholder="照合する曲名"></label>
+            <label class="field">アーティスト <input id="karaokeArtist" required maxlength="150" placeholder="照合するアーティスト"></label>
+          </div>
+          <div class="karaoke-provider-grid">
+            <fieldset class="karaoke-provider-box">
+              <legend>DAM</legend>
+              <label class="field">確認結果
+                <select id="karaokeDamStatus">
+                  <option value="unknown">未確認</option>
+                  <option value="available">公式で配信を確認</option>
+                  <option value="searched">検索で見つからず（未配信確定ではない）</option>
+                </select>
+              </label>
+              <label class="field">公式情報URL <input type="url" id="karaokeDamUrl" placeholder="https://www.clubdam.com/..." maxlength="600"></label>
+              <label class="field">曲番号（任意）<input id="karaokeDamNumber" maxlength="35"></label>
+              <a id="karaokeDamLookup" class="button subtle" href="https://www.clubdam.com/karaokesearch/" target="_blank" rel="noopener noreferrer">DAM公式で検索</a>
+            </fieldset>
+            <fieldset class="karaoke-provider-box">
+              <legend>JOYSOUND</legend>
+              <label class="field">確認結果
+                <select id="karaokeJoyStatus">
+                  <option value="unknown">未確認</option>
+                  <option value="available">公式で配信を確認</option>
+                  <option value="searched">検索で見つからず（未配信確定ではない）</option>
+                </select>
+              </label>
+              <label class="field">公式情報URL <input type="url" id="karaokeJoyUrl" placeholder="https://www.joysound.com/..." maxlength="600"></label>
+              <label class="field">曲番号（任意）<input id="karaokeJoyNumber" maxlength="35"></label>
+              <a id="karaokeJoyLookup" class="button subtle" href="https://www.joysound.com/web/search" target="_blank" rel="noopener noreferrer">JOYSOUND公式で検索</a>
+            </fieldset>
+          </div>
+          <label class="field">対応機種・照合メモ（任意）
+            <textarea id="karaokeNotes" maxlength="400" rows="2" placeholder="例：JOYSOUND X1で確認、配信機種に注意"></textarea>
+          </label>
+          <div class="song-form-actions">
+            <button type="submit" class="button primary">確認結果を保存</button>
+            <button type="button" class="button subtle" id="karaokeClear">フォームをクリア</button>
+            <button type="button" class="button" id="karaokeExport">照合データを書き出す</button>
+          </div>
+          <p id="karaokeRecordCount" class="helper" aria-live="polite">照合記録 0曲</p>
+        </form>
+      </section>
       <div class="song-manage-area"><h3>登録曲とメモの確認・編集</h3>
         <input type="search" id="adminSongSearch" placeholder="曲名・アーティスト・メモで検索" aria-label="登録曲を検索">
         <p id="adminSongCount" class="helper"></p><div id="adminSongList" class="song-manage-list"></div>

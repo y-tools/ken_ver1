@@ -43,6 +43,10 @@ try{
  await page.locator("#reqName").fill("試験リスナー");
  await page.locator("#sendRequest").click();
  await admin();
+ await check(await page.locator("#adminRequests [data-do=research]").count()===1,"GPT search button visible on request");
+ await check(await page.locator("#adminRequests a.lyrics-action").count()===1,"Lyrics URL link visible on request");
+ const requestCardHeight=await page.locator("#adminRequests .admin-song-entry").first().evaluate(el=>el.getBoundingClientRect().height);
+ await check(requestCardHeight<235,"Request row stays compact ("+Math.round(requestCardHeight)+" px)");
  await page.locator("#adminRequests [data-dest=waiting]").check();
  await page.locator("#adminRequests [data-dest=ready]").check();
  await page.locator("#adminRequests [data-do=classify]").click();
@@ -50,11 +54,14 @@ try{
  await page.locator(".admin-tools summary").click();
  await page.locator("#adminSongSearch").fill("統合テスト曲");
  await check((await page.locator("#adminSongList").textContent()).includes("統合テスト曲"),"Dual classification: singable");
+ await check(await page.locator("#adminWaiting a.lyrics-action").count()===1,"Lyrics URL link visible on waiting song");
+ await check(await page.locator("#adminWaiting [data-do=research]").count()===1,"GPT search button visible on waiting song");
  await page.locator("#adminWaiting [data-do=research]").click();
  await check((await page.locator("#gptResearchPrompt").inputValue()).includes("統合テスト曲"),"Research prompt generated");
  await check((await page.locator("#lyricsSearch").getAttribute("href")).includes("google.com/search"),"Lyrics search link generated");
  await page.locator("#adminWaiting [data-do=singing]").click();
  await check((await page.locator("#adminSinging .song-title").allTextContents()).includes("統合テスト曲"),"Singing state entered");
+ await check(await page.locator("#adminSinging a.lyrics-action").count()===1,"Lyrics URL link visible on currently singing song");
  await page.locator("#adminSinging [data-do=done]").click();
  await page.locator("#adminChatInput").fill("テスト用の管理メモ");
  await page.locator("#adminChatForm button[type=submit]").click();

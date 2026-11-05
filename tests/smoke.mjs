@@ -28,6 +28,29 @@ try{
  await page.locator("#searchInput").fill("流恋情歌");
  await page.waitForFunction(()=>document.querySelector("#searchResults")?.textContent?.includes("流恋情歌"),null,{timeout:30000});
  await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),"Japanese song catalog search succeeds");
+ const mbMetadata=await page.evaluate(async()=>{
+  const manifest=await window.KEN_MB_SEARCH.ready();
+  if(!manifest)return null;
+  const indexResponse=await fetch("./data/musicbrainz_700k/bucket_00.json");
+  if(!indexResponse.ok)return null;
+  const sample=(await indexResponse.json()).find(row=>row[0]&&Array.from(row[0]).length>=2);
+  if(!sample)return null;
+  const normalized=sample[0].normalize("NFKC").toLowerCase()
+   .replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-96))
+   .replace(/[\\s・ー‐-]/g,"");
+  const query=Array.from(normalized).slice(0,2).join("");
+  const results=await window.KEN_MB_SEARCH.search(query,30);
+  return {manifest,sample,query,results};
+ });
+ await check(mbMetadata?.manifest?.targetUnique===1000000 && mbMetadata?.manifest?.additionalUnique===700000,
+  "One million song manifest is published and verified");
+ await check(Array.isArray(mbMetadata.results)&&mbMetadata.results.length>0,
+  "On-demand MusicBrainz prefix search returns songs");
+ await page.locator("#searchInput").fill(mbMetadata.query);
+ await page.waitForFunction(q=>window.__searchResults?.some(row=>row.source==="catalog"&&
+  (row.title.toLowerCase().includes(q)||row.artist.toLowerCase().includes(q))),mbMetadata.query,{timeout:30000});
+ await check((await page.locator("#searchResults .song-row").count())>0,
+  "Additional MusicBrainz song can be searched in the listener UI");
  await check((await page.locator("#today-history-section").count())===1,"Today sung-history section exists");
  await check((await page.locator("#practice-section .section-no").textContent()).trim()==="04","Practice section is number 04");
  await admin();

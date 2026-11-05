@@ -183,8 +183,10 @@ function classifyRequest(id,flags){
 }
 function renderStreamStatus(){
  const live=state.streamLive===true;
- $("#streamStatus").textContent=live?"配信中・楽曲リクエスト受付中":"配信終了中・リクエスト受付停止";
- $("#streamStatus").classList.toggle("live",live);
+ $("#listenerStreamLabel").textContent=live?"ON AIR":"OFF AIR";
+ $("#listenerStreamDetail").textContent=live?"ただいま配信中！ 楽曲リクエストを受け付けています。":"現在は配信していません。楽曲リクエストは受付停止中です。";
+ $("#streamStatus").classList.toggle("is-live",live);
+ $("#streamStatus").classList.toggle("is-offline",!live);
  $("#requestAvailability").textContent=live?"配信中・リクエスト受付中":"配信終了中・リクエスト受付停止";
  $("#requestAvailability").classList.toggle("live",live);
  $("#adminStreamStatus").textContent=live?"配信中・受付中":"配信終了中";

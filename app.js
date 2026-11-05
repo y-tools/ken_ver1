@@ -143,6 +143,30 @@ function renderSearch(){
  };
  const initial=list.slice(0,window.KEN_MB_SEARCH&&q?40:60);
  show(initial);
+ if(q&&Array.from(norm(q)).length>=2&&window.KEN_VPS_SEARCH){
+  window.KEN_VPS_SEARCH.search(q,mode,30).then(payload=>{
+   if(sequence!==extendedSearchSequence||searchMode!==mode||$("#searchInput").value.trim()!==q)return;
+   const current=Array.isArray(window.__searchResults)?window.__searchResults:[...initial];
+   const merged=[...current],index=new Map(merged.map((row,i)=>[readyKey(row.title,row.artist),i]));
+   for(const row of payload.items){
+    if(!row.title||!row.artist)continue;
+    const key=readyKey(row.title,row.artist);
+    const entry={
+      title:row.title,artist:row.artist,
+      year:row.releaseDate||null,readings:row.readings||null,
+      source:statusLookup.get(key)||"catalog"
+    };
+    if(index.has(key)){
+     const existing=merged[index.get(key)];
+     merged[index.get(key)]={...existing,...(row.readings?{readings:row.readings}:{}),
+       ...(!existing.year&&row.releaseDate?{year:row.releaseDate}:{})};
+    }else if(merged.length<60){
+     index.set(key,merged.length);merged.push(entry);
+    }
+   }
+   show(merged);
+  }).catch(error=>console.warn("VPS search unavailable; keeping static results",error));
+ }
  if(!q||Array.from(norm(q)).length<2||!window.KEN_MB_SEARCH)return;
  window.KEN_MB_SEARCH.search(q,30,mode).then(rows=>{
   if(sequence!==extendedSearchSequence||searchMode!==mode||$("#searchInput").value.trim()!==q)return;

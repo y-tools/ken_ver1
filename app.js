@@ -61,13 +61,14 @@ function timeLabel(at){return at?new Date(at).toLocaleString("ja-JP",{month:"num
 function clockLabel(at){return at?new Date(at).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"—";}
 function formatDuration(ms){const s=Math.max(0,Math.round((ms||0)/1000));return Math.floor(s/60)+"分"+String(s%60).padStart(2,"0")+"秒";}
 
-function lookupCatalog(q,limit=60){
+function lookupCatalog(q,limit=60,mode=searchMode){
  const term=norm(q);if(!term||!catalog.ready)return [];
+ const selected=mode==="artist"?1:0;
  const prefix=[],middle=[];
  for(let i=0;i<catalog.idx.length;i++){
-  const [title,artist]=catalog.idx[i];
-  if(title.startsWith(term)||artist.startsWith(term)){prefix.push(i);if(prefix.length>=limit)break;}
-  else if((title.includes(term)||artist.includes(term))&&middle.length<limit)middle.push(i);
+  const value=catalog.idx[i][selected];
+  if(value.startsWith(term)){prefix.push(i);if(prefix.length>=limit)break;}
+  else if(value.includes(term)&&middle.length<limit)middle.push(i);
  }
  return prefix.concat(middle).slice(0,limit);
 }
@@ -107,8 +108,10 @@ function openRequestDialog(song){
 }
 function selectSong(title,artist,source){openRequestDialog({title,artist,source});}
 let extendedSearchSequence=0;
+let searchMode="title";
 function renderSearch(){
  const sequence=++extendedSearchSequence;
+ const mode=searchMode;
  const q=$("#searchInput").value.trim();
  const ready=state.songs.filter(s=>s.status==="ready");
  const statusLookup=new Map(state.songs.map(s=>[readyKey(s.title,s.artist),s.status]));
@@ -116,16 +119,16 @@ function renderSearch(){
  const twoMillion=window.KEN_2M_STATS?.ready;
  $("#searchHelper").textContent=catalog.ready
   ? "楽曲カタログ "+(twoMillion?"2,000,000":oneMillion?"1,000,000":catalog.rows.length.toLocaleString("ja-JP"))+
-    "曲。曲名・アーティスト名・ひらがな・カタカナ・ローマ字で検索できます。大量追加分は先頭2文字以上で検索。"
+    "曲。"+(mode==="title"?"曲名":"アーティスト名")+"のひらがな・カタカナ・ローマ字にも対応。大量追加分は先頭2文字以上で検索。"
   : catalog.error?"カタログを読み込めませんでした。登録済み曲は検索できます。":"楽曲カタログを読み込み中です…";
  const list=[],seen=new Set();
  const add=entry=>{
   const k=readyKey(entry.title,entry.artist);
   if(!seen.has(k)){seen.add(k);list.push(entry);}
  };
- for(const song of ready.filter(s=>!q||norm(s.title).includes(norm(q))||norm(s.artist).includes(norm(q))).slice(0,60))
+ for(const song of ready.filter(s=>!q||norm(s[mode]).includes(norm(q))).slice(0,60))
   add({...song,source:"ready"});
- if(q&&catalog.ready)for(const i of lookupCatalog(q,60)){
+ if(q&&catalog.ready)for(const i of lookupCatalog(q,60,mode)){
   const [title,artist,year]=catalog.rows[i];
   add({title,artist,year,source:statusLookup.get(readyKey(title,artist))||"catalog"});
   if(list.length>=60)break;
@@ -135,14 +138,14 @@ function renderSearch(){
    '<button class="button primary" data-select-index="'+i+'" type="button"'+
    (!state.streamLive?' disabled title="配信中のみリクエスト受付"':'')+'>リクエスト</button>',
    song.source==="ready"?"ready":"catalog")).join("")
-   :'<div class="empty">'+(q?"一致する曲がありません。別の表記でも検索してください。":"歌える曲の登録はまだありません。曲名やアーティスト名で検索してください。")+'</div>';
+   :'<div class="empty">'+(q?"一致する"+(mode==="title"?"曲名":"アーティスト名")+"がありません。別の表記でも検索してください。":"検索したい"+(mode==="title"?"曲名":"アーティスト名")+"を入力してください。")+'</div>';
   window.__searchResults=items;
  };
  const initial=list.slice(0,window.KEN_MB_SEARCH&&q?40:60);
  show(initial);
  if(!q||Array.from(norm(q)).length<2||!window.KEN_MB_SEARCH)return;
- window.KEN_MB_SEARCH.search(q,30).then(rows=>{
-  if(sequence!==extendedSearchSequence||$("#searchInput").value.trim()!==q)return;
+ window.KEN_MB_SEARCH.search(q,30,mode).then(rows=>{
+  if(sequence!==extendedSearchSequence||searchMode!==mode||$("#searchInput").value.trim()!==q)return;
   const combined=[...initial],indexByKey=new Map(combined.map((entry,i)=>[readyKey(entry.title,entry.artist),i]));
   for(const row of rows){
    const [title,artist,year,,readings]=row;
@@ -610,6 +613,22 @@ function attach(){
   clearTimeout(searchTimer);
   searchTimer=setTimeout(renderSearch,160);
  });
+ document.querySelectorAll("[data-search-mode]").forEach(button=>button.addEventListener("click",()=>{
+  const next=button.dataset.searchMode;
+  if(next!=="title"&&next!=="artist")return;
+  if(next===searchMode)return;
+  searchMode=next;
+  document.querySelectorAll("[data-search-mode]").forEach(item=>{
+   const active=item.dataset.searchMode===searchMode;
+   item.classList.toggle("active",active);
+   item.setAttribute("aria-pressed",String(active));
+  });
+  $("#searchInputLabel").textContent=searchMode==="title"?"曲名で検索":"アーティスト名で検索";
+  $("#searchInput").placeholder=searchMode==="title"?"曲名・かな・ローマ字で検索":"アーティスト名・かな・ローマ字で検索";
+  clearTimeout(searchTimer);
+  renderSearch();
+  $("#searchInput").focus();
+ }));
  $("#searchResults").addEventListener("click",e=>{
   const btn=e.target.closest("[data-select-index]");if(!btn)return;
   const s=window.__searchResults?.[Number(btn.dataset.selectIndex)];

@@ -2,5 +2,7 @@
 // service_role / secret key は絶対に掲載しないでください。
 window.KEN_CONFIG = Object.freeze({
   supabaseUrl: "",
-  supabasePublishableKey: ""
+  supabasePublishableKey: "",
+  // VPSの公開HTTPS検索API。未設定の場合は従来の静的楽曲検索を継続します。
+  apiBaseUrl: ""
 });

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://kenapi.153-127-64-17.sslip.io; base-uri 'none'; object-src 'none'; img-src 'self' data:">
+<title>楽曲データベース編集 | Kenのデンモク</title>
+<link rel="stylesheet" href="./database-editor.css?v=20261106-v1">
+<script src="./config.js?v=20261106-vps-live-v2" defer></script>
+<script src="./database-editor.js?v=20261106-v1" defer></script>
+</head>
+<body>
+<header class="topbar">
+ <div><a href="./" class="backlink">← デンモクに戻る</a><h1>楽曲データベース編集</h1><p>アーティストから楽曲・読み・リリース日を管理</p></div>
+ <button id="logout" class="secondary" type="button" hidden>ログアウト</button>
+</header>
+<main>
+<section id="loginPanel" class="panel login-panel">
+ <h2>データベース管理者ログイン</h2>
+ <p>デンモクの簡易パスワードとは別の、VPS管理用パスワードでログインします。</p>
+ <form id="loginForm">
+   <label>管理者パスワード<input id="adminSecret" type="password" autocomplete="current-password" required minlength="8"></label>
+   <button type="submit" class="primary">管理者ログイン</button>
+ </form>
+ <p class="hint">認証情報は端末内に保存せず、30分で失効します。VPS側で初期パスワードを設定してください。</p>
+</section>
+<div id="editorPanel" hidden>
+ <div class="layout">
+  <aside class="panel sidebar">
+    <h2>アーティスト検索</h2>
+    <form id="artistSearchForm">
+      <label>アーティスト名・読み・ローマ字<input id="artistSearch" type="search" required minlength="2" maxlength="80" placeholder="2文字以上で検索"></label>
+      <button class="primary" type="submit">検索</button>
+    </form>
+    <div id="artistResults" class="artist-results" aria-live="polite"></div>
+  </aside>
+  <div class="main-content">
+   <section id="artistPanel" class="panel" hidden>
+     <div class="section-head"><h2>アーティスト基本情報</h2><span id="artistIdLabel" class="muted"></span></div>
+     <form id="artistForm">
+       <label>アーティスト名<input id="artistName" required maxlength="200"></label>
+       <button type="submit" class="primary">アーティスト名を保存</button>
+     </form>
+     <h3>アーティストの読み・正式表記</h3>
+     <div id="artistAliases"></div>
+     <form id="artistAliasForm" class="alias-form">
+      <input type="hidden" name="oldId">
+      <label>種類<select name="kind"><option value="hiragana">ひらがな</option><option value="katakana">カタカナ</option><option value="romaji">ローマ字</option><option value="english">正式英語表記</option></select></label>
+      <label>表記<input name="value" maxlength="300" required></label>
+      <label>出典URL（任意）<input name="sourceUrl" type="url" maxlength="600" placeholder="https://..."></label>
+      <button class="primary" type="submit">読み・表記を登録／更新</button>
+      <button class="secondary" type="reset">新規登録に戻す</button>
+     </form>
+   </section>
+   <section id="songListPanel" class="panel" hidden>
+     <div class="section-head"><h2>このアーティストの楽曲</h2><span id="songsCount" class="muted"></span></div>
+     <div id="songList" class="song-list"></div>
+     <div class="pagination"><button type="button" class="secondary" id="prevSongs">前の50曲</button><span id="pagePosition"></span><button type="button" class="secondary" id="nextSongs">次の50曲</button></div>
+   </section>
+   <section id="songPanel" class="panel" hidden>
+     <div class="section-head"><h2>選択した楽曲を編集</h2><span id="songIdLabel" class="muted"></span></div>
+     <form id="songForm" class="song-form">
+      <label class="wide">曲名<input name="title" required maxlength="300"></label>
+      <label>発売日精度<select name="releasePrecision">
+       <option value="unknown">未確認</option><option value="year">年のみ</option>
+       <option value="month">年月まで</option><option value="day">年月日まで</option>
+      </select></label>
+      <label>年<input name="releaseYear" inputmode="numeric" type="number" min="1850" max="2100" placeholder="例：2018"></label>
+      <label>月<input name="releaseMonth" inputmode="numeric" type="number" min="1" max="12"></label>
+      <label>日<input name="releaseDay" inputmode="numeric" type="number" min="1" max="31"></label>
+      <label class="wide">リリース日出典URL（確認できた場合）<input name="releaseSourceUrl" type="url" maxlength="600" placeholder="https://..."></label>
+      <button class="primary" type="submit">楽曲情報を保存</button>
+     </form>
+     <h3>曲名の読み・正式表記</h3>
+     <div id="songAliases"></div>
+     <form id="songAliasForm" class="alias-form">
+      <input type="hidden" name="oldId">
+      <label>種類<select name="kind"><option value="hiragana">ひらがな</option><option value="katakana">カタカナ</option><option value="romaji">ローマ字</option><option value="english">正式英語表記</option></select></label>
+      <label>表記<input name="value" maxlength="300" required></label>
+      <label>出典URL（任意）<input name="sourceUrl" type="url" maxlength="600" placeholder="https://..."></label>
+      <button class="primary" type="submit">読み・表記を登録／更新</button>
+      <button class="secondary" type="reset">新規登録に戻す</button>
+     </form>
+     <details id="songHistory"><summary>変更履歴</summary><div id="auditList"></div></details>
+   </section>
+  </div>
+ </div>
+</div>
+<p id="feedback" class="feedback" role="status" aria-live="polite"></p>
+</main>
+<footer>曲名や発売日は出典を確認してください。推定読みを正式情報として保存しないでください。編集履歴はVPS側に記録されます。</footer>
+</body>
+</html>

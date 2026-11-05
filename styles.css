@@ -468,3 +468,7 @@ body.embed-mode .listener-broadcast-detail{font-size:11px;flex-basis:100%}
 .karaoke-provider-result strong{font-weight:900}
 #adminRequests .karaoke-provider-links,#adminWaiting .karaoke-provider-links,#adminSinging .karaoke-provider-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 #adminRequests .karaoke-provider-links a,#adminWaiting .karaoke-provider-links a,#adminSinging .karaoke-provider-links a{text-align:center;padding:5px 4px;font-size:10px}
+
+.music-source-credits{max-width:1200px;margin:24px auto;padding:12px 16px 20px;text-align:center;font-size:10px;line-height:1.65;color:var(--muted)}
+.music-source-credits a{color:var(--soft);text-decoration:underline}
+.music-source-credits span{display:block;margin-top:3px}

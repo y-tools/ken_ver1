@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Kenのデンモク</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,6 +20,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{background:radial-gradient(1200px 500px at 50% -200px,#2A0A12 0%,transparent 70%),var(--bg);background-color:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;min-height:100%}
 .wrap{max-width:880px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 56px}
 header.top{position:relative;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-radius:18px;
@@ -101,6 +107,8 @@ details.box .form{background:transparent}
 h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0 8px;padding-left:12px;border-left:4px solid var(--accent)}
 @media (prefers-reduced-motion:no-preference){.row,.rank,.btn{transition:border-color .15s,background .15s,transform .1s}.row:hover,.rank:hover{border-color:#454959}.btn:active{transform:scale(.97)}}
 </style>
+</head>
+<body>
 
 <div class="wrap">
   <header class="top">
@@ -121,6 +129,7 @@ h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="songs" aria-selected="true">歌える曲<span class="n" id="nSongs">0</span></button>
       <button role="tab" data-tab="practice" aria-selected="false">練習中ランキング<span class="n" id="nPractice">0</span></button>
+      <button role="tab" data-tab="catalog" aria-selected="false">曲カタログ<span class="n" id="nCatalog">…</span></button>
       <button role="tab" data-tab="request" aria-selected="false">リクエストする</button>
     </nav>
 
@@ -128,6 +137,13 @@ h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0
       <div class="search"><input id="qSongs" type="search" placeholder="曲名・アーティストで検索" autocomplete="off"></div>
       <div id="songsList" class="list"></div>
       <div id="songsCat"></div>
+    </section>
+
+    <section class="panel" data-panel="catalog" hidden>
+      <p class="note">公開楽曲カタログです。ここに載っている曲がKenの歌える曲という意味ではありません。</p>
+      <div class="search"><input id="qCatalog" type="search" placeholder="曲名・アーティストで検索" autocomplete="off" aria-label="曲カタログを検索"></div>
+      <p class="msg" id="catalogHint" role="status">曲カタログを読み込み中です…</p>
+      <div id="catalogList" class="catlist"></div>
     </section>
 
     <section class="panel" data-panel="practice" hidden>
@@ -282,7 +298,9 @@ h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0
     $("#songsList").innerHTML = hits.length ? hits.slice(0,LIM).map(s => `
       <div class="row"><div style="min-width:0"><div class="t">${esc(s.title)}</div><div class="a">${esc(s.artist)}${s.year?`<span class="yr">${esc(s.year)}</span>`:""}</div></div></div>`).join("") + more
       : ready.length ? `<div class="empty"><strong>「${esc($("#qSongs").value)}」は見つかりませんでした</strong>練習中の曲や新しい曲としてリクエストできます。</div>`
-      : `<div class="empty"><strong>まだ曲が登録されていません</strong>配信者が管理画面から曲を追加すると、ここに並びます。</div>`;
+      : (state.db
+          ? `<div class="empty"><strong>まだ曲が登録されていません</strong>配信者が管理画面から曲を追加すると、ここに並びます。</div>`
+          : `<div class="empty"><strong>歌える曲リストは公開準備中です</strong>「曲カタログ」タブでは一般の楽曲を検索できます。</div>`);
 
     const sc = $("#songsCat");
     if (q && cat.ready){
@@ -321,7 +339,7 @@ h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0
   }
   function updateReqHint(){
     const h = $("#reqHint");
-    if (!state.db){ h.textContent = "リクエストの送信には claude.ai へのサインインと、このページへの参加者(Contributor)以上の権限が必要です。"; $("#reqSubmit").disabled = true; return; }
+    if (!state.db){ h.textContent = "公開版ではリクエスト送信の準備中です。現在は曲カタログのみ閲覧できます。"; $("#reqSubmit").disabled = true; return; }
     if (state.canWrite === false){ h.textContent = "この画面は閲覧のみの権限です。配信者に参加者(Contributor)権限をもらうとリクエストできます。"; $("#reqSubmit").disabled = true; return; }
     $("#reqSubmit").disabled = false;
     if (state.reqMode==="pick" && state.uid){
@@ -396,7 +414,7 @@ h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0
     try{ localStorage.setItem("utabox-mode", m); }catch(e){}
     render();
   }
-  function render(){ if (cat.ready){ renderCat("aCat","aCatList","admin"); } $("#streamerName").textContent = state.name || "Ken"; renderListener(); renderAdmin(); }
+  function render(){ if (cat.ready){ renderCat("aCat","aCatList","admin"); } $("#streamerName").textContent = state.name || "Ken"; renderListener(); renderPublicCatalog(); renderAdmin(); }
 
   // ---------- 書き込み ----------
   async function write(fn, okMsg){
@@ -449,7 +467,7 @@ h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0
       cat.idx = cat.rows.map(x => norm(x[0]) + "\u0001" + norm(x[1]));
       cat.ready = true;
     }catch(e){ cat.failed = true; }
-    catStatus(); renderListener(); renderCat("aCat","aCatList","admin"); renderCat("reqCat","reqCatList","req");
+    catStatus(); renderListener(); renderPublicCatalog(); renderCat("aCat","aCatList","admin"); renderCat("reqCat","reqCatList","req");
   }
   function searchCat(qRaw, n){
     const q = norm(qRaw); if(!q || !cat.ready) return [];
@@ -463,6 +481,25 @@ h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0
   function catRow(i, btns){
     const [t,a,y] = cat.rows[i];
     return `<div class="cat"><div style="min-width:0"><div class="t">${esc(t)}</div><div class="a">${esc(a)}${y?`<span class="yr">${esc(y)}</span>`:""}</div></div><div class="acts">${btns}</div></div>`;
+  }
+  function renderPublicCatalog(){
+    const hint = $("#catalogHint");
+    const list = $("#catalogList");
+    if (!cat.ready){
+      $("#nCatalog").textContent = cat.failed ? "!" : "…";
+      hint.textContent = cat.failed ? "曲カタログの取得に失敗しました。ページを再読み込みしてください。" : "曲カタログを読み込み中です…";
+      list.innerHTML = "";
+      return;
+    }
+    $("#nCatalog").textContent = cat.rows.length.toLocaleString("ja-JP");
+    const q = $("#qCatalog").value.trim();
+    const hits = q ? searchCat(q, 60) : cat.rows.slice(0, 40).map((_, i) => i);
+    hint.textContent = q
+      ? "検索結果を最大60件表示しています。見つからない場合は別の表記でもお試しください。"
+      : "全" + cat.rows.length.toLocaleString("ja-JP") + "曲から人気順の40曲を表示中です。検索すると絞り込めます。";
+    list.innerHTML = hits.length
+      ? hits.map(i => catRow(i, "")).join("")
+      : '<div class="empty"><strong>曲が見つかりませんでした</strong>別の曲名・アーティスト名を試してください。</div>';
   }
   function renderCat(inputId, listId, kind){
     const el = $("#"+listId); const q = $("#"+inputId).value;
@@ -480,6 +517,7 @@ h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0
   const debounce = (fn, ms=150) => { let t; return () => { clearTimeout(t); t=setTimeout(fn, ms); }; };
   $("#aCat").addEventListener("input", debounce(() => renderCat("aCat","aCatList","admin")));
   $("#reqCat").addEventListener("input", debounce(() => renderCat("reqCat","reqCatList","req")));
+  $("#qCatalog").addEventListener("input", debounce(renderPublicCatalog, 180));
   function pickCatalog(i){
     const [t,a] = cat.rows[i];
     setTab("request"); setReqMode("free");
@@ -621,7 +659,7 @@ h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0
     const db = await (window.claude?.use ? window.claude.use("db") : null);
     const user = await (window.claude?.use ? window.claude.use("user") : null);
     state.user = user;
-    if (!db){ banner("リスナーの方は claude.ai にサインインすると曲リストを見てリクエストできます。"); updateReqHint(); return; }
+    if (!db){ banner("公開閲覧モード：曲カタログの検索は利用できます。歌える曲・練習中・リクエストの共有データは未接続です。"); updateReqHint(); return; }
     state.db = db;
     if (user){
       try{ state.uid = await user.id(); }catch(e){}
@@ -642,3 +680,5 @@ h2.sub{font-family:var(--f-display);font-weight:900;font-size:19px;margin:26px 0
   })();
 })();
 </script>
+</body>
+</html>

@@ -11,4 +11,7 @@ CREATE TABLE IF NOT EXISTS ken_admin_audit(
   changed_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS ken_admin_audit_entity ON ken_admin_audit (entity_type,entity_id,changed_at DESC);
+INSERT INTO source_catalogs(code,display_name,source_url,license_id,attribution)
+VALUES('ken_admin_manual','Ken admin curated release dates',NULL,'user_editor','User supplied official source URLs')
+ON CONFLICT(code) DO NOTHING;
 COMMIT;

@@ -23,7 +23,8 @@ try{
   null,{timeout:90000}
  );
  const stats=await page.evaluate(()=>window.KEN_CATALOG_STATS);
- await check(stats.searchableUniqueCount>=100000,"100k additional song catalog is searchable");
+ await check(stats.extensionSourceCount===140983,"New catalog extension contains 140983 songs");
+ await check(stats.searchableUniqueCount===300000 && stats.targetReached===true,"Exactly 300000 unique songs are searchable");
  await page.locator("#searchInput").fill("流恋情歌");
  await page.waitForFunction(()=>document.querySelector("#searchResults")?.textContent?.includes("流恋情歌"),null,{timeout:30000});
  await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),"Japanese song catalog search succeeds");

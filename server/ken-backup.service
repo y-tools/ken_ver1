@@ -1,0 +1,10 @@
+[Unit]
+Description=Back up Ken song database
+After=postgresql.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ken-backup-local
+Nice=15
+IOSchedulingClass=idle
+NoNewPrivileges=true

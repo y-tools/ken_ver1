@@ -169,7 +169,9 @@ def import_readings(conn, max_files):
         cur.execute("""CREATE TEMP TABLE IF NOT EXISTS ken_reading_stage(
            title_key TEXT,artist_key TEXT,
            title_hira TEXT,title_kata TEXT,title_romaji TEXT,title_english TEXT,
-           artist_hira TEXT,artist_kata TEXT,artist_romaji TEXT,artist_english TEXT
+           artist_hira TEXT,artist_kata TEXT,artist_romaji TEXT,artist_english TEXT,
+           title_hira_key TEXT,title_kata_key TEXT,title_romaji_key TEXT,title_english_key TEXT,
+           artist_hira_key TEXT,artist_kata_key TEXT,artist_romaji_key TEXT,artist_english_key TEXT
         ) ON COMMIT PRESERVE ROWS""")
     conn.commit()
     scanned=0
@@ -187,24 +189,25 @@ def import_readings(conn, max_files):
                     for row in rows:
                         if not isinstance(row,list) or len(row)<11 or not row[0] or not row[1]:
                             continue
+                        values=[str(row[n] or "")[:300] for n in (3,4,5,6,7,8,9,10)]
                         copy.write_row((normalize(row[0]),normalize(row[1]),
-                            *(str(row[n] or "")[:300] for n in (3,4,5,6,7,8,9,10))))
+                            *values,*(normalize(v) for v in values)))
                         scanned+=1
                 for col,side,kind in NAME_COLUMNS:
                     if side=="title":
                         sql=f"""INSERT INTO song_names(song_id,kind,value,search_key,verification)
-                          SELECT DISTINCT s.id,%s::text,st.{col},st.{col}
+                          SELECT DISTINCT s.id,%s::text,st.{col},st.{col}_key
                           FROM ken_reading_stage st
                           JOIN artists a ON a.name_key=st.artist_key
                           JOIN songs s ON s.title_key=st.title_key AND s.primary_artist_id=a.id
                           WHERE st.{col}<>'' ON CONFLICT(song_id,kind,search_key) DO NOTHING"""
                     else:
                         sql=f"""INSERT INTO artist_names(artist_id,kind,value,search_key,verification)
-                          SELECT DISTINCT a.id,%s::text,st.{col},st.{col}
+                          SELECT DISTINCT a.id,%s::text,st.{col},st.{col}_key
                           FROM ken_reading_stage st JOIN artists a ON a.name_key=st.artist_key
                           WHERE st.{col}<>'' ON CONFLICT(artist_id,kind,search_key) DO NOTHING"""
                     # Stored readings are explicitly estimated. Do not promote them to verified aliases.
-                    sql=sql.replace(f"st.{col},st.{col}", f"st.{col},st.{col},'estimated'")
+                    sql=sql.replace(f"st.{col},st.{col}_key", f"st.{col},st.{col}_key,'estimated'")
                     cur.execute(sql,(kind,))
         print(f"readings: processed {path.name}; rows={scanned:,}",flush=True)
 

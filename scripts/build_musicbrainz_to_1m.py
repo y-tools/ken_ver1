@@ -77,7 +77,19 @@ def stream_records():
                     extracted=archive.extractfile(member)
                     if extracted is None:
                         raise ValueError("Could not extract canonical music metadata")
-                    wrapper=io.TextIOWrapper(extracted,encoding="utf-8-sig",errors="replace",newline="")
+                    class StreamAdapter(io.RawIOBase):
+                        def readable(self):
+                            return True
+                        def seekable(self):
+                            return False
+                        def readinto(self,b):
+                            part=extracted.read(len(b))
+                            if part is None:
+                                return 0
+                            b[:len(part)]=part
+                            return len(part)
+                    buffered=io.BufferedReader(StreamAdapter(),buffer_size=1<<20)
+                    wrapper=io.TextIOWrapper(buffered,encoding="utf-8-sig",errors="replace",newline="")
                     reader=csv.DictReader(wrapper)
                     fields=set(reader.fieldnames or [])
                     required={"recording_name","artist_credit_name","recording_mbid"}

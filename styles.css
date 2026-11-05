@@ -406,3 +406,16 @@ body.embed-mode .listener-broadcast-detail{font-size:11px;flex-basis:100%}
   margin:0;
 }
 .admin-panel-body .queue-list{gap:6px}
+
+
+/* Readings are folded by default to keep a million-song search compact. */
+.song-reading-details{margin:5px 0 0;font-size:11px;line-height:1.4;color:var(--soft)}
+.song-reading-details summary{cursor:pointer;display:list-item;list-style:disclosure-closed inside;font-weight:700;color:var(--soft);width:fit-content}
+.song-reading-details[open] summary{list-style:disclosure-open inside}
+.song-reading-details summary:hover{color:var(--text)}
+.reading-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:7px 0 0}
+.reading-item{display:flex;flex-wrap:wrap;align-items:flex-start;gap:3px 8px;font-size:10px;line-height:1.5}
+.reading-item strong{flex:1 1 100%;color:var(--text);font-size:11px}
+.reading-item span{min-width:0;overflow-wrap:anywhere}
+.reading-item b{font-weight:700;color:var(--soft)}
+@media(max-width:680px){.reading-grid{grid-template-columns:1fr}}

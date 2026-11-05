@@ -18,6 +18,15 @@ try{
  await page.goto(base,{waitUntil:"domcontentloaded",timeout:60000});
  await page.locator("#listenerView").waitFor({state:"visible"});
  await check((await text(page.locator("#listenerStreamLabel")))==="OFF AIR","Listener starts OFF AIR");
+ await page.waitForFunction(
+  () => window.KEN_CATALOG_STATS?.vocadbSourceCount===100000,
+  null,{timeout:90000}
+ );
+ const stats=await page.evaluate(()=>window.KEN_CATALOG_STATS);
+ await check(stats.searchableUniqueCount>=100000,"100k additional song catalog is searchable");
+ await page.locator("#searchInput").fill("流恋情歌");
+ await page.waitForFunction(()=>document.querySelector("#searchResults")?.textContent?.includes("流恋情歌"),null,{timeout:30000});
+ await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),"Japanese song catalog search succeeds");
  await check((await page.locator("#today-history-section").count())===1,"Today sung-history section exists");
  await check((await page.locator("#practice-section .section-no").textContent()).trim()==="04","Practice section is number 04");
  await admin();

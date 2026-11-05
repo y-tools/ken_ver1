@@ -15,6 +15,14 @@ kenapi.153-127-64-17.sslip.io {
         method GET OPTIONS
     }
 
+    @admin_api {
+        path /api/admin/*
+        method GET POST OPTIONS
+    }
+    handle @admin_api {
+        reverse_proxy 127.0.0.1:8788
+    }
+
     handle @song_api {
         reverse_proxy 127.0.0.1:8787
     }

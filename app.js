@@ -124,7 +124,7 @@ function render(){
  renderSearch();renderQueue();renderAdminRequests();
  $("#catalogStatus").textContent=catalog.ready?"楽曲検索利用可":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
- $("#toListener").classList.toggle("active",!adminMode);$("#toAdmin").classList.toggle("active",adminMode);
+ $("#toListener").hidden=!adminMode || preview;
  document.body.classList.toggle("admin-active",adminMode&&!preview);
 }
 function changeRequestStatus(id,status){
@@ -179,6 +179,73 @@ async function loadCatalog(){
  }catch(e){catalog.error=true;console.warn("Catalog unavailable",e);}
  render();
 }
+
+/* Hidden manager entrance: press the app title for at least 900ms.
+   This is a client-side UI gate only; do not use it for sensitive data. */
+const UI_ADMIN_PASSWORD = "kny";
+function setupAdminUnlock(){
+ const trigger=$("#adminTitle");
+ const dialog=$("#adminPasswordDialog");
+ const password=$("#adminPasswordInput");
+ const error=$("#adminPasswordError");
+ let timer=null;
+ let startX=0,startY=0;
+ const cancelHold=()=>{if(timer!==null){clearTimeout(timer);timer=null;}};
+ const openPassword=()=>{
+  cancelHold();
+  if(preview||adminMode||dialog.open)return;
+  password.value="";
+  error.hidden=true;
+  dialog.showModal();
+  password.focus();
+ };
+ const startHold=()=>{
+  if(preview||adminMode||dialog.open)return;
+  cancelHold();
+  timer=setTimeout(()=>{timer=null;openPassword();},900);
+ };
+ trigger.addEventListener("pointerdown",e=>{
+  if(e.button!==0)return;
+  startX=e.clientX;startY=e.clientY;
+  startHold();
+ });
+ trigger.addEventListener("pointermove",e=>{
+  if(Math.hypot(e.clientX-startX,e.clientY-startY)>12)cancelHold();
+ });
+ ["pointerup","pointercancel","pointerleave","lostpointercapture"].forEach(eventName=>
+  trigger.addEventListener(eventName,cancelHold)
+ );
+ trigger.addEventListener("contextmenu",e=>e.preventDefault());
+ trigger.addEventListener("click",e=>e.preventDefault());
+ trigger.addEventListener("keydown",e=>{
+  if((e.key==="Enter"||e.key===" ")&&!e.repeat){e.preventDefault();startHold();}
+ });
+ trigger.addEventListener("keyup",e=>{
+  if(e.key==="Enter"||e.key===" "){e.preventDefault();cancelHold();}
+ });
+ window.addEventListener("blur",cancelHold);
+ document.addEventListener("visibilitychange",()=>{if(document.hidden)cancelHold();});
+ $("#adminPasswordCancel").addEventListener("click",()=>dialog.close());
+ $("#adminPasswordForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  if(password.value!==UI_ADMIN_PASSWORD){
+   error.hidden=false;
+   password.value="";
+   password.focus();
+   return;
+  }
+  dialog.close();
+  adminMode=true;
+  render();
+  $("#toListener").focus();
+ });
+ dialog.addEventListener("close",()=>{
+  password.value="";
+  error.hidden=true;
+  cancelHold();
+ });
+}
+
 function attach(){
  document.querySelectorAll("[data-search-mode]").forEach(b=>b.addEventListener("click",()=>{
   searchMode=b.dataset.searchMode;
@@ -199,8 +266,8 @@ function attach(){
   document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));
   renderAdminRequests();
  }));
- $("#toListener").addEventListener("click",()=>{adminMode=false;render();});
- $("#toAdmin").addEventListener("click",()=>{adminMode=true;render();});
+ $("#toListener").addEventListener("click",()=>{adminMode=false;render();$("#adminTitle").focus();});
+ setupAdminUnlock();
  $("#nameForm").addEventListener("submit",e=>{
   e.preventDefault();state.name=$("#newName").value.trim().slice(0,30)||"Ken";persist();render();toast("この端末の表示名を変更しました");
  });

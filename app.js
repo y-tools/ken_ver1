@@ -135,11 +135,22 @@ function renderPractice(){
  $("#practiceList").innerHTML=rows.length?rows.map(s=>'<div class="song-row"><div class="song-info"><div class="song-title">'+esc(s.title)+'</div><div class="song-artist">'+esc(s.artist)+'</div><div class="song-meta"><span class="tag wait">練習中</span>'+ (s.count?' リクエスト '+s.count+'件':'')+'</div></div></div>').join("")
   :'<div class="empty">練習中の楽曲はまだありません。</div>';
 }
+function lyricsSearchUrl(song){
+ return "https://www.google.com/search?q="+encodeURIComponent([song.title,song.artist,"歌詞 公式"].filter(Boolean).join(" "));
+}
+function lyricsAction(song){
+ return '<a class="button lyrics-action" href="'+esc(lyricsSearchUrl(song))+'" target="_blank" rel="noopener noreferrer" aria-label="'+esc(song.title+" "+song.artist+" 歌詞URL検索")+'">歌詞URL検索</a>';
+}
 function requestItem(r,controls=""){
  const when=r.createdAt?new Date(r.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
- return '<div class="song-row"><div class="song-info"><div class="song-title">'+esc(r.title)+'</div><div class="song-artist">'+esc(r.artist)+'</div><div class="queue-person">リクエスト者：'+esc(r.nickname||"匿名")+'</div>'+
- (r.message?'<div class="song-meta">'+esc(r.message)+'</div>':"")+
- '<div class="song-meta">'+esc(when)+'</div></div>'+(controls?'<div class="song-actions">'+controls+'</div>':"")+'</div>';
+ const requester="リクエスト者："+(r.nickname||"匿名");
+ const byline=requester+(when?" ｜ "+when:"");
+ const message=r.message?'<details class="admin-song-message"><summary>メッセージを見る</summary><p>'+esc(r.message)+'</p></details>':"";
+ return '<div class="song-row admin-song-entry"><div class="song-info">'+
+  '<div class="song-title" title="'+esc(r.title)+'">'+esc(r.title)+'</div>'+
+  '<div class="song-artist" title="'+esc(r.artist)+'">'+esc(r.artist)+'</div>'+
+  '<div class="admin-song-byline" title="'+esc(byline)+'">'+esc(byline)+'</div>'+
+  message+'</div>'+(controls?'<div class="song-actions">'+controls+'</div>':"")+'</div>';
 }
 function waitingRequests(){return state.requests.filter(r=>r.status==="waiting").sort((a,b)=>(a.waitOrder||a.createdAt)-(b.waitOrder||b.createdAt));}
 function singingRequest(){return state.requests.find(r=>r.status==="singing")||null;}
@@ -152,7 +163,8 @@ function renderSinging(){
   '<button type="button" class="button primary" data-do="done" data-id="'+esc(singing.id)+'">歌唱完了</button>'+
   '<button type="button" class="button subtle" data-do="waiting" data-id="'+esc(singing.id)+'">待機に戻す</button>'+
   '<button type="button" class="button warning" data-do="cancel" data-id="'+esc(singing.id)+'">取り消し</button>'+
-  '<button type="button" class="button" data-do="research" data-id="'+esc(singing.id)+'">さらに調べる</button>')
+  '<button type="button" class="button" data-do="research" data-id="'+esc(singing.id)+'" aria-label="GPTで楽曲情報を検索">GPT検索</button>'+
+  lyricsAction(singing))
   :'<div class="empty">歌唱中の曲はありません。</div>';
 }
 function renderQueue(){
@@ -167,7 +179,8 @@ function renderQueue(){
   '<button type="button" class="button primary" data-do="singing" data-id="'+esc(r.id)+'">歌唱開始</button>'+
   '<button type="button" class="button subtle" data-do="new" data-id="'+esc(r.id)+'">受付へ戻す</button>'+
   '<button type="button" class="button warning" data-do="cancel" data-id="'+esc(r.id)+'">取り消し</button>'+
-  '<button type="button" class="button" data-do="research" data-id="'+esc(r.id)+'">さらに調べる</button>')).join("")
+  '<button type="button" class="button" data-do="research" data-id="'+esc(r.id)+'" aria-label="GPTで楽曲情報を検索">GPT検索</button>'+
+  lyricsAction(r))).join("")
   :'<div class="empty">待機曲はありません。受付中のリクエストから追加できます。</div>';
 }
 function renderAdminRequests(){
@@ -183,7 +196,8 @@ function renderAdminRequests(){
     '<button type="button" class="button primary" data-do="classify" data-id="'+key+'">振り分けを送信</button>'+
     '<div class="song-actions">'+
     '<button type="button" class="button warning" data-do="cancel" data-id="'+key+'">取り消し</button>'+
-    '<button type="button" class="button" data-do="research" data-id="'+key+'">さらに調べる</button></div></div>';
+    '<button type="button" class="button" data-do="research" data-id="'+key+'" aria-label="GPTで楽曲情報を検索">GPT検索</button>'+
+    lyricsAction(r)+'</div></div>';
   return requestItem(r,form);
  }).join(""):'<div class="empty">未分類のリクエストはありません。</div>';
 }
@@ -382,7 +396,7 @@ function researchSong(id){
  if(!song){toast("対象の楽曲が見つかりません");return;}
  const prompt=makeResearchPrompt(song);
  $("#gptResearchPrompt").value=prompt;
- $("#lyricsSearch").href="https://www.google.com/search?q="+encodeURIComponent(song.title+" "+song.artist+" 歌詞 公式");
+ $("#lyricsSearch").href=lyricsSearchUrl(song);
  state.chatNotes.push({id:makeId("note"),kind:"research",text:song.title+" / "+song.artist,at:Date.now()});
  state.chatNotes=state.chatNotes.slice(-80);
  persist();renderChatNotes();

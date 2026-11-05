@@ -28,6 +28,16 @@ try{
  await page.locator("#searchInput").fill("流恋情歌");
  await page.waitForFunction(()=>document.querySelector("#searchResults")?.textContent?.includes("流恋情歌"),null,{timeout:30000});
  await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),"Japanese song catalog search succeeds");
+ await check(await page.locator('[data-search-mode="title"]').getAttribute("aria-pressed")==="true","Title search selected by default");
+ const titleResult=await page.locator("#searchResults").textContent();
+ await page.locator('[data-search-mode="artist"]').click();
+ await check(await page.locator('[data-search-mode="artist"]').getAttribute("aria-pressed")==="true","Artist search switch activates");
+ await check((await page.locator("#searchInput").inputValue())==="流恋情歌","Switch retains the existing query");
+ await page.waitForTimeout(400);
+ await check(!(await page.locator("#searchResults").textContent()).includes("流恋情歌"),"Artist search excludes a title-only match");
+ await page.locator('[data-search-mode="title"]').click();
+ await check(await page.locator('[data-search-mode="title"]').getAttribute("aria-pressed")==="true","Switch back to title search works");
+ await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),"Title results return on switching back");
  const mbMetadata=await page.evaluate(async()=>{
   const manifest=await window.KEN_MB_SEARCH.ready();
   if(!manifest)return null;

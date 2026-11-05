@@ -8,12 +8,12 @@ const preview = params.get("embed")==="1";
 if(preview) document.body.classList.add("embed-mode");
 const config = window.KEN_CONFIG || {};
 const storageKey = "ken-denmoku-v2";
-const initial = {songs:[],requests:[],name:"Ken",streamLive:false,sessions:[],activeSessionId:null};
+const initial = {songs:[],requests:[],name:"Ken",streamLive:false,sessions:[],activeSessionId:null,chatNotes:[]};
 let state = initial;
 try {
  const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
  if(saved && typeof saved==="object") {
-  state = {...initial, songs:Array.isArray(saved.songs)?saved.songs:[], requests:Array.isArray(saved.requests)?saved.requests:[], name:typeof saved.name==="string"?saved.name:"Ken",streamLive:saved.streamLive===true,sessions:Array.isArray(saved.sessions)?saved.sessions:[],activeSessionId:typeof saved.activeSessionId==="string"?saved.activeSessionId:null};
+  state = {...initial, songs:Array.isArray(saved.songs)?saved.songs:[], requests:Array.isArray(saved.requests)?saved.requests:[], name:typeof saved.name==="string"?saved.name:"Ken",streamLive:saved.streamLive===true,sessions:Array.isArray(saved.sessions)?saved.sessions:[],activeSessionId:typeof saved.activeSessionId==="string"?saved.activeSessionId:null,chatNotes:Array.isArray(saved.chatNotes)?saved.chatNotes.slice(-80):[]};
  }
 } catch(_) {}
 const catalog = {rows:[],idx:[],ready:false,error:false};
@@ -110,6 +110,21 @@ function renderSearch(){
   :'<div class="empty">'+(q?"一致する曲がありません。別の表記でも検索してください。":"歌える曲の登録はまだありません。曲名やアーティスト名で検索してください。")+'</div>';
  window.__searchResults=result;
 }
+function japanDay(at){
+ const d=new Date(at);
+ return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
+}
+function renderTodayHistory(){
+ const today=japanDay(Date.now());
+ const records=state.requests.filter(r=>r.completedAt && japanDay(r.completedAt)===today && r.status==="done").sort((a,b)=>a.completedAt-b.completedAt);
+ $("#todaySingingCount").textContent=records.length;
+ $("#todaySingingList").innerHTML=records.length?records.map((r,i)=>
+  '<div class="queue-row"><div class="queue-no">'+(i+1)+'</div><div class="queue-info">'+
+  '<div class="song-title">'+esc(r.title)+'</div><div class="song-artist">'+esc(r.artist)+'</div>'+
+  '<div class="today-sung-meta">リクエスト者：'+esc(r.nickname||"匿名")+'</div>'+
+  '<div class="today-sung-time">歌唱終了：'+esc(clockLabel(r.completedAt))+'</div>'+
+  '</div></div>').join(""):'<div class="empty">本日歌唱を完了した曲はまだありません。</div>';
+}
 function renderPractice(){
  const list=new Map();
  const add=(title,artist,year)=>{const k=readyKey(title,artist);if(!list.has(k))list.set(k,{title,artist,year,count:0});return list.get(k)};
@@ -135,7 +150,9 @@ function renderSinging(){
   : '<div class="singing-empty">現在、歌唱中の曲はありません。</div>';
  $("#adminSinging").innerHTML=singing?requestItem(singing,
   '<button type="button" class="button primary" data-do="done" data-id="'+esc(singing.id)+'">歌唱完了</button>'+
-  '<button type="button" class="button subtle" data-do="waiting" data-id="'+esc(singing.id)+'">待機に戻す</button>')
+  '<button type="button" class="button subtle" data-do="waiting" data-id="'+esc(singing.id)+'">待機に戻す</button>'+
+  '<button type="button" class="button warning" data-do="cancel" data-id="'+esc(singing.id)+'">取り消し</button>'+
+  '<button type="button" class="button" data-do="research" data-id="'+esc(singing.id)+'">さらに調べる</button>')
   :'<div class="empty">歌唱中の曲はありません。</div>';
 }
 function renderQueue(){
@@ -148,7 +165,9 @@ function renderQueue(){
   '<button type="button" class="button" data-do="up" data-id="'+esc(r.id)+'">↑</button>'+
   '<button type="button" class="button" data-do="down" data-id="'+esc(r.id)+'">↓</button>'+
   '<button type="button" class="button primary" data-do="singing" data-id="'+esc(r.id)+'">歌唱開始</button>'+
-  '<button type="button" class="button subtle" data-do="new" data-id="'+esc(r.id)+'">受付へ戻す</button>')).join("")
+  '<button type="button" class="button subtle" data-do="new" data-id="'+esc(r.id)+'">受付へ戻す</button>'+
+  '<button type="button" class="button warning" data-do="cancel" data-id="'+esc(r.id)+'">取り消し</button>'+
+  '<button type="button" class="button" data-do="research" data-id="'+esc(r.id)+'">さらに調べる</button>')).join("")
   :'<div class="empty">待機曲はありません。受付中のリクエストから追加できます。</div>';
 }
 function renderAdminRequests(){
@@ -161,7 +180,10 @@ function renderAdminRequests(){
     '<label><input type="checkbox" data-dest="waiting"> 歌唱待機</label>'+
     '<label><input type="checkbox" data-dest="practice"> 練習中</label>'+
     '<label><input type="checkbox" data-dest="ready"> 歌える曲</label></div>'+
-    '<button type="button" class="button primary" data-do="classify" data-id="'+key+'">振り分けを送信</button></div>';
+    '<button type="button" class="button primary" data-do="classify" data-id="'+key+'">振り分けを送信</button>'+
+    '<div class="song-actions">'+
+    '<button type="button" class="button warning" data-do="cancel" data-id="'+key+'">取り消し</button>'+
+    '<button type="button" class="button" data-do="research" data-id="'+key+'">さらに調べる</button></div></div>';
   return requestItem(r,form);
  }).join(""):'<div class="empty">未分類のリクエストはありません。</div>';
 }
@@ -208,7 +230,7 @@ function setStreamLive(live){
   const singing=singingRequest();
   if(singing){
    logEvent("singing_end",{...songSnapshot(singing),startedAt:singing.singingStartedAt||null,reason:"stream_end"},now);
-   singing.status="done";singing.singingEndedAt=now;delete singing.singingStartedAt;
+   singing.status="done";singing.completedAt=now;singing.singingEndedAt=now;delete singing.singingStartedAt;
   }
   const session=currentSession();
   if(session)session.endedAt=now;
@@ -274,7 +296,7 @@ function startSongEdit(id){
 function render(){
  $("#streamerName").textContent=state.name;
  document.title=state.name+"のデンモク";
- renderSearch();renderSinging();renderQueue();renderPractice();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();
+ renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
  $("#catalogStatus").textContent=catalog.ready?"楽曲検索利用可":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  $("#toListener").hidden=!adminMode || preview;
@@ -293,6 +315,7 @@ function changeRequestStatus(id,status){
   r.singingEndedAt=now;delete r.singingStartedAt;
  }
  r.status=status;
+ if(status==="done")r.completedAt=now;
  if(status==="singing"){
   r.singingStartedAt=now;
   logEvent("singing_start",songSnapshot(r),now);
@@ -331,10 +354,62 @@ function requestSubmit(event){
   render();
  }finally{isSending=false;}
 }
+function makeResearchPrompt(song){
+ return [
+  "以下の日本の楽曲について、ウェブ上の信頼できる情報源を調査してください。",
+  "曲名："+song.title,
+  "アーティスト："+song.artist,
+  "",
+  "1. 作品情報（発売日・収録作品・作詞作曲者など確認できたものだけ）",
+  "2. 曲のジャンル、テーマ、雰囲気や聴きどころを日本語で150～250字ほどに簡潔に説明",
+  "3. 正規の歌詞掲載ページへのURL（歌詞全文は転載しない）",
+  "4. 裏付けとなる公式サイト・権利者ページ等のURL",
+  "同名異曲や別アーティストを混同せず、確認できない点は不明と記してください。推測でURLや発売年を作らないでください。",
+ ].join("\n");
+}
+function renderChatNotes(){
+ const container=$("#adminChatHistory");
+ const notes=(state.chatNotes||[]).slice(-40);
+ container.innerHTML=notes.length?notes.map(n=>
+  '<div class="chat-line '+(n.kind==="research"?"system":"note")+'">'+
+  '<span class="chat-time">'+esc(timeLabel(n.at))+'</span>'+
+  '<strong>'+(n.kind==="research"?"調査指示を作成":"管理メモ")+'</strong>'+
+  esc(n.text)+'</div>').join("")
+  :'<div class="empty">まだメモはありません。</div>';
+}
+function researchSong(id){
+ const song=state.requests.find(r=>r.id===id);
+ if(!song){toast("対象の楽曲が見つかりません");return;}
+ const prompt=makeResearchPrompt(song);
+ $("#gptResearchPrompt").value=prompt;
+ $("#lyricsSearch").href="https://www.google.com/search?q="+encodeURIComponent(song.title+" "+song.artist+" 歌詞 公式");
+ state.chatNotes.push({id:makeId("note"),kind:"research",text:song.title+" / "+song.artist,at:Date.now()});
+ state.chatNotes=state.chatNotes.slice(-80);
+ persist();renderChatNotes();
+ // The real ChatGPT site cannot be embedded or instructed automatically from GitHub Pages.
+ // Prepare the prompt for copying; the operator controls when to open and submit it.
+ toast("調査指示を準備しました。右下の指示をコピーしてChatGPTに貼り付けてください");
+}
+function cancelRequest(id){
+ const song=state.requests.find(r=>r.id===id);
+ if(!song||!["new","waiting","singing"].includes(song.status))return;
+ if(!confirm("「"+song.title+"」の選択を取り消しますか？"))return;
+ const now=Date.now();
+ if(song.status==="singing"){
+  logEvent("singing_end",{...songSnapshot(song),startedAt:song.singingStartedAt||null,reason:"cancelled"},now);
+  song.singingEndedAt=now;delete song.singingStartedAt;
+ }
+ song.status="cancelled";song.cancelledAt=now;
+ logEvent("request_cancelled",songSnapshot(song),now);
+ persist();render();
+ toast("選択を取り消しました");
+}
 function adminAction(event){
  const b=event.target.closest("[data-do]");
  if(!b)return;
  const id=b.dataset.id,act=b.dataset.do;
+ if(act==="research"){researchSong(id);return;}
+ if(act==="cancel"){cancelRequest(id);return;}
  if(act==="classify"){
   const box=b.closest("[data-classify-id]");
   if(box)classifyRequest(id,[...box.querySelectorAll("input[data-dest]:checked")].map(x=>x.dataset.dest));
@@ -473,6 +548,20 @@ function attach(){
  $("#startStream").addEventListener("click",()=>setStreamLive(true));
  $("#endStream").addEventListener("click",()=>setStreamLive(false));
  $("#adminView").addEventListener("click",adminAction);
+ $("#adminChatForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const input=$("#adminChatInput");const text=input.value.trim();
+  if(!text)return;
+  state.chatNotes.push({id:makeId("note"),kind:"note",text,at:Date.now()});
+  state.chatNotes=state.chatNotes.slice(-80);
+  persist();renderChatNotes();input.value="";
+ });
+ $("#gptCopy").addEventListener("click",async()=>{
+  const prompt=$("#gptResearchPrompt").value;
+  if(!prompt){toast("先に「さらに調べる」で楽曲を選んでください");return;}
+  try{await navigator.clipboard.writeText(prompt);toast("調査指示をコピーしました。ChatGPTに貼り付けてください");}
+  catch(_){$("#gptResearchPrompt").focus();$("#gptResearchPrompt").select();toast("コピーできないため指示を選択しました。手動でコピーしてください");}
+ });
  $("#toListener").addEventListener("click",()=>{adminMode=false;render();$("#adminTitle").focus();});
  setupAdminUnlock();
  $("#adminSongSearch").addEventListener("input",renderAdminSongList);

@@ -32,5 +32,18 @@ jobs:
           git add data/vocadb_100k/
           if ! git diff --cached --quiet; then
             git commit -m "Generate 100k deduplicated VocaDB song metadata records"
-            git push
+            # The repository can change during the dataset build.
+            # Rebase the generated data-only commit onto the newest main branch.
+            for attempt in 1 2 3 4 5; do
+              git fetch origin main
+              git rebase origin/main
+              if git push origin HEAD:main; then
+                echo "Catalog shards published successfully"
+                exit 0
+              fi
+              echo "Retrying catalog publish after concurrent main update ($attempt/5)"
+              sleep 3
+            done
+            echo "Failed to publish catalog after five attempts" >&2
+            exit 1
           fi

@@ -188,44 +188,79 @@ function setupAdminUnlock(){
  const dialog=$("#adminPasswordDialog");
  const password=$("#adminPasswordInput");
  const error=$("#adminPasswordError");
+ const HOLD_MS=750;
  let timer=null;
+ let heldAt=0;
  let startX=0,startY=0;
- const cancelHold=()=>{if(timer!==null){clearTimeout(timer);timer=null;}};
+ let pointerId=null;
+ let alreadyOpened=false;
+ const cancelHold=()=>{
+  if(timer!==null){clearTimeout(timer);timer=null;}
+  heldAt=0;
+ };
  const openPassword=()=>{
   cancelHold();
   if(preview||adminMode||dialog.open)return;
+  alreadyOpened=true;
   password.value="";
   error.hidden=true;
-  dialog.showModal();
+  if(typeof dialog.showModal==="function")dialog.showModal();
+  else dialog.setAttribute("open","");
   password.focus();
  };
- const startHold=()=>{
+ const beginHold=(x,y,id)=>{
   if(preview||adminMode||dialog.open)return;
   cancelHold();
-  timer=setTimeout(()=>{timer=null;openPassword();},900);
+  alreadyOpened=false;
+  startX=x;startY=y;pointerId=id;
+  heldAt=Date.now();
+  timer=window.setTimeout(()=>openPassword(),HOLD_MS);
  };
  trigger.addEventListener("pointerdown",e=>{
-  if(e.button!==0)return;
-  startX=e.clientX;startY=e.clientY;
-  startHold();
+  if(e.button!==0||e.isPrimary===false)return;
+  beginHold(e.clientX,e.clientY,e.pointerId);
+  // Capture mouse events even if the cursor drifts away from the title.
+  if(e.pointerType==="mouse" && typeof trigger.setPointerCapture==="function"){
+   try{trigger.setPointerCapture(e.pointerId);}catch(_){}
+  }
  });
  trigger.addEventListener("pointermove",e=>{
-  if(Math.hypot(e.clientX-startX,e.clientY-startY)>12)cancelHold();
+  if(heldAt && e.pointerId===pointerId && Math.hypot(e.clientX-startX,e.clientY-startY)>55)cancelHold();
  });
- ["pointerup","pointercancel","pointerleave","lostpointercapture"].forEach(eventName=>
-  trigger.addEventListener(eventName,cancelHold)
- );
- trigger.addEventListener("contextmenu",e=>e.preventDefault());
+ trigger.addEventListener("pointerup",e=>{
+  if(pointerId!==e.pointerId)return;
+  if(heldAt && !alreadyOpened && Date.now()-heldAt>=HOLD_MS)openPassword();
+  cancelHold();
+  pointerId=null;
+ });
+ trigger.addEventListener("pointercancel",cancelHold);
+ // PC alternative: double-click title to access the same password gate.
+ trigger.addEventListener("dblclick",e=>{e.preventDefault();openPassword();});
  trigger.addEventListener("click",e=>e.preventDefault());
+ trigger.addEventListener("contextmenu",e=>{if(heldAt)e.preventDefault();});
+ let keyboardStart=0;
  trigger.addEventListener("keydown",e=>{
-  if((e.key==="Enter"||e.key===" ")&&!e.repeat){e.preventDefault();startHold();}
+  if((e.key==="Enter"||e.key===" ")&&!e.repeat){
+   e.preventDefault();
+   if(!keyboardStart){
+    keyboardStart=Date.now();
+    beginHold(0,0,"keyboard");
+   }
+  }
  });
  trigger.addEventListener("keyup",e=>{
-  if(e.key==="Enter"||e.key===" "){e.preventDefault();cancelHold();}
+  if(e.key==="Enter"||e.key===" "){
+   e.preventDefault();
+   if(keyboardStart && Date.now()-keyboardStart>=HOLD_MS && !alreadyOpened)openPassword();
+   keyboardStart=0;
+   cancelHold();
+  }
  });
  window.addEventListener("blur",cancelHold);
  document.addEventListener("visibilitychange",()=>{if(document.hidden)cancelHold();});
- $("#adminPasswordCancel").addEventListener("click",()=>dialog.close());
+ $("#adminPasswordCancel").addEventListener("click",()=>{
+  if(typeof dialog.close==="function")dialog.close();else dialog.removeAttribute("open");
+ });
  $("#adminPasswordForm").addEventListener("submit",e=>{
   e.preventDefault();
   if(password.value!==UI_ADMIN_PASSWORD){
@@ -234,7 +269,7 @@ function setupAdminUnlock(){
    password.focus();
    return;
   }
-  dialog.close();
+  if(typeof dialog.close==="function")dialog.close();else dialog.removeAttribute("open");
   adminMode=true;
   render();
   $("#toListener").focus();
@@ -242,10 +277,10 @@ function setupAdminUnlock(){
  dialog.addEventListener("close",()=>{
   password.value="";
   error.hidden=true;
+  alreadyOpened=false;
   cancelHold();
  });
 }
-
 function attach(){
  document.querySelectorAll("[data-search-mode]").forEach(b=>b.addEventListener("click",()=>{
   searchMode=b.dataset.searchMode;

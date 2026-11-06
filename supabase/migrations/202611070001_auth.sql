@@ -67,3 +67,32 @@ create index if not exists profiles_role_idx on public.profiles(role);
 -- not from the browser. Replace the email below only after that user has registered:
 -- update public.profiles set role='owner'
 -- where id=(select id from auth.users where email='OWNER_EMAIL_HERE');
+
+
+-- A user is promoted only AFTER signing in with a verified invited email.
+-- A browser cannot choose its own role; the invitation is matched server-side.
+create or replace function public.accept_admin_invite()
+returns boolean language plpgsql security definer set search_path='' as $$
+declare
+  user_id uuid := (select auth.uid());
+  email_verified text;
+  invite_id uuid;
+begin
+  if user_id is null then raise exception 'Authentication required' using errcode='28000'; end if;
+  select lower(email) into email_verified from auth.users
+    where id=user_id and email_confirmed_at is not null;
+  if email_verified is null then return false; end if;
+  select ai.id into invite_id from public.admin_invites ai
+    where lower(ai.email)=email_verified
+      and ai.status='pending' and ai.expires_at>now()
+    order by ai.created_at desc limit 1 for update;
+  if invite_id is null then return false; end if;
+  update public.profiles set role='admin',updated_at=now()
+    where id=user_id and role='listener';
+  if not found then return false; end if;
+  update public.admin_invites set status='accepted' where id=invite_id;
+  return true;
+end;
+$$;
+revoke all on function public.accept_admin_invite() from public,anon;
+grant execute on function public.accept_admin_invite() to authenticated;

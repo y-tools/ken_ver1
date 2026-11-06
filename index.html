@@ -169,6 +169,10 @@
     </div>
     <details class="admin-tools">
       <summary>共通配信設定・楽曲リストの登録</summary>
+      <div class="notice">
+        <p>旧ブラウザのデータは自動で共有DBに上書きされません。移行前にそれぞれのブラウザでバックアップしてください。</p>
+        <button type="button" class="button" id="backupLegacy">このブラウザの旧データをバックアップ</button>
+      </div>
       <p class="helper">設定・楽曲リストは共通DBへ保存されます。編集権限は管理者・オーナーのみです。</p>
       <form id="nameForm">
         <label class="field">配信者の表示名<input id="newName" maxlength="30" placeholder="Ken"></label>
@@ -188,7 +192,7 @@
       </form>
       <section class="karaoke-management" aria-labelledby="karaokeManagementHeading">
         <h3 id="karaokeManagementHeading">DAM / JOYSOUND 配信情報の照合</h3>
-        <p class="helper">公式サイトで曲名・歌手名・対応機種を確認してから登録してください。カタログ収録だけでは配信済みを意味しません。確認情報はこの端末にのみ保存されます。</p>
+        <p class="helper">公式サイトで曲名・歌手名・対応機種を確認してから登録してください。カタログ収録だけでは配信済みを意味しません。確認情報は共有データベースに保存されます。</p>
         <form id="karaokeCheckForm">
           <div class="form-row">
             <label class="field">曲名 <input id="karaokeTitle" required maxlength="190" placeholder="照合する曲名"></label>

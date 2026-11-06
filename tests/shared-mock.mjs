@@ -54,7 +54,7 @@ async function fixture(role){
  }));
  await page.goto(origin+"/",{waitUntil:"domcontentloaded",timeout:60000});
  await page.locator("#listenerStreamLabel").waitFor({state:"visible",timeout:15000});
- await page.waitForFunction(()=>document.querySelector("#logoutButton")?.onclick!==undefined);
+ await page.waitForFunction(()=>Boolean(document.querySelector("#signedInUser")?.textContent?.trim()));
  return page;
 }
 try{

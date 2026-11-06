@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kenのデンモク | 旧データのバックアップ</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:24px;background:#081628;color:#eaf4ff;display:grid;place-items:center}
+main{width:min(640px,100%);background:#142840;border:1px solid #375a83;border-radius:20px;padding:clamp(18px,5vw,32px)}
+.eyebrow{font-size:12px;letter-spacing:.13em;font-weight:800;color:#6ac9ff}h1{font-size:clamp(22px,4vw,30px);margin:10px 0}
+p,li{line-height:1.75}small{color:#b5cae3}strong{color:white}
+.state{border:1px solid #4a6485;background:#0a1c32;padding:14px;border-radius:12px;margin:16px 0}
+button,.link{padding:13px 16px;border-radius:11px;font:inherit;font-weight:750;cursor:pointer}
+button{background:#1794e8;color:white;border:0;width:100%;margin:10px 0}
+button:disabled{opacity:.6}a{color:#80d4ff}.alert{color:#ffcf89}#status{min-height:2em}
+</style>
+</head>
+<body>
+<main>
+<div class="eyebrow">KEN'S DENMOKU / MIGRATION</div>
+<h1>旧データのバックアップ</h1>
+<p>この画面は、現在のブラウザに保存されているKenのデンモクの情報を<strong>JSONファイルとしてダウンロード</strong>します。保存データの編集・削除・サーバー送信は行いません。</p>
+<p class="alert">重要：PC・スマートフォン・Chrome・Edgeなど、データを使っていた<strong>端末とブラウザごとに</strong>このページを開き、個別に保存してください。</p>
+<div class="state" id="summary" role="status">保存済みデータを調べています…</div>
+<button type="button" id="backup">このブラウザの保存データをダウンロード</button>
+<p id="status" role="status"></p>
+<p><small>バックアップには曲の登録、リクエスト者名、履歴、管理メモ、照合情報が含まれる場合があります。公開場所にアップロードしないでください。管理者に引き渡す場合も安全な方法で扱ってください。</small></p>
+<p><a href="./">デンモクに戻る</a></p>
+</main>
+<script>
+(() => {
+ "use strict";
+ const names=["ken-denmoku-v2","ken-denmoku-karaoke-v1","ken-nickname"];
+ const summary=document.getElementById("summary");
+ const status=document.getElementById("status");
+ const button=document.getElementById("backup");
+ let entries=[];
+ try {
+   entries=names.map(key=>({key,value:localStorage.getItem(key)}));
+   const found=entries.filter(row=>row.value!==null);
+   summary.textContent=found.length
+     ? "保存されている項目："+found.map(row=>row.key).join(" / ")
+     : "このブラウザには旧デンモクの保存データが見つかりません。別のブラウザや端末も確認してください。";
+ } catch(e){
+   summary.textContent="このブラウザから保存データを読み込めませんでした。";
+   button.disabled=true;
+   console.error(e);
+ }
+ button.addEventListener("click",()=>{
+   if(button.disabled)return;
+   try{
+     const payload={
+       format:"ken-denmoku-browser-backup-v1",
+       exported_at:new Date().toISOString(),
+       source_origin:location.origin,
+       source_path:location.pathname,
+       records:Object.fromEntries(entries.map(row=>[row.key,row.value]))
+     };
+     const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});
+     const link=document.createElement("a");
+     const url=URL.createObjectURL(blob);
+     const timestamp=new Date().toISOString().replaceAll(":","-").replace(/\..+/,"");
+     link.href=url;
+     link.download="ken-denmoku-browser-backup-"+timestamp+".json";
+     document.body.appendChild(link);link.click();link.remove();
+     setTimeout(()=>URL.revokeObjectURL(url),15000);
+     status.textContent="バックアップファイルを作成しました。ダウンロードフォルダに保存されているか確認してください。";
+   }catch(e){
+     status.textContent="ダウンロードに失敗しました。ブラウザの保存設定を確認してください。";
+     console.error(e);
+   }
+ });
+})();
+</script>
+</body>
+</html>

@@ -16,6 +16,9 @@
   return null;
  };
  async function route(){
+  // Admin promotion is allowed only for a currently valid invitation and verified email.
+  const {error:acceptError}=await client.rpc("accept_admin_invite");
+  if(acceptError)console.warn("Invite acceptance unavailable",acceptError);
   const auth=await C.authenticate();
   if(!auth)return;
   location.replace(openNext() || (C.isAdmin()?"./admin.html":"./index.html"));

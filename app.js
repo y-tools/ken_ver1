@@ -454,7 +454,7 @@ function reorder(id,dir){
  const tmp=list[a].waitOrder;list[a].waitOrder=list[b].waitOrder;list[b].waitOrder=tmp;
  persist();render();
 }
-function requestSubmit(event){
+async function requestSubmit(event){
  event.preventDefault();if(isSending)return;
  if(!state.streamLive){toast("配信終了中のため、リクエストを受け付けていません");return;}
  const title=$("#reqTitle").value.trim(),artist=$("#reqArtist").value.trim(),nickname=$("#reqName").value.trim();

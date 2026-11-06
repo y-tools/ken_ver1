@@ -600,6 +600,18 @@ async function attach(){
   if($("#signedInUser"))$("#signedInUser").textContent=auth.profile.display_name+" ("+auth.profile.role+")";
   if($("#logoutButton"))$("#logoutButton").addEventListener("click",()=>void shared.signOut());
   adminMode=params.get("admin")==="1"&&shared.isAdmin();
+  if($("#ownerInvite"))$("#ownerInvite").hidden=!shared.isOwner();
+  if($("#inviteAdminForm"))$("#inviteAdminForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    if(!shared.isOwner())return;
+    const email=$("#inviteAdminEmail").value.trim();
+    const feedback=$("#inviteAdminFeedback");
+    feedback.textContent="招待を送信しています…";
+    const {data,error}=await shared.client.functions.invoke("invite-admin",{body:{email}});
+    feedback.textContent=error?"招待に失敗しました: "+error.message:
+      (data?.error?"招待に失敗しました: "+data.error:"管理者招待メールを送信しました");
+    if(!error&&!data?.error)$("#inviteAdminEmail").value="";
+  });
   shared.subscribe(data=>{state={...initial,...data};if(!shared.isAdmin())adminMode=false;render();});
  }catch(e){
   console.error("Denmoku shared bootstrap failed",e);

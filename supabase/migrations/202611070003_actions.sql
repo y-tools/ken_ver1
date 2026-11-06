@@ -153,8 +153,8 @@ begin
       'requestId',tmp,'title',title,'artist',artist,'nickname',nick));
   elsif p_action='request_cancel_self' or p_action='request_cancel' then
     rid := (p_data->>'id')::uuid;
-    select status into prior from public.requests
-      where id=rid and (is_admin or user_id=uid) for update;
+    select r.status into prior from public.requests r
+      where r.id=rid and (is_admin or r.user_id=uid) for update;
     if prior not in ('new','waiting') and not (is_admin and prior='singing') then
       raise exception 'Request cannot be cancelled' using errcode='23514';
     end if;
@@ -183,8 +183,8 @@ begin
       updated_by=uid,updated_at=now() where id=true;
   elsif p_action='request_classify' then
     rid := (p_data->>'id')::uuid;
-    select status,title,artist into prior,title,artist
-      from public.requests where id=rid for update;
+    select r.status,r.title,r.artist into prior,title,artist
+      from public.requests r where r.id=rid for update;
     if prior is distinct from 'new' then raise exception 'Not a new request' using errcode='23514'; end if;
     if (p_data->>'waiting')::boolean and (p_data->>'practice')::boolean or
        (p_data->>'practice')::boolean and (p_data->>'ready')::boolean then
@@ -227,8 +227,8 @@ begin
     if next_status not in ('new','waiting','singing','practice','done') then
       raise exception 'Invalid request status' using errcode='22023';
     end if;
-    select status,title,artist,nickname into prior,title,artist,nick
-      from public.requests where id=rid for update;
+    select r.status,r.title,r.artist,r.nickname into prior,title,artist,nick
+      from public.requests r where r.id=rid for update;
     if prior is null then raise exception 'Request missing' using errcode='22023'; end if;
     if next_status='singing' then
       if not live_now or prior<>'waiting' then raise exception 'Cannot start singing' using errcode='23514'; end if;
@@ -274,7 +274,7 @@ begin
     select coalesce(array_agg(value::uuid order by ord),array[]::uuid[]) into ordered
       from pg_catalog.jsonb_array_elements_text(p_data->'ids') with ordinality as a(value,ord);
     select count(*) into count_wait from public.queue where status='waiting';
-    if array_length(ordered,1) is distinct from count_wait or
+    if coalesce(array_length(ordered,1),0) <> count_wait or
        (select count(distinct v) from unnest(ordered) v) is distinct from count_wait or
        exists(select 1 from unnest(ordered) v where not exists
          (select 1 from public.queue q where q.request_id=v and q.status='waiting')) then

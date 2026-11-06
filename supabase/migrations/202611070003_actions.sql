@@ -97,6 +97,8 @@ declare
   next_status text;
   title text;
   artist text;
+  v_title text;
+  v_artist text;
   nick text;
   note text;
   new_position bigint;
@@ -202,11 +204,11 @@ begin
       when coalesce((p_data->>'practice')::boolean,false) then 'practice'
       else 'classified' end;
     update public.requests set status=next_status,classified_at=now(),
-      classifications=pg_catalog.jsonb_build_array(
+      classifications=to_jsonb(array_remove(array[
         case when coalesce((p_data->>'waiting')::boolean,false) then 'waiting' end,
         case when coalesce((p_data->>'practice')::boolean,false) then 'practice' end,
         case when coalesce((p_data->>'ready')::boolean,false) then 'ready' end
-      )- 'null' where id=rid;
+      ]::text[],null)) where id=rid;
     if next_status='waiting' then
       select coalesce(max(position),0)+1 into new_position from public.queue;
       insert into public.queue(request_id,position,status) values(rid,new_position,'waiting');
@@ -290,7 +292,8 @@ begin
     end if;
     if nullif(p_data->>'id','') is not null then
       song_id := (p_data->>'id')::uuid;
-      update public.songs set title=title,artist=artist,status=next_status,
+      v_title := title; v_artist := artist;
+      update public.songs set title=v_title,artist=v_artist,status=next_status,
         release_year=nullif(p_data->>'year',''),memo=note,updated_at=now()
         where id=song_id;
       if not found then raise exception 'Song not found' using errcode='22023'; end if;

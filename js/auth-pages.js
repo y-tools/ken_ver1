@@ -24,6 +24,9 @@
   location.replace(openNext() || (C.isAdmin()?"./admin.html":"./index.html"));
  }
  if(mode==="callback"){
+  const initialHash=new URLSearchParams(location.hash.replace(/^#/,""));
+  const initialQuery=new URLSearchParams(location.search);
+  const isInvite=initialHash.get("type")==="invite" || initialQuery.get("type")==="invite";
   show("認証リンクを確認しています…");
   try{
    const query=new URLSearchParams(location.search);
@@ -34,7 +37,17 @@
    }
    const {data:{session},error}=await client.auth.getSession();
    if(error||!session)throw Error("ログインセッションを確認できません");
-   await route();
+   if(isInvite){
+    $("#invitePasswordStep").hidden=false;
+    show("管理者として使うパスワードを設定してください。");
+    $("#invitePasswordStep").addEventListener("submit",async e=>{
+     e.preventDefault();
+     if($("#invitePassword").value.length<8){show("8文字以上で設定してください。");return;}
+     const {error:changeError}=await client.auth.updateUser({password:$("#invitePassword").value});
+     if(changeError){show("パスワード設定に失敗しました。再度お試しください。");return;}
+     await route();
+    });
+   }else await route();
   }catch(e){show("認証できませんでした。ログイン画面からやり直してください。");console.error(e);}
   return;
  }

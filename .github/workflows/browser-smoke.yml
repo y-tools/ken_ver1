@@ -10,6 +10,8 @@ on:
       - "database-editor.html"
       - "database-editor.css"
       - "database-editor.js"
+      - "js/**"
+      - "supabase/**"
       - ".github/workflows/browser-smoke.yml"
 permissions:
   contents: read
@@ -30,7 +32,15 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/ken-server.log 2>&1 &
           sleep 3
-      - name: Run UI smoke test
-        run: node tests/smoke.mjs
+      - name: Check browser JavaScript syntax
+        run: |
+          node --check app.js
+          node --check js/shared.js
+          node --check js/auth-pages.js
+      - name: Verify fail-closed shared mode
+        run: node tests/shared-guard.mjs
       - name: Run administrator editor browser test
         run: node tests/editor-smoke.mjs
+      # The legacy localStorage tests/smoke.mjs is retained for reference.
+      # Real-time/RPC integration requires a Supabase staging project and
+      # must run before merging this branch into main.

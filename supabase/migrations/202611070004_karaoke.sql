@@ -1,14 +1,14 @@
 -- Karaoke records table and index are created in 202611070002_live_data.sql
 -- so that 202611070003_actions.sql can reference the table safely.
 -- Records are served by a role-aware RPC only.
-create or replace function private.denmoku_save_karaoke(record jsonb,actor uuid)
+create or replace function private.denmoku_save_karaoke(p_record jsonb,p_actor uuid)
 returns void language plpgsql security definer set search_path='' as $$
 declare
- t text := btrim(record->>'title');
- a text := btrim(record->>'artist');
- d jsonb := coalesce(record->'dam','{}'::jsonb);
- j jsonb := coalesce(record->'joy','{}'::jsonb);
- n text := coalesce(record->>'notes','');
+ t text := btrim(p_record->>'title');
+ a text := btrim(p_record->>'artist');
+ d jsonb := coalesce(p_record->'dam','{}'::jsonb);
+ j jsonb := coalesce(p_record->'joy','{}'::jsonb);
+ n text := coalesce(p_record->>'notes','');
  p jsonb;
  src text;
  status_value text;
@@ -43,7 +43,7 @@ begin
      and lower(btrim(artist))=lower(a);
  else
    insert into public.karaoke_records(title,artist,dam,joy,notes,changed_by)
-   values(t,a,d,j,n,actor)
+   values(t,a,d,j,n,p_actor)
    on conflict ((lower(btrim(title))),(lower(btrim(artist))))
    do update set dam=excluded.dam,joy=excluded.joy,
       notes=excluded.notes,changed_by=excluded.changed_by,updated_at=now();

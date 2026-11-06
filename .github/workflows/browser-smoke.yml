@@ -39,6 +39,8 @@ jobs:
           node --check js/auth-pages.js
       - name: Verify fail-closed shared mode
         run: node tests/shared-guard.mjs
+      - name: Exercise simulated authenticated shared UI
+        run: node tests/shared-mock.mjs
       - name: Run administrator editor browser test
         run: node tests/editor-smoke.mjs
       # The legacy localStorage tests/smoke.mjs is retained for reference.

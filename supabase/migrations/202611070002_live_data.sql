@@ -13,6 +13,23 @@ create table if not exists public.songs (
 create unique index if not exists denmoku_song_identity
   on public.songs(lower(btrim(title)),lower(btrim(artist)));
 
+-- Shared source-linked DAM / JOYSOUND verification.
+create table if not exists public.karaoke_records (
+  id uuid primary key default gen_random_uuid(),
+  title text not null check(length(btrim(title)) between 1 and 190),
+  artist text not null check(length(btrim(artist)) between 1 and 150),
+  dam jsonb not null default '{}'::jsonb,
+  joy jsonb not null default '{}'::jsonb,
+  notes text not null default '' check(length(notes)<=400),
+  changed_by uuid references auth.users(id),
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists denmoku_karaoke_unique
+  on public.karaoke_records(lower(btrim(title)),lower(btrim(artist)));
+alter table public.karaoke_records enable row level security;
+revoke all on public.karaoke_records from anon,authenticated;
+
+
 create table if not exists public.stream_sessions (
   id uuid primary key default gen_random_uuid(),
   started_at timestamptz not null default now(),
@@ -111,7 +128,8 @@ declare t text;
 begin
  for t in select unnest(array[
    'songs','requests','queue','singing_history','stream_status',
-   'stream_sessions','session_events','admin_notes','admin_logs','sync_version'
+   'stream_sessions','session_events','admin_notes','admin_logs','sync_version',
+   'karaoke_records'
  ]) loop
    execute format('alter table public.%I enable row level security',t);
    execute format('revoke all on public.%I from anon,authenticated',t);

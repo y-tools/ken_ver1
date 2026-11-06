@@ -7,10 +7,6 @@ browser memory (not localStorage) and expire after 30 minutes.
 from __future__ import annotations
 
 import hashlib
-import base64
-import hmac
-import struct
-import time
 import os
 import re
 import secrets
@@ -33,18 +29,12 @@ from contextlib import asynccontextmanager
 
 DB_URL = os.environ.get("KEN_ADMIN_DATABASE_URL", "")
 PASSWORD_HASH = os.environ.get("KEN_ADMIN_PASSWORD_HASH", "")
-TOTP_SECRET = os.environ.get("KEN_ADMIN_TOTP_SECRET", "").strip().upper()
 ORIGINS = [
     value.strip() for value in os.environ.get("KEN_ALLOWED_ORIGINS", "https://y-tools.github.io").split(",")
     if value.strip()
 ]
-if not DB_URL or not PASSWORD_HASH or not TOTP_SECRET:
-    raise RuntimeError("Administrator DB, password and TOTP secret must all be configured on the VPS")
-try:
-    if len(base64.b32decode(TOTP_SECRET, casefold=True)) < 20:
-        raise ValueError("TOTP key too short")
-except (ValueError, base64.binascii.Error) as exc:
-    raise RuntimeError("Invalid TOTP secret") from exc
+if not DB_URL or not PASSWORD_HASH:
+    raise RuntimeError("Administrator database and password hash must be configured on the VPS")
 if any(v == "*" or not v.startswith("https://") for v in ORIGINS):
     raise RuntimeError("Only explicit HTTPS origins may administer the database")
 if not PASSWORD_HASH.startswith("$argon2id$"):
@@ -55,17 +45,6 @@ sessions: dict[str, float] = {}
 login_attempts: dict[str, deque[float]] = defaultdict(deque)
 MAX_SESSIONS = 8
 SESSION_SECONDS = 1800
-last_totp_step = -1
-
-
-def one_time_code(secret: str, step: int) -> str:
-    """RFC 6238 SHA-1 6-digit TOTP. Secret never leaves the VPS."""
-    key = base64.b32decode(secret, casefold=True)
-    digest = hmac.new(key, struct.pack(">Q", step), hashlib.sha1).digest()
-    offset = digest[-1] & 0x0F
-    result = struct.unpack(">I", digest[offset:offset + 4])[0] & 0x7FFFFFFF
-    return str(result % 1_000_000).zfill(6)
-
 
 
 def normalized(value: str) -> str:
@@ -127,8 +106,7 @@ async def reject_wrong_origin(request: Request, call_next):
 
 
 class Login(BaseModel):
-    password: str = Field(min_length=3, max_length=256)
-    otp: str = Field(pattern=r"^[0-9]{6}$")
+    password: str = Field(min_length=8, max_length=256)
 
 
 def auth(authorization: str | None = Header(default=None)):
@@ -147,7 +125,6 @@ def auth(authorization: str | None = Header(default=None)):
 
 @app.post("/api/admin/login")
 async def login(body: Login, request: Request):
-    global last_totp_step
     ip = request.client.host if request.client else "unknown"
     now = monotonic()
     entries = login_attempts[ip]
@@ -160,15 +137,8 @@ async def login(body: Login, request: Request):
         match = password_hasher.verify(PASSWORD_HASH, body.password)
     except (VerifyMismatchError, VerificationError):
         match = False
-    current_step = int(time.time() // 30)
-    verified_step = next(
-        (step for step in (current_step - 1, current_step, current_step + 1)
-         if step > last_totp_step and hmac.compare_digest(one_time_code(TOTP_SECRET, step), body.otp)),
-        None,
-    )
-    if not match or verified_step is None:
-        raise HTTPException(401, "パスワードまたは確認コードが違います")
-    last_totp_step = verified_step
+    if not match:
+        raise HTTPException(401, "認証できませんでした")
     entries.clear()
     # Tokens are opaque, short-lived, and stored server-side only as hashes.
     for key, deadline in list(sessions.items()):

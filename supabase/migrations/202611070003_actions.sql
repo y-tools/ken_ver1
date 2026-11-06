@@ -58,6 +58,11 @@ begin
       ) order by ss.started_at desc) from
         (select * from public.stream_sessions order by started_at desc limit 100) ss
     ),'[]'::jsonb) else '[]'::jsonb end,
+    'karaoke',coalesce((
+      select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+        'title',k.title,'artist',k.artist,'dam',k.dam,'joy',k.joy,'notes',k.notes
+      )) from public.karaoke_records k
+    ),'[]'::jsonb),
     'chatNotes',case when admin_access then coalesce((
       select pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
         'id',n.id,'kind',n.kind,'text',n.body,
@@ -104,6 +109,7 @@ declare
   new_position bigint;
   tmp uuid;
   ordered uuid[];
+  karaoke_item jsonb;
   count_wait bigint;
   result_version bigint;
 begin
@@ -328,6 +334,16 @@ begin
     end if;
     insert into public.admin_notes(kind,body,created_by) values
       (case when p_data->>'kind'='research' then 'research' else 'note' end,note,uid);
+  elsif p_action='karaoke_upsert' then
+    perform private.denmoku_save_karaoke(p_data->'record',uid);
+  elsif p_action='karaoke_import' then
+    if pg_catalog.jsonb_typeof(p_data->'records')<>'array'
+       or pg_catalog.jsonb_array_length(p_data->'records')>100 then
+       raise exception 'Karaoke import limited to 100 records' using errcode='22023';
+    end if;
+    for karaoke_item in select value from pg_catalog.jsonb_array_elements(p_data->'records') loop
+       perform private.denmoku_save_karaoke(karaoke_item,uid);
+    end loop;
   elsif p_action='name_update' then
     note := btrim(p_data->>'name');
     if note is null or length(note) not between 1 and 30 then

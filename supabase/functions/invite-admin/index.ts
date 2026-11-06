@@ -42,17 +42,15 @@ Deno.serve(async request=>{
    .eq("email",email).eq("status","pending").gt("expires_at",new Date().toISOString()).maybeSingle();
  if(existing)return respond({error:"A pending invitation already exists"},409);
 
+ const {data:record,error:recordError}=await admin.from("admin_invites")
+   .insert({email,invited_by:user.id,status:"pending"}).select("id").single();
+ if(recordError||!record)return respond({error:"Could not reserve invitation"},409);
  const {data:invitation,error:inviteError}=await admin.auth.admin.inviteUserByEmail(email,{
    redirectTo:"https://y-tools.github.io/ken_ver1/auth-callback.html"
  });
- if(inviteError||!invitation?.user)return respond({
-   error:"Invitation failed. This address may already have an account."
- },400);
- const {error:recordError}=await admin.from("admin_invites")
-   .insert({email,invited_by:user.id,status:"pending"});
- if(recordError){
-   // No privilege is granted unless a verified invitation record exists.
-   return respond({error:"Invite email sent, but record creation failed; contact owner"},500);
+ if(inviteError||!invitation?.user){
+   await admin.from("admin_invites").update({status:"revoked"}).eq("id",record.id);
+   return respond({error:"Invitation failed. This address may already have an account."},400);
  }
  return respond({success:true,message:"Invitation sent"});
 });

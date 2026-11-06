@@ -596,7 +596,8 @@ async function attach(){
  }
  try{
   const auth=await shared.authenticate();if(!auth)return;
-  state={...initial,...await shared.snapshot()};
+  const firstSnapshot=await shared.snapshot();
+  state={...initial,...firstSnapshot};window.KEN_KARAOKE?.applyShared?.(firstSnapshot.karaoke||[]);
   if($("#signedInUser"))$("#signedInUser").textContent=auth.profile.display_name+" ("+auth.profile.role+")";
   if($("#logoutButton"))$("#logoutButton").addEventListener("click",()=>void shared.signOut());
   adminMode=params.get("admin")==="1"&&shared.isAdmin();
@@ -612,7 +613,7 @@ async function attach(){
       (data?.error?"招待に失敗しました: "+data.error:"管理者招待メールを送信しました");
     if(!error&&!data?.error)$("#inviteAdminEmail").value="";
   });
-  shared.subscribe(data=>{state={...initial,...data};if(!shared.isAdmin())adminMode=false;render();});
+  shared.subscribe(data=>{state={...initial,...data};window.KEN_KARAOKE?.applyShared?.(data.karaoke||[]);if(!shared.isAdmin())adminMode=false;render();});
  }catch(e){
   console.error("Denmoku shared bootstrap failed",e);
   document.querySelector("main").innerHTML='<section class="notice">共有データの取得に失敗しました。Supabaseの設定・権限・SQLを確認してください。</section>';return;

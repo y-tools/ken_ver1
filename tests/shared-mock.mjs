@@ -1,0 +1,87 @@
+import assert from "node:assert/strict";
+import { chromium } from "playwright";
+
+const origin="http://127.0.0.1:8765";
+const browser=await chromium.launch({headless:true});
+const errors=[];
+function mockSupabase(){
+ const role=window.__KEN_TEST_ROLE;
+ let data={role,userId:"11111111-1111-4111-8111-111111111111",name:"Ken",
+   version:0,streamLive:false,activeSessionId:null,requests:[],songs:[],sessions:[],chatNotes:[],karaoke:[]};
+ const client={
+  auth:{getUser:async()=>({data:{user:{id:data.userId,email:"test@example.com"}},error:null}),
+   signOut:async()=>({error:null})},
+  from:(name)=>({select:()=>({eq:()=>({single:async()=>({data:name==="profiles"?
+    {id:data.userId,display_name:"テスト利用者",role:data.role}:{version:data.version},error:null})})})}),
+  rpc:async(name,params)=>{
+   if(name==="denmoku_snapshot")return {data:JSON.parse(JSON.stringify(data)),error:null};
+   if(name==="denmoku_action"){
+    if(data.role==="listener"&&params.p_action!=="request_add")
+      return {data:null,error:{message:"Permission denied"}};
+    if(params.p_action==="stream_start"){
+      data.streamLive=true;data.activeSessionId=crypto.randomUUID();
+      data.sessions.push({id:data.activeSessionId,startedAt:Date.now(),endedAt:null,events:[]});
+    }
+    if(params.p_action==="stream_end"){
+      data.streamLive=false;data.sessions[data.sessions.length-1].endedAt=Date.now();
+      data.activeSessionId=null;
+    }
+    if(params.p_action==="request_add"){
+      if(!data.streamLive)return {data:null,error:{message:"OFF AIR"}};
+      data.requests.push({id:crypto.randomUUID(),title:params.p_data.title,
+        artist:params.p_data.artist,nickname:params.p_data.nickname,
+        status:"new",createdAt:Date.now(),message:""});
+    }
+    data.version++;return {data:data.version,error:null};
+   }
+   return {data:null,error:null};
+  },
+  channel:()=>({on(){return this},subscribe(){return this}}),
+  removeChannel(){},functions:{invoke:async()=>({data:{success:true},error:null})}
+ };
+ window.supabase={createClient:()=>client};
+}
+async function fixture(role){
+ const page=await browser.newPage({viewport:{width:1400,height:900}});
+ page.on("pageerror",e=>errors.push(e.message));
+ await page.route("**/config.js*",r=>r.fulfill({
+  contentType:"application/javascript",
+  body:"window.KEN_CONFIG={supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'sb_publishable_testing_only_0123456789012345',apiBaseUrl:''}"
+ }));
+ await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/**",r=>r.fulfill({
+  contentType:"application/javascript",
+  body:"window.__KEN_TEST_ROLE="+JSON.stringify(role)+";("+mockSupabase.toString()+")();"
+ }));
+ await page.goto(origin+"/",{waitUntil:"domcontentloaded",timeout:60000});
+ await page.locator("#listenerStreamLabel").waitFor({state:"visible",timeout:15000});
+ await page.waitForFunction(()=>Boolean(document.querySelector("#signedInUser")?.textContent?.trim()));
+ return page;
+}
+try{
+ const admin=await fixture("admin");
+ assert.equal(await admin.locator("#listenerStreamLabel").textContent(),"OFF AIR");
+ await admin.locator("#adminTitle").dblclick();
+ await admin.locator("#adminView").waitFor({state:"visible"});
+ await admin.locator("#startStream").click();
+ await admin.locator("#adminOnAir").waitFor({state:"visible"});
+ await admin.locator("#toListener").click();
+ assert.equal(await admin.locator("#listenerStreamLabel").textContent(),"ON AIR");
+ await admin.locator("#openRequestDialog").click();
+ await admin.locator("#reqTitle").fill("結合テスト曲");
+ await admin.locator("#reqArtist").fill("テスト歌手");
+ await admin.locator("#reqName").fill("テスト利用者");
+ await admin.locator("#sendRequest").click();
+ await admin.locator("#adminTitle").dblclick();
+ await admin.locator("#adminRequests").getByText("結合テスト曲").waitFor({state:"visible"});
+ await admin.close();
+ console.log("PASS admin stream start and shared request UI");
+
+ const listener=await fixture("listener");
+ await listener.locator("#adminTitle").dblclick();
+ assert.equal(await listener.locator("#adminView").isVisible(),false);
+ await listener.close();
+ console.log("PASS listener cannot open admin UI");
+ assert.deepEqual(errors,[],"No uncaught JS errors");
+}finally{
+ await browser.close();
+}

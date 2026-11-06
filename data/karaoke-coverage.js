@@ -22,7 +22,19 @@ try{
   }
  }
 }catch(error){console.warn("Karaoke verification data could not load",error);}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(all));return true;}catch(e){alert("照合情報を保存できませんでした。容量を確認してください。");return false;}}
+function save(){
+ if(window.KEN_SHARED?.configured)return true; // Shared mode writes via authenticated RPC.
+ try{localStorage.setItem(KEY,JSON.stringify(all));return true;}
+ catch(e){alert("照合情報を保存できませんでした。容量を確認してください。");return false;}
+}
+function applyShared(records){
+ if(!Array.isArray(records))return;
+ for(const key of Object.keys(all))delete all[key];
+ for(const row of records){
+  if(row?.title&&row?.artist)all[songKey(row.title,row.artist)]=row;
+ }
+ refresh();
+}
 const lookup=(title,artist)=>all[songKey(title,artist)]||null;
 const allowed=(url,provider)=>{
  if(!url)return "";
@@ -95,7 +107,7 @@ function updateCount(){
  const count=Object.keys(all).length;
  const verified=Object.values(all).filter(row=>row.dam?.status==="available"||row.joy?.status==="available").length;
  if($("#karaokeRecordCount"))
-  $("#karaokeRecordCount").textContent="照合記録 "+count+"曲 / 配信確認記録あり "+verified+"曲（この端末のみ）";
+  $("#karaokeRecordCount").textContent="照合記録 "+count+"曲 / 配信確認記録あり "+verified+"曲"+(window.KEN_SHARED?.configured?"（全端末共通）":"（この端末のみ）");
 }
 function refresh(){
  updateCount();
@@ -129,8 +141,14 @@ function validateAndSave({title,artist,dam,joy,notes},{deferSave=false,checkedDa
   delete all[key];
  else all[key]=record;
  if(!deferSave){
-  if(!save())throw Error("端末に保存できませんでした。");
-  refresh();
+  if(window.KEN_SHARED?.configured){
+   void window.KEN_SHARED.action("karaoke_upsert",{record}).then(()=>refresh())
+    .catch(e=>{alert("共有保存に失敗しました: "+e.message);void window.KEN_SHARED.refresh(true);});
+   refresh();
+  }else{
+   if(!save())throw Error("端末に保存できませんでした。");
+   refresh();
+  }
  }
 }
 function getFormRecord(){
@@ -198,7 +216,11 @@ async function importCsv(file){
    added++;
   }catch(error){skipped++;console.warn("Skipped karaoke CSV row:",error.message);}
  }
- if(!save())throw Error("CSVの記録を保存できませんでした。");
+ if(window.KEN_SHARED?.configured){
+  const values=Object.values(all);
+  for(let i=0;i<values.length;i+=100)
+   await window.KEN_SHARED.action("karaoke_import",{records:values.slice(i,i+100)});
+ }else if(!save())throw Error("CSVの記録を保存できませんでした。");
  refresh();
  return {added,skipped};
 }
@@ -207,7 +229,7 @@ function init(){
  for(const id of ["karaokeTitle","karaokeArtist"])$("#"+id).addEventListener("input",updateLookupLinks);
  form.addEventListener("submit",event=>{
   event.preventDefault();
-  try{validateAndSave(getFormRecord());alert("公式の確認結果をこの端末に保存しました。");}
+  try{validateAndSave(getFormRecord());alert(window.KEN_SHARED?.configured?"共有保存を送信しました。反映状態を確認してください。":"公式の確認結果をこの端末に保存しました。");}
   catch(e){alert(e.message);}
  });
  $("#karaokeClear").addEventListener("click",()=>setForm("",""));
@@ -237,5 +259,5 @@ function init(){
 }
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init);
 else init();
-window.KEN_KARAOKE=Object.freeze({render,lookup,siteSearch,official:SOURCES,importCsv});
+window.KEN_KARAOKE=Object.freeze({render,lookup,siteSearch,official:SOURCES,importCsv,applyShared});
 })();

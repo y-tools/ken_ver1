@@ -8,7 +8,7 @@
 <title>楽曲データベース編集 | Kenのデンモク</title>
 <link rel="stylesheet" href="./database-editor.css?v=20261106-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
-<script src="./database-editor.js?v=20261106-v1" defer></script>
+<script src="./database-editor.js?v=20261106-v2-totp" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -18,12 +18,13 @@
 <main>
 <section id="loginPanel" class="panel login-panel">
  <h2>データベース管理者ログイン</h2>
- <p>デンモクの簡易パスワードとは別の、VPS管理用パスワードでログインします。</p>
+ <p>デンモクと共通のパスワードに加え、認証アプリの6桁コードが必要です。</p>
  <form id="loginForm">
-   <label>管理者パスワード<input id="adminSecret" type="password" autocomplete="current-password" required minlength="8"></label>
+   <label>管理者パスワード<input id="adminSecret" type="password" autocomplete="current-password" required minlength="3"></label>
+   <label>認証アプリの6桁コード<input id="adminOtp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required placeholder="123456"></label>
    <button type="submit" class="primary">管理者ログイン</button>
  </form>
- <p class="hint">認証情報は端末内に保存せず、30分で失効します。VPS側で初期パスワードを設定してください。</p>
+ <p class="hint">初回はVPS側の認証アプリ用キーを登録してください。ログインは30分で失効し、パスワード・コードは保存しません。</p>
 </section>
 <div id="editorPanel" hidden>
  <div class="layout">

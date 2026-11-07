@@ -97,5 +97,5 @@ def stage_candidates(conn, batch_id: uuid.UUID, candidates: Iterable[Candidate],
                     counts["collision"] += 1
                 if result == "duplicate":
                     counts["duplicate"] += 1
-            cur.execute("SELECT t008_stage_audit(%s,%s::jsonb)",(batch_id,json.dumps(counts)))
+            # SQL gateway writes append-only intake audit entries; no direct audit EXECUTE.
     return counts

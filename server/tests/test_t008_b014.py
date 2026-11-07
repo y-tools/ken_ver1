@@ -142,6 +142,21 @@ class T008B014Tests(unittest.TestCase):
                 self.assertEqual(c.fetchone()[0],"verified")
             con.commit()
 
+    def test_reviewer_role_denied_bulk_verification(self):
+        with psycopg.connect(DSN) as con:
+            with con.cursor() as c:
+                c.execute("SET ROLE t008_reviewer")
+                c.execute("""SELECT has_function_privilege(current_user,
+                   't008_review_mark(uuid,text,boolean)','EXECUTE')""")
+                self.assertFalse(c.fetchone()[0])
+                c.execute("""SELECT has_function_privilege(current_user,
+                   't008_review_evidence(bigint,text)','EXECUTE')""")
+                self.assertTrue(c.fetchone()[0])
+                c.execute("""SELECT has_function_privilege(current_user,
+                   't008_resolve_issue(bigint,text)','EXECUTE')""")
+                self.assertTrue(c.fetchone()[0])
+            con.rollback()
+
     def test_policy_insert_before_intake_rejects_stale_version(self):
         source="b014_"+uuid.uuid4().hex
         policy=replace(self.policy,source_code=source)

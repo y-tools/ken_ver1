@@ -53,7 +53,7 @@ def stage_candidates(conn, batch_id: uuid.UUID, candidates: Iterable[Candidate],
     with conn.cursor() as cur:
         cur.execute("""SELECT id,content_license,access_terms,allowed_fields,
                       automated_access_allowed,storage_allowed,publication_allowed,
-                      reviewed_at,expires_at
+                      reviewed_at,expires_at,policy_version
                       FROM t008_source_policies
                       WHERE source_code=%s AND acquisition_method=%s
                       ORDER BY policy_version DESC LIMIT 1""",
@@ -63,7 +63,7 @@ def stage_candidates(conn, batch_id: uuid.UUID, candidates: Iterable[Candidate],
             raise PermissionError("T008 source policy is not provisioned")
         policy_id=row[0]
         stored=SourcePolicy(policy.source_code,policy.method,row[1],row[2],
-                frozenset(row[3]),row[4],row[5],row[6],True,row[7],row[8])
+                frozenset(row[3]),row[4],row[5],row[6],True,row[7],row[8],row[9])
         if stored != policy or not acquisition_allowed(stored,policy.method,{"title","artist"},now):
             raise PermissionError("T008 source policy is invalid, stale or differs")
     counts = {"inserted": 0, "duplicate": 0, "collision": 0, "rejected": 0}

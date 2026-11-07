@@ -229,9 +229,26 @@ BEGIN
  END LOOP;
 END $$;
 
+-- Append-only approval revisions allow reapproval after refreshed evidence,
+-- but never for a preview already published or permanently revoked.
+CREATE TABLE t008_approval_revisions (
+ candidate_id UUID NOT NULL REFERENCES t008_candidates(id),
+ revision INTEGER NOT NULL CHECK(revision > 0),
+ content_digest TEXT NOT NULL,
+ proof_digest TEXT NOT NULL,
+ approved_by TEXT NOT NULL,
+ approved_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+ note TEXT NOT NULL,
+ PRIMARY KEY(candidate_id,revision)
+);
+CREATE TRIGGER t008_approval_revision_immutable
+BEFORE UPDATE OR DELETE ON t008_approval_revisions
+FOR EACH ROW EXECUTE FUNCTION t008_immutable_rows();
+
 CREATE OR REPLACE FUNCTION t008_approve_candidate(p_candidate UUID,p_note TEXT DEFAULT '')
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
-DECLARE c t008_candidates%ROWTYPE;
+DECLARE c t008_candidates%ROWTYPE; latest t008_approval_revisions%ROWTYPE;
+        next_revision integer; cd text; ed text;
 BEGIN
  SELECT * INTO STRICT c FROM t008_candidates WHERE id=p_candidate FOR UPDATE;
  PERFORM t008_lock_candidate_sources(p_candidate);
@@ -239,21 +256,34 @@ BEGIN
  IF EXISTS(SELECT 1 FROM t008_publication_preview WHERE candidate_id=p_candidate) THEN
   RAISE EXCEPTION 'T008 preview already published or revoked';
  END IF;
- INSERT INTO t008_approvals(candidate_id,content_digest,proof_digest,approved_by,note)
- VALUES(p_candidate,t008_candidate_digest(p_candidate),
-        t008_proof_digest(p_candidate),t008_actor(),p_note);
+ cd:=t008_candidate_digest(p_candidate);
+ ed:=t008_proof_digest(p_candidate);
+ SELECT * INTO latest FROM t008_approval_revisions
+ WHERE candidate_id=p_candidate ORDER BY revision DESC LIMIT 1;
+ IF FOUND AND latest.content_digest=cd AND latest.proof_digest=ed THEN
+   RAISE EXCEPTION 'T008 approval for this exact evidence already exists';
+ END IF;
+ next_revision:=coalesce(latest.revision,0)+1;
+ IF next_revision=1 THEN
+  INSERT INTO t008_approvals(candidate_id,content_digest,proof_digest,approved_by,note)
+  VALUES(p_candidate,cd,ed,t008_actor(),p_note);
+ END IF;
+ INSERT INTO t008_approval_revisions
+ (candidate_id,revision,content_digest,proof_digest,approved_by,note)
+ VALUES(p_candidate,next_revision,cd,ed,t008_actor(),p_note);
  INSERT INTO t008_audit(batch_id,action,details)
- VALUES(c.batch_id,'approved',jsonb_build_object('actor',t008_actor(),'candidate_id',p_candidate));
+ VALUES(c.batch_id,'approved',jsonb_build_object('actor',t008_actor(),
+       'candidate_id',p_candidate,'revision',next_revision));
 END $$;
 
 CREATE OR REPLACE FUNCTION t008_publish_preview(p_candidate UUID,p_fail BOOLEAN DEFAULT FALSE)
 RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,public AS $$
-DECLARE c t008_candidates%ROWTYPE; a t008_approvals%ROWTYPE; old_state TEXT;
+DECLARE c t008_candidates%ROWTYPE; a t008_approval_revisions%ROWTYPE; old_state TEXT;
 BEGIN
  SELECT * INTO STRICT c FROM t008_candidates WHERE id=p_candidate FOR UPDATE;
  PERFORM t008_lock_candidate_sources(p_candidate);
  PERFORM t008_check_publishable(p_candidate);
- SELECT * INTO a FROM t008_approvals WHERE candidate_id=p_candidate;
+ SELECT * INTO a FROM t008_approval_revisions WHERE candidate_id=p_candidate\n ORDER BY revision DESC LIMIT 1;
  IF NOT FOUND OR a.content_digest IS DISTINCT FROM t008_candidate_digest(p_candidate)
  OR a.proof_digest IS DISTINCT FROM t008_proof_digest(p_candidate)
  THEN RAISE EXCEPTION 'T008 approval missing or stale'; END IF;

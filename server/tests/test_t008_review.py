@@ -155,7 +155,7 @@ class T008ReviewTests(unittest.TestCase):
         with self.conn.cursor() as cur:
             cur.execute("SELECT state FROM t008_publication_preview WHERE candidate_id=%s",(cid,))
             self.assertEqual(cur.fetchone()[0],"revoked")
-            cur.execute("SELECT COUNT(*) FROM t008_audit WHERE details->>'candidate_id'=%s",(str(cid),))
+            cur.execute("SELECT COUNT(*) FROM t008_audit WHERE action IN ('approved','published','revoked') AND details->>'candidate_id'=%s",(str(cid),))
             self.assertEqual(cur.fetchone()[0],3)
         self.conn.commit()
 

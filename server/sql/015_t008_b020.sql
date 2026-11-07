@@ -3,7 +3,7 @@ BEGIN;
 DO $$BEGIN IF current_database() NOT IN ('ken_test','t008_test') THEN RAISE EXCEPTION 'T008 disposable only'; END IF; END$$;
 -- Upgrade populated 014 schemas without losing preview IDs/history. Reject corrupt
 -- preexisting non-null keys instead of silently rewriting them.
-DO $BEGIN
+DO $$BEGIN
  IF EXISTS(
    SELECT 1 FROM t008_publication_preview p
    LEFT JOIN t008_candidates c ON c.id=p.candidate_id
@@ -12,7 +12,7 @@ DO $BEGIN
      (p.entity_type IS NOT NULL AND p.entity_type IS DISTINCT FROM c.external_entity_type) OR
      (p.external_id IS NOT NULL AND p.external_id IS DISTINCT FROM c.external_id)
  ) THEN RAISE EXCEPTION 'T008 preview key mismatch: manual reconciliation required'; END IF;
-END$;
+END$$;
 UPDATE t008_publication_preview p
  SET source_code=c.external_source,
      entity_type=c.external_entity_type,

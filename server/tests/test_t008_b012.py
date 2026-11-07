@@ -375,5 +375,26 @@ class T008IntegrityTests(unittest.TestCase):
                 cur.execute("SELECT count(*) FROM t008_candidates WHERE batch_id=%s",(batch,))
                 self.assertEqual(cur.fetchone()[0],1)
 
+
+    @unittest.skipUnless(LOGIN,"real temporary stage login required")
+    def test_nonowner_import_gateway_and_audit_tampering_denied(self):
+        key="real-role-"+uuid.uuid4().hex
+        with psycopg.connect(LOGIN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SET ROLE t008_stage_writer")
+            conn.commit()
+            result=stage_candidates(conn,uuid.uuid4(),[Candidate("Role Gateway","Singer",key)],self.policy)
+            conn.commit()
+            self.assertEqual(result["inserted"],1)
+            with self.assertRaises(errors.InsufficientPrivilege):
+                with conn.transaction():
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT t008_stage_audit(%s,%s::jsonb)",
+                                    (uuid.uuid4(),'{"forged":"yes"}'))
+            conn.rollback()
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM t008_intake_events WHERE external_id=%s",(key,))
+                self.assertEqual(cur.fetchone()[0],1)
+
 if __name__=="__main__":
     unittest.main()

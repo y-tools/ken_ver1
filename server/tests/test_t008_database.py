@@ -32,7 +32,8 @@ class T008DatabaseTests(unittest.TestCase):
 
     def _count(self, table, batch):
         with self.conn.cursor() as cur:
-            cur.execute("SELECT COUNT(*) FROM "+table+" WHERE batch_id=%s",(batch,))
+            column = "id" if table == "t008_batches" else "batch_id"
+            cur.execute("SELECT COUNT(*) FROM "+table+" WHERE "+column+"=%s",(batch,))
             result=cur.fetchone()[0]
         self.conn.commit()
         return result

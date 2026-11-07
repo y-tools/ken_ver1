@@ -81,3 +81,18 @@ Reviewer status changes use `t008_review_mark(candidate_id, reason, verified)`. 
 ### Remaining release blockers
 
 Production actor identity/credentials, DB default privileges, untrusted-source rights proof, multi-connection recovery under real VPS limits, restoration rehearsal, API compatibility and stable legacy IDs are unverified. MD5 approval digests remain test-only integrity hints; deployable audit integrity needs a stronger, separately controlled design. Draft PR #3 stays unmerged.
+
+
+## B-014 review: disposable validation only (2026-11-07)
+
+- `sql/010_t008_b014.sql` requires an explicit `t008_policy_authorizations` row referencing a particular approved source/method/policy version. Fictional test-only source approvals are seeded ONLY in the disposable CI DB; real external sources are never implicitly approved. New intake takes the same advisory lock as policy-version insertion, preventing a transaction from committing intake under a superseded policy version.
+- A revoked preview stays permanently revoked; repeated identical acquisition creates a fresh candidate ID, `t008_reapplications` links the new candidate to its revoked predecessor, and a new review-queue item is required. Existing song IDs and production tables remain unchanged.
+- `sql/011_t008_item_review.sql` provides individual evidence and issue review decisions, with reason and mapped reviewer ID for a *unique CI login*. The old bulk helper remains accessible only to the test database owner; the reviewer role cannot invoke it. Production needs real, distinct authenticated reviewer logins or a secure principal-binding service before this can be used.
+- `tests/test_t008_b014.py`: unknown or unapproved source policy SQL rejection; revoked candidate reapplication and ancestry preservation; item-level issue decisions; concurrent policy update versus stage intake; reviewer role's bulk-call refusal.
+- `tests/test_t008_b014_load.py`: repeat 20 and 50 logical requests three times with CI-only maximum of ten simultaneous DB connections. These figures are **not** VPS throughput predictions.
+
+### VPS inspection blocker
+`t008_inventory_readonly.py` has been tested with synthetic/local PostgreSQL and static API code, but **no authorized direct PostgreSQL read-only connection to the real VPS is present in this PR/CI environment**. Do not connect via production credentials, escalate permissions, download user records, or perform a destructive migration. When an operator supplies an approved read-only endpoint and the target environment is verified, run a secret-free aggregate survey and capture only anonymized results. Disk usage from this tool is the current working filesystem, not necessarily the PostgreSQL volume. Backups and API compatibility require separate verification.
+
+### Security limitations
+CI fixture policy authorization is not a real license review; sample source values are test-only. A database owner/superuser can bypass database role and trigger enforcement; full production hardening requires separate owner/service identities, tamper-resistant logs and independent audit. Draft PR #3 remains unmerged. Never install disposable-only SQL migrations on VPS.

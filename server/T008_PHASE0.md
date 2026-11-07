@@ -96,3 +96,13 @@ Production actor identity/credentials, DB default privileges, untrusted-source r
 
 ### Security limitations
 CI fixture policy authorization is not a real license review; sample source values are test-only. A database owner/superuser can bypass database role and trigger enforcement; full production hardening requires separate owner/service identities, tamper-resistant logs and independent audit. Draft PR #3 remains unmerged. Never install disposable-only SQL migrations on VPS.
+
+
+## B-016 remediation (synthetic disposable PostgreSQL only)
+
+- `sql/012_t008_b016.sql` replaces stage intake with a consistent acquisition ordering: external-ID advisory lock, pre-existing candidate row lock (if any), source/method policy advisory lock, then external-claim row and evidence. Approval/publish already lock candidate before policy; this avoids the previously observed lock-order inversion. Explicit transaction timeouts remain mandatory.
+- If an existing candidate is already **published** and the same source/version/content is reacquired, only the acquisition event and audit entry are added. Existing published proofs are never modified, avoiding the evidence trigger rejection. Changed content or policy version opens a fresh, independently reviewable candidate with a `t008_publication_refreshes` link; it is **not automatically public**. If the current candidate was **revoked**, a fresh candidate linked by `t008_reapplications` is created, keeping each prior revoked ID and audit.
+- `sql/013_t008_b016_review.sql` locks the candidate, then the issue row, **rechecks** that it is open, and conditionally transitions it to resolved. Another concurrent resolver is refused, so at most one resolution decision should be persisted.
+- `tests/test_t008_b016.py` exercises published same-version replay, refreshed-policy re-registration, two consecutive permanent revocations/reapplications, concurrent double resolution, dedicated non-owner reviewer session identity, and stage-versus-publish concurrency. This is not a production authentication integration.
+- All real VPS inventory, backup restore, API compatibility, and production connection-capacity investigations remain **unperformed**. There is no authorized least-privilege PostgreSQL read-only route or confirmed production DB identity available to this CI execution. Never substitute existing desktop devices' possible SSH credentials, infer connection strings or escalate access.
+- Draft PR #3 stays unmerged; the new SQL files are forbidden on non-disposable DBs. Preserve the legacy song IDs and public API unchanged.

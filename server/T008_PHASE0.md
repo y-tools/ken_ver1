@@ -1,37 +1,36 @@
-# T008 Phase 0 — isolated safety prototype
+# T008 Phase 0 — B-006 review candidate (disposable environment only)
 
-No VPS or production database changed. Legacy importer and search API remain untouched.
+**Never deploy this PR to the production VPS.** Existing importer, API, legacy schema and static catalog are unchanged. No new data is promoted to public search.
 
-## Files
-- `sql/004_t008_staging.sql`: additive staging-only schema, no legacy migrations or promotion path
-- `t008_policy.py`: fail-closed acquisition and publication policy, conservative identity classifier
-- `tests/test_t008_policy.py`: fourteen offline safety unit tests
+## Components
 
-## Run offline policy tests
-```sh
-python -m unittest server.tests.test_t008_policy -v
-```
+- `sql/004_t008_staging.sql`: additive staging-only PostgreSQL schema.
+- `sql/005_t008_constraints.sql`: evidence-policy FK, same-candidate ancestry FK, per-batch idempotency indexes and evidence-source trigger.
+- `t008_policy.py`: deny unknown/blank/expired rights, unknown method, empty field list, missing evidence. Recording ID matching also requires title/artist agreement and identical source namespace.
+- `t008_stage_import.py`: synthetic-fixture-only importer; checks rights before DB writes and allows only databases named `ken_test`/`t008_test`. Does not write to legacy tables.
+- `tests/test_t008_policy.py` and `tests/test_t008_database.py`: policy regressions and 500 synthetic-row integration tests.
+- `../.github/workflows/vps-db-tests.yml`: disposable PostgreSQL 16 execution.
 
-## Run SQL only on a disposable PostgreSQL 16 database
-```sh
-psql -v ON_ERROR_STOP=1 -d disposable_ken_test -f server/sql/004_t008_staging.sql
-```
-The DDL has NOT yet been executed or verified in PostgreSQL.
+## CI and measurements
 
-## Safety boundaries and existing behavior
-- `server/import_catalog.py` still writes directly into legacy tables and silently ignores name-key conflicts. **Do not run it with a production DSN**.
-- `server/api/main.py` still searches legacy rows without a publication filter. The new `t008_candidates` table is not included in those queries.
-- Legacy `songs` still has `UNIQUE(title_key, primary_artist_id)`. This branch deliberately does not remove it before legacy-row provenance and rollback planning.
-- No `t008_candidates` row is automatically promoted to legacy `songs`.
-- Source policies must be explicitly reviewed; unknown permission denies automated collection and publication.
-- Even equal recording IDs only produce `link_recording`, never deletion or merge of Denmok song IDs.
+CI applies 001, 004 and 005 SQL to GitHub Actions disposable database, uses a fictional local data source, then runs all server tests. See GitHub Actions for actual pass/fail logs; do not infer results from file creation.
 
-## Next gates before a production change
-1. Read-only VPS inventory (DB engine, constraints, row counts, API responses, storage and service load).
-2. Disposable Postgres integration and 500 synthetic row test: staging, collisions, query isolation, retry, batch rollback.
-3. Field-specific evidence, source hash and transform-chain validation during actual ingestion.
-4. Promotion service with an explicit approval identity, durable audit trail, idempotency key and rollback.
-5. Baseline p50/p95/p99 and existing API compatibility; backups plus restore test.
-6. Existing static GitHub Pages catalogue exposure must be assessed independently of VPS search.
+`t008_stage_import.py` is deliberately a constrained development fixture, **not** a production-approved acquisition/publishing pipeline. In particular it is not authorized to fetch any external catalog or promote data. The existing import_catalog.py must not run against a production DSN under this PR.
 
-**Status:** implementation prototype only; no claim of 500-row DB test or production safety approval.
+## Rights and provenance caveats
+
+- The policy gate is strict, with time-bound review and permitted-field evidence.
+- The test importer writes source evidence with hashes but does not implement a license provenance UI or verify a real-world supplier agreement.
+- DB constraints validate policy references and per-candidate evidence links, but transitive ancestry cycle proofs and production access-role grants need hardening. `005` checks immediate parent ordering in the trigger.
+- Source authorization is evaluated in the Python stage importer, **not** universally for arbitrary direct SQL writes. Production protection will require database roles, restricted grants, and a controlled public promotion procedure.
+
+## Required gates before merge/deployment
+
+1. All CI tests green including synthetic 500-row, replay and rollback.
+2. Verify role-isolation and forbidden SQL writes using a disposable DB non-owner.
+3. Verify inter-batch external ID collisions, fake source terms and lineage cycles.
+4. Implement explicit approval-based promotion, audited rollback and no-merge guarantees.
+5. Read-only real VPS inventory; real DB snapshot and restoration test; API compatibility and p50/p95/p99.
+6. Review static GitHub Pages catalog separately; no blanket claim of 2 million verified songs.
+
+**Merge and production deployment remain on hold.**

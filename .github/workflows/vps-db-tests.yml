@@ -30,6 +30,8 @@ jobs:
       KEN_DATABASE_URL: postgresql://postgres:test@127.0.0.1:5432/ken_test
       KEN_IMPORT_DATABASE_URL: postgresql://postgres:test@127.0.0.1:5432/ken_test
       KEN_ALLOWED_ORIGINS: https://y-tools.github.io
+      KEN_T008_TEST_DATABASE_URL: postgresql://postgres:test@127.0.0.1:5432/ken_test
+      KEN_T008_ALLOW_DISPOSABLE: "YES"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -45,6 +47,10 @@ jobs:
           node --check data/vps-search.js
       - name: Apply database schema to disposable PostgreSQL
         run: psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/001_init.sql
+      - name: Apply T008 isolated staging and hardening DDL
+        run: |
+          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/004_t008_staging.sql
+          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/005_t008_constraints.sql
       - name: Import one small source file
         run: python server/import_catalog.py --dataset japanese --max-files 1 --batch-size 500
       - name: Initialize separate database editor audit schema

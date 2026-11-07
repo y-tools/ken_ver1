@@ -85,10 +85,10 @@ class B024Tests(unittest.TestCase):
         artist=prefix+" ensemble"
         with psycopg.connect(DSN) as conn:
             artist_id=conn.execute("""INSERT INTO artists(name,name_key)
-                VALUES(%s,%s) RETURNING id""",(artist,artist)).fetchone()[0]
+                VALUES(%s,%s) RETURNING id""",(artist,artist.replace(' ',''))).fetchone()[0]
             song_id=conn.execute("""INSERT INTO songs(title,title_key,primary_artist_id,
                 release_year,release_precision) VALUES(%s,%s,%s,2024,'year')
-                RETURNING id""",(title,title,artist_id)).fetchone()[0]
+                RETURNING id""",(title,title.replace(' ',''),artist_id)).fetchone()[0]
             conn.execute("""INSERT INTO song_names(song_id,kind,value,search_key,verification)
                  VALUES(%s,'hiragana','しゃどうてすと','しゃどうてすと','estimated')""",(song_id,))
             conn.execute("""INSERT INTO song_names(song_id,kind,value,search_key,verification)

@@ -51,6 +51,8 @@ jobs:
         run: |
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/004_t008_staging.sql
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/005_t008_constraints.sql
+          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/006_t008_review.sql
+          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/007_t008_roles_test.sql
       - name: Import one small source file
         run: python server/import_catalog.py --dataset japanese --max-files 1 --batch-size 500
       - name: Initialize separate database editor audit schema

@@ -55,6 +55,9 @@ BEGIN
  OR c.external_entity_type IS DISTINCT FROM other.external_entity_type
  OR c.external_id IS DISTINCT FROM other.external_id THEN
  RAISE EXCEPTION 'T008 identity decision requires the same external key'; END IF;
+ -- Identity decisions share the external-key lock used by stage/publish/revoke.
+ PERFORM pg_advisory_xact_lock(hashtextextended(
+ 't008:claim:'||c.external_source||':'||c.external_entity_type||':'||c.external_id,0));
  -- Lock two candidate rows in deterministic order.
  PERFORM 1 FROM t008_candidates WHERE id IN(p_candidate,p_compared) ORDER BY id FOR UPDATE;
  IF EXISTS(SELECT 1 FROM t008_publication_preview WHERE candidate_id=p_candidate)

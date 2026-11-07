@@ -25,3 +25,8 @@ Status: proposal for B review; no production migration. 2026-11-07.
 - Ambiguous conflict: record both claims, no silent overwrite. Source-approved acquisition does not imply publication authorization.
 ## Acceptance
 All 30 fixture cases preserve public song IDs; no erroneous merges; alias-language fields and date semantics independently validated; unknown never guessed. This is a vocabulary/specification, not a DB schema change or claim that current schema has all proposed columns.
+
+## B-026-01: legacy vs new-candidate estimated readings
+- Existing GET /api/v1/search (server/api/main.py) returns estimated names in the existing "verified_or_estimated" shape and adds *Verification fields; this behavior MUST remain unchanged for G1/G3 compatibility.
+- New T008 staged candidates MUST NOT graduate an estimated title/artist reading into verified publication or present it as source-confirmed. Unknown new aliases remain NULL / absent.
+- Any future unified API/read layer needs explicit G3/G5 approval, field-wise provenance, client compatibility and public rights review; this document does not authorize a breaking change to legacy output.

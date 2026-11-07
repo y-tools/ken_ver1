@@ -269,6 +269,91 @@ class B018ActivePublicationTests(unittest.TestCase):
             cur.execute("SELECT count(*) FROM t008_publication_preview WHERE external_id=%s AND state='published'",(key,))
             self.assertEqual(cur.fetchone()[0],0)
 
+    def test_new_policy_denial_races_with_pending_promotion(self):
+        source="b014_b018_"+uuid.uuid4().hex
+        policy=self.policy.__class__(source,self.policy.method,self.policy.content_license,
+            self.policy.access_terms,self.policy.allowed_fields,
+            self.policy.automated_access_allowed,self.policy.storage_allowed,
+            self.policy.publication_allowed,self.policy.reviewed,
+            self.policy.reviewed_at,self.policy.expires_at)
+        key=uuid.uuid4().hex
+        with psycopg.connect(DSN) as conn:
+            conn.execute("""INSERT INTO t008_source_policies
+                 (source_code,acquisition_method,content_license,access_terms,allowed_fields,
+                  automated_access_allowed,storage_allowed,publication_allowed,reviewed_at,
+                  expires_at,policy_version)
+                 VALUES(%s,'local_dump','test-only','fixture approved',%s,true,true,true,%s,%s,1)""",
+                 (source,["title","artist"],policy.reviewed_at,policy.expires_at))
+            conn.commit()
+        def add(title):
+            batch=uuid.uuid4()
+            with psycopg.connect(DSN) as conn:
+                stage_candidates(conn,batch,[Candidate(title,"Singer",key)],policy)
+                conn.commit()
+                row=conn.execute("SELECT id FROM t008_candidates WHERE batch_id=%s",(batch,)).fetchone()
+                return row[0]
+        a=add("Original")
+        with psycopg.connect(DSN) as conn:
+            conn.execute("SELECT t008_review_mark(%s,'fixture review completed',true)",(a,))
+            conn.execute("SELECT t008_approve_candidate(%s,'fixture A')",(a,))
+            conn.execute("SELECT t008_publish_preview(%s)",(a,))
+            conn.commit()
+        b=add("New version")
+        with psycopg.connect(DSN) as conn:
+            cur=conn.cursor()
+            cur.execute("SELECT id FROM t008_evidence WHERE candidate_id=%s ORDER BY id",(b,))
+            ids=[r[0] for r in cur.fetchall()]
+            for eid in ids:
+                cur.execute("SELECT t008_review_evidence(%s,'validated independently')",(eid,))
+            cur.execute("SELECT id FROM t008_review_queue WHERE candidate_id=%s",(b,))
+            issue=cur.fetchone()[0]
+            cur.execute("SELECT t008_resolve_issue(%s,'same external ID reviewed')",(issue,))
+            cur.execute("SELECT t008_finalize_review(%s,'finished proof review')",(b,))
+            cur.execute("SELECT t008_identity_decide(%s,%s,%s,%s,'same_recording',%s)",
+                (b,a,ids[0],ids[1],"Compared independently as equivalent synthetic recording"))
+            cur.execute("SELECT t008_approve_candidate(%s,'approved pending version')",(b,))
+            conn.commit()
+        entered=Event()
+        release=Event()
+        def change_policy():
+            with psycopg.connect(DSN) as conn:
+                with conn.transaction():
+                    conn.execute("""INSERT INTO t008_source_policies
+                        (source_code,acquisition_method,content_license,access_terms,
+                         allowed_fields,automated_access_allowed,storage_allowed,
+                         publication_allowed,reviewed_at,expires_at,policy_version)
+                        VALUES(%s,'local_dump','test-only','fixture approved',
+                         %s,true,true,false,%s,%s,2)""",
+                         (source,["title","artist"],policy.reviewed_at,policy.expires_at))
+                    entered.set()
+                    if not release.wait(7):
+                        raise TimeoutError("policy synchronization")
+        def attempt_publish():
+            with psycopg.connect(DSN) as conn:
+                conn.execute("SET lock_timeout='5s'")
+                conn.commit()
+                try:
+                    conn.execute("SELECT t008_publish_preview(%s)",(b,))
+                    conn.commit()
+                    return "published"
+                except errors.RaiseException:
+                    conn.rollback()
+                    return "rejected"
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first=pool.submit(change_policy)
+            self.assertTrue(entered.wait(7))
+            second=pool.submit(attempt_publish)
+            time.sleep(.1)
+            release.set()
+            first.result(timeout=9)
+            self.assertEqual(second.result(timeout=9),"rejected")
+        with psycopg.connect(DSN) as conn:
+            cur=conn.cursor()
+            cur.execute("SELECT candidate_id FROM t008_active_publications WHERE source_code=%s AND external_id=%s",(source,key))
+            self.assertEqual(cur.fetchone()[0],a)
+            cur.execute("SELECT COUNT(*) FROM t008_publication_preview WHERE source_code=%s AND external_id=%s AND state='published'",(source,key))
+            self.assertEqual(cur.fetchone()[0],1)
+
     def test_direct_sql_duplicate_published_row_blocked(self):
         key=uuid.uuid4().hex
         a=self.initial_publish(key)

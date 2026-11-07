@@ -198,5 +198,94 @@ class B018ActivePublicationTests(unittest.TestCase):
             cur.execute("SELECT COUNT(*) FROM t008_publication_preview WHERE external_id=%s AND state='published'",(key,))
             self.assertEqual(cur.fetchone()[0],1)
 
+
+    def test_two_competing_promotion_candidates_only_one_wins(self):
+        key=uuid.uuid4().hex
+        a=self.initial_publish(key)
+        _,b=self.stage(key,"Updated Title B")
+        _,c=self.stage(key,"Updated Title C")
+        for candidate in (b,c):
+            proofs=self.review_candidate(candidate)
+            self.decide(candidate,a,"same_recording",proofs)
+            with psycopg.connect(DSN) as conn:
+                conn.execute("SELECT t008_approve_candidate(%s,'conflicting concurrent approval')",(candidate,))
+                conn.commit()
+        gate=Event()
+        def promote(candidate):
+            with psycopg.connect(DSN) as conn:
+                conn.execute("SET lock_timeout='5s'")
+                conn.commit()
+                gate.wait(5)
+                try:
+                    result=conn.execute("SELECT t008_publish_preview(%s)",(candidate,)).fetchone()[0]
+                    conn.commit()
+                    return result
+                except errors.RaiseException:
+                    conn.rollback()
+                    return "rejected"
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            f1=executor.submit(promote,b)
+            f2=executor.submit(promote,c)
+            gate.set()
+            outcomes=[f1.result(timeout=9),f2.result(timeout=9)]
+        self.assertEqual(outcomes.count("published"),1)
+        self.assertEqual(outcomes.count("rejected"),1)
+        with psycopg.connect(DSN) as conn:
+            cur=conn.cursor()
+            cur.execute("SELECT candidate_id FROM t008_active_publications WHERE external_id=%s AND source_code=%s",(key,self.source))
+            winner=cur.fetchone()[0]
+            self.assertIn(winner,(b,c))
+            cur.execute("SELECT count(*) FROM t008_publication_preview WHERE external_id=%s AND state='published'",(key,))
+            self.assertEqual(cur.fetchone()[0],1)
+            cur.execute("SELECT state FROM t008_publication_preview WHERE candidate_id=%s",(a,))
+            self.assertEqual(cur.fetchone()[0],"superseded")
+
+    def test_revoke_races_with_reacquisition(self):
+        key=uuid.uuid4().hex
+        a=self.initial_publish(key)
+        gate=Event()
+        def revoke():
+            with psycopg.connect(DSN) as conn:
+                gate.wait(5)
+                value=conn.execute("SELECT t008_revoke_preview(%s)",(a,)).fetchone()[0]
+                conn.commit()
+                return value
+        def ingest():
+            gate.wait(5)
+            return self.stage(key,"Song A")
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            r=executor.submit(revoke)
+            i=executor.submit(ingest)
+            gate.set()
+            self.assertEqual(r.result(timeout=9),"revoked")
+            counts,new=i.result(timeout=9)
+            self.assertTrue(counts["inserted"]+counts["duplicate"]>=1)
+        with psycopg.connect(DSN) as conn:
+            cur=conn.cursor()
+            cur.execute("SELECT count(*) FROM t008_active_publications WHERE external_id=%s",(key,))
+            self.assertEqual(cur.fetchone()[0],0)
+            cur.execute("SELECT state FROM t008_publication_preview WHERE candidate_id=%s",(a,))
+            self.assertEqual(cur.fetchone()[0],"revoked")
+            cur.execute("SELECT count(*) FROM t008_publication_preview WHERE external_id=%s AND state='published'",(key,))
+            self.assertEqual(cur.fetchone()[0],0)
+
+    def test_direct_sql_duplicate_published_row_blocked(self):
+        key=uuid.uuid4().hex
+        a=self.initial_publish(key)
+        _,b=self.stage(key,"Independent Title")
+        with psycopg.connect(DSN) as conn:
+            with self.assertRaises(errors.UniqueViolation):
+                with conn.transaction():
+                    cur=conn.cursor()
+                    cur.execute("""INSERT INTO t008_publication_preview
+                     (candidate_id,title,artist,approved_by,approved_at,proof_digest,
+                     source_code,entity_type,external_id)
+                     VALUES(%s,'Bypass','Singer','fixture',now(),'fake',%s,'recording',%s)""",
+                     (b,self.source,key))
+            conn.rollback()
+            cur=conn.cursor()
+            cur.execute("SELECT candidate_id FROM t008_active_publications WHERE external_id=%s AND source_code=%s",(key,self.source))
+            self.assertEqual(cur.fetchone()[0],a)
+
 if __name__=="__main__":
     unittest.main()

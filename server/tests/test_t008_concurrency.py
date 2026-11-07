@@ -120,8 +120,7 @@ class T008ConcurrencyTests(unittest.TestCase):
         self.db.commit()
         _,cid=self.stage("Publish",uuid.uuid4().hex,pol)
         with self.db.cursor() as cur:
-            cur.execute("UPDATE t008_candidates SET verification='verified' WHERE id=%s",(cid,))
-            cur.execute("UPDATE t008_evidence SET verification='verified' WHERE candidate_id=%s",(cid,))
+            cur.execute("SELECT t008_review_mark(%s,'fixture evidence verification',true)",(cid,))
             cur.execute("SELECT t008_approve_candidate(%s,'test')",(cid,))
         self.db.commit()
         return pol,cid

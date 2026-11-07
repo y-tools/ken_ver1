@@ -55,6 +55,7 @@ jobs:
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/006_t008_review.sql
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/007_t008_roles_test.sql
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/008_t008_concurrency.sql
+          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/009_t008_integrity.sql
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_stage_login LOGIN PASSWORD 't008-ephemeral-test'; GRANT t008_stage_writer TO t008_stage_login"
       - name: Import one small source file
         run: python server/import_catalog.py --dataset japanese --max-files 1 --batch-size 500

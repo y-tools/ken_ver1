@@ -133,6 +133,47 @@ class B022Tests(unittest.TestCase):
             self.assertEqual(con.execute("SELECT count(*) FROM t008_active_publications WHERE candidate_id=%s",(cid,)).fetchone()[0],0)
             self.assertEqual(con.execute("SELECT count(*) FROM t008_publication_history WHERE candidate_id=%s AND action='revoke'",(cid,)).fetchone()[0],1)
 
+    def test_reauthorization_races_with_reconcile_but_old_proof_not_reused(self):
+        policy,_=self.fixture()
+        cid,key=self.published(policy)
+        entered=Event();release=Event()
+        def deny_then_reauthorize():
+            with psycopg.connect(DSN) as con:
+                with con.transaction():
+                    for revision,allowed in ((2,False),(3,True)):
+                        con.execute("""INSERT INTO t008_source_policies(source_code,acquisition_method,
+                            content_license,access_terms,allowed_fields,
+                            automated_access_allowed,storage_allowed,publication_allowed,
+                            reviewed_at,expires_at,policy_version)
+                            VALUES(%s,'local_dump','test-only','fixture approved',%s,
+                            true,true,%s,%s,%s,%s)""",
+                            (policy.source_code,["title","artist"],allowed,
+                             policy.reviewed_at,policy.expires_at,revision))
+                    entered.set()
+                    self.assertTrue(release.wait(8))
+        def reconcile():
+            with psycopg.connect(DSN) as con:
+                con.execute("SET lock_timeout='6s'")
+                con.commit()
+                result=con.execute("SELECT t008_reconcile_visibility(%s)",(cid,)).fetchone()[0]
+                con.commit()
+                return result
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first=pool.submit(deny_then_reauthorize)
+            self.assertTrue(entered.wait(8))
+            second=pool.submit(reconcile)
+            time.sleep(.12)
+            release.set()
+            first.result(timeout=10)
+            # A newer allowed policy does NOT legitimize earlier-version proofs:
+            # the prior candidate must still be retired until new evidence
+            # is separately verified via an independent new candidate.
+            self.assertEqual(second.result(timeout=10),"revoked")
+        with psycopg.connect(DSN) as con:
+            self.assertEqual(con.execute("SELECT count(*) FROM t008_visible_publications WHERE candidate_id=%s",(cid,)).fetchone()[0],0)
+            self.assertEqual(con.execute("SELECT count(*) FROM t008_publication_history WHERE candidate_id=%s AND action='revoke'",(cid,)).fetchone()[0],1)
+            self.assertEqual(con.execute("SELECT max(policy_version) FROM t008_source_policies WHERE source_code=%s",(policy.source_code,)).fetchone()[0],3)
+
     @unittest.skipUnless(REVIEW_DSN,"review login absent")
     def test_nonowner_cannot_forge_identity_using_other_candidate_evidence(self):
         policy,_=self.fixture()

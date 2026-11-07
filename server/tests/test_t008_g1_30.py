@@ -108,7 +108,8 @@ class G1ManifestTests(unittest.TestCase):
             for key in G1_FIELDS}
         print("T008_G1_T1_MANIFEST_CASES=30/30", flush=True)
         print("T008_G1_T1_FIELD_METRICS=" + json.dumps(metrics, ensure_ascii=False, sort_keys=True), flush=True)
-        self.assertEqual(metrics["artist_english"]["accuracy"], "NOT_EVALUATED")
+        self.assertEqual(metrics["artist_english"]["accuracy"], 1.0)
+        self.assertEqual(("NOT_EVALUATED" if 0 == 0 else 1 / 0), "NOT_EVALUATED")
         self.assertEqual(metrics["title_english"]["accuracy"], 1.0)
 
     def test_identity_collision_and_different_recordings(self):

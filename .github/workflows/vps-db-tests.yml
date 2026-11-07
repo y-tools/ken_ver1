@@ -33,6 +33,7 @@ jobs:
       KEN_T008_TEST_DATABASE_URL: postgresql://postgres:test@127.0.0.1:5432/ken_test
       KEN_T008_ALLOW_DISPOSABLE: "YES"
       KEN_T008_STAGE_LOGIN_DSN: postgresql://t008_stage_login:t008-ephemeral-test@127.0.0.1:5432/ken_test
+      KEN_T008_REVIEW_LOGIN_DSN: postgresql://t008_review_login:t008-review-ephemeral@127.0.0.1:5432/ken_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -58,7 +59,10 @@ jobs:
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/009_t008_integrity.sql
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/010_t008_b014.sql
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/011_t008_item_review.sql
+          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/012_t008_b016.sql
+          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/013_t008_b016_review.sql
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_stage_login LOGIN PASSWORD 't008-ephemeral-test'; GRANT t008_stage_writer TO t008_stage_login"
+          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_review_login LOGIN PASSWORD 't008-review-ephemeral'; GRANT t008_reviewer TO t008_review_login; INSERT INTO t008_reviewer_principals(login_name,reviewer_id) VALUES ('t008_review_login','CI-REVIEWER-ROLE')"
       - name: Import one small source file
         run: python server/import_catalog.py --dataset japanese --max-files 1 --batch-size 500
       - name: Initialize separate database editor audit schema

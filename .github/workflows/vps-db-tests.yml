@@ -36,6 +36,7 @@ jobs:
       KEN_T008_REVIEW_LOGIN_DSN: postgresql://t008_review_login:t008-review-ephemeral@127.0.0.1:5432/ken_test
       KEN_T008_PUBLISH_LOGIN_DSN: postgresql://t008_publish_login:t008-publish-ephemeral@127.0.0.1:5432/ken_test
       KEN_T008_SEARCH_LOGIN_DSN: postgresql://t008_search_login:t008-search-ephemeral@127.0.0.1:5432/ken_test
+      KEN_T008_UPGRADE_DATABASE_URL: postgresql://postgres:test@127.0.0.1:5432/t008_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -74,5 +75,15 @@ jobs:
         run: python server/import_catalog.py --dataset japanese --max-files 1 --batch-size 500
       - name: Initialize separate database editor audit schema
         run: psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/003_admin_editor.sql
+      - name: Rehearse populated 014-to-015 upgrade without data loss
+        run: |
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 -c 'CREATE DATABASE t008_test'
+          for sql in 001_init 004_t008_staging 005_t008_constraints 006_t008_review 007_t008_roles_test 008_t008_concurrency 009_t008_integrity 010_t008_b014 011_t008_item_review 012_t008_b016 013_t008_b016_review 014_t008_active_publication; do
+            psql -h 127.0.0.1 -U postgres -d t008_test -v ON_ERROR_STOP=1 -f "server/sql/${sql}.sql"
+          done
+          python -m server.t008_b022_upgrade_fixture before
+          psql -h 127.0.0.1 -U postgres -d t008_test -v ON_ERROR_STOP=1 -f server/sql/015_t008_b020.sql
+          psql -h 127.0.0.1 -U postgres -d t008_test -v ON_ERROR_STOP=1 -f server/sql/016_t008_b022.sql
+          python -m server.t008_b022_upgrade_fixture after
       - name: Run PostgreSQL search and pronunciation verification
         run: python -m unittest discover -s server/tests -p 'test_*.py' -v

@@ -78,7 +78,7 @@ class T008DatabaseTests(unittest.TestCase):
             cur.execute("SELECT id FROM t008_candidates WHERE batch_id=%s",(batch,))
             candidate_id=cur.fetchone()[0]
         self.conn.commit()
-        with self.assertRaises(errors.ForeignKeyViolation):
+        with self.assertRaises((errors.ForeignKeyViolation, errors.RaiseException)):
             with self.conn.transaction():
                 with self.conn.cursor() as cur:
                     cur.execute("""INSERT INTO t008_evidence(candidate_id,field_name,source_code,

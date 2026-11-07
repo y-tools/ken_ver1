@@ -98,6 +98,73 @@ class B022Tests(unittest.TestCase):
             self.assertEqual(response.status_code,200,response.text)
             self.assertNotIn(str(cid),[x["candidate_id"] for x in response.json()["items"]])
 
+    def test_repeatable_read_can_retain_stale_policy_snapshot(self):
+        # Negative control: clock_timestamp() alone does NOT refresh RR snapshots.
+        policy,_=self.fixture(expires_in=100)
+        cid,_=self.published(policy)
+        with psycopg.connect(DSN) as stale:
+            stale.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+            self.assertEqual(stale.execute(
+                "SELECT count(*) FROM t008_visible_publications WHERE candidate_id=%s",
+                (cid,)).fetchone()[0],1)
+            with psycopg.connect(DSN) as writer:
+                writer.execute("""INSERT INTO t008_source_policies(source_code,acquisition_method,
+                    content_license,access_terms,allowed_fields,automated_access_allowed,
+                    storage_allowed,publication_allowed,reviewed_at,expires_at,policy_version)
+                    VALUES(%s,'local_dump','test-only','fixture approved',
+                    %s,true,true,false,%s,%s,2)""",
+                    (policy.source_code,["title","artist"],policy.reviewed_at,policy.expires_at))
+                writer.commit()
+            self.assertEqual(stale.execute("SELECT current_setting('transaction_isolation')").fetchone()[0],
+                             "repeatable read")
+            self.assertEqual(stale.execute(
+                "SELECT count(*) FROM t008_visible_publications WHERE candidate_id=%s",
+                (cid,)).fetchone()[0],1)
+            # A new READ COMMITTED statement does see the newly committed denial.
+            with psycopg.connect(DSN) as fresh:
+                self.assertEqual(fresh.execute(
+                    "SELECT count(*) FROM t008_visible_publications WHERE candidate_id=%s",
+                    (cid,)).fetchone()[0],0)
+
+    @unittest.skipUnless(SEARCH_DSN,"isolated search DB login absent")
+    def test_http_cache_headers_and_conditional_rerequest(self):
+        policy,_=self.fixture()
+        cid,_=self.published(policy)
+        path="/t008/isolated-preview/search"
+        with TestClient(create_preview_app(SEARCH_DSN)) as client:
+            first=client.get(path,params={"q":"B022 Hidden License Song"})
+            self.assertEqual(first.status_code,200,first.text)
+            for response in (first,client.get(path,params={"q":"B022 Hidden License Song"},
+                       headers={"If-None-Match":'"cached-before-revocation"',
+                                "If-Modified-Since":"Wed, 21 Oct 2015 07:28:00 GMT"})):
+                self.assertEqual(response.status_code,200,response.text)
+                self.assertIn("no-store",response.headers["cache-control"])
+                self.assertEqual(response.headers["surrogate-control"],"no-store")
+                self.assertEqual(response.headers["pragma"],"no-cache")
+                self.assertEqual(response.headers["expires"],"0")
+                self.assertNotIn("etag",response.headers)
+            with psycopg.connect(DSN) as con:
+                con.execute("""INSERT INTO t008_source_policies(source_code,acquisition_method,
+                    content_license,access_terms,allowed_fields,automated_access_allowed,
+                    storage_allowed,publication_allowed,reviewed_at,expires_at,policy_version)
+                    VALUES(%s,'local_dump','test-only','fixture approved',
+                    %s,true,true,false,%s,%s,2)""",
+                    (policy.source_code,["title","artist"],policy.reviewed_at,policy.expires_at))
+                con.commit()
+            second=client.get(path,params={"q":"B022 Hidden License Song"},
+                headers={"If-None-Match":'"cached-before-revocation"',
+                         "If-Modified-Since":"Wed, 21 Oct 2015 07:28:00 GMT"})
+            self.assertEqual(second.status_code,200,second.text)
+            self.assertNotIn(str(cid),[x["candidate_id"] for x in second.json()["items"]])
+            self.assertIn("no-store",second.headers["cache-control"])
+            bad=client.get(path,params={"q":""})
+            self.assertEqual(bad.status_code,422)
+            self.assertIn("no-store",bad.headers["cache-control"])
+        with TestClient(create_preview_app(DSN)) as invalid_client:
+            denied=invalid_client.get(path,params={"q":"B022"})
+            self.assertEqual(denied.status_code,503)
+            self.assertIn("no-store",denied.headers["cache-control"])
+
     def test_reactivation_policy_races_with_reconciliation(self):
         policy,_=self.fixture()
         cid,key=self.published(policy)

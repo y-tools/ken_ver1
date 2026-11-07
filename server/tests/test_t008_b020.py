@@ -60,15 +60,35 @@ class B020SafetyTest(unittest.TestCase):
             conn.commit()
         return new,proofs
     def test_existing_active_disappears_from_visibility_after_new_denied_policy(self):
+        # This mutation must never invalidate another test's shared source.
+        source="b014_b020_"+uuid.uuid4().hex
+        now=datetime.now(timezone.utc)
+        separate=SourcePolicy(source,"local_dump","test-only","fixture approved",
+            frozenset({"title","artist"}),True,True,True,True,
+            now-timedelta(minutes=1),now+timedelta(hours=1))
         key=uuid.uuid4().hex
-        a=self.publish_first(key)
         with psycopg.connect(DSN) as conn:
+            conn.execute("""INSERT INTO t008_source_policies(source_code,acquisition_method,
+               content_license,access_terms,allowed_fields,automated_access_allowed,
+               storage_allowed,publication_allowed,reviewed_at,expires_at,policy_version)
+               VALUES(%s,'local_dump','test-only','fixture approved',%s,true,true,true,%s,%s,1)""",
+               (source,["title","artist"],separate.reviewed_at,separate.expires_at))
+            conn.commit()
+        batch=uuid.uuid4()
+        with psycopg.connect(DSN) as conn:
+            stage_candidates(conn,batch,[Candidate("Source Revoke","Artist",key)],separate)
+            conn.commit()
+            a=conn.execute("SELECT id FROM t008_candidates WHERE batch_id=%s",(batch,)).fetchone()[0]
+            conn.execute("SELECT t008_review_mark(%s,'fixture checked',true)",(a,))
+            conn.execute("SELECT t008_approve_candidate(%s,'approved')",(a,))
+            conn.execute("SELECT t008_publish_preview(%s)",(a,))
+            conn.commit()
             self.assertEqual(conn.execute("SELECT count(*) FROM t008_visible_publications WHERE candidate_id=%s",(a,)).fetchone()[0],1)
             conn.execute("""INSERT INTO t008_source_policies(source_code,acquisition_method,
                content_license,access_terms,allowed_fields,automated_access_allowed,storage_allowed,
                publication_allowed,reviewed_at,expires_at,policy_version)
                VALUES (%s,'local_dump','test-only','fixture approved',%s,true,true,false,%s,%s,2)""",
-               (self.source,["title","artist"],self.policy.reviewed_at,self.policy.expires_at))
+               (source,["title","artist"],separate.reviewed_at,separate.expires_at))
             conn.commit()
             self.assertEqual(conn.execute("SELECT count(*) FROM t008_visible_publications WHERE candidate_id=%s",(a,)).fetchone()[0],0)
             self.assertEqual(conn.execute("SELECT count(*) FROM t008_active_publications WHERE candidate_id=%s",(a,)).fetchone()[0],1)

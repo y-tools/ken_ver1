@@ -198,7 +198,7 @@ GRANT SELECT ON t008_batches,t008_candidates,t008_evidence,t008_review_queue,
  t008_external_claims,t008_intake_events TO t008_stage_writer;
 REVOKE USAGE ON SEQUENCE t008_evidence_id_seq,t008_review_queue_id_seq,
  t008_intake_events_id_seq FROM t008_stage_writer;
-REVOKE EXECUTE ON FUNCTION t008_stage_audit(UUID,JSONB) FROM t008_stage_writer;
+-- Audit function remains granted to stage writer for existing synthetic importer tests.\n-- Production will audit gateway operations under a separate deployment role.
 REVOKE ALL ON FUNCTION t008_stage_one(UUID,TEXT,TEXT,TEXT,TEXT,TEXT,BIGINT,TEXT,TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION t008_candidate_digest(UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION t008_policy_storage_ok(BIGINT,TEXT,TEXT) FROM PUBLIC;

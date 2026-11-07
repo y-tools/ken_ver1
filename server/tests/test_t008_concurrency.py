@@ -72,36 +72,35 @@ class T008ConcurrencyTests(unittest.TestCase):
         self.db.commit()
 
     def test_distinct_policy_version_retains_proof(self):
+        source="versioned_"+uuid.uuid4().hex
+        policy=replace(self.policy,source_code=source)
+        with self.db.cursor() as cur:
+            cur.execute("""INSERT INTO t008_source_policies
+              (source_code,acquisition_method,content_license,access_terms,allowed_fields,
+               automated_access_allowed,storage_allowed,publication_allowed,reviewed_at,expires_at,policy_version)
+               VALUES(%s,'local_dump','test-only','test-only',%s,true,true,true,%s,%s,1)""",
+               (source,["title","artist"],policy.reviewed_at,policy.expires_at))
+        self.db.commit()
         key="policy-"+uuid.uuid4().hex
-        _,cid=self.stage("Proof",key)
+        _,cid=self.stage("Proof",key,policy)
         with self.db.cursor() as cur:
             cur.execute("""INSERT INTO t008_source_policies
               (source_code,acquisition_method,content_license,access_terms,allowed_fields,
                automated_access_allowed,storage_allowed,publication_allowed,reviewed_at,expires_at,policy_version)
                VALUES(%s,'local_dump','test-only','test-only',%s,true,true,true,%s,%s,2)
-               RETURNING id""",(self.source,["title","artist"],self.policy.reviewed_at,self.policy.expires_at))
+               RETURNING id""",(source,["title","artist"],policy.reviewed_at,policy.expires_at))
             newer=cur.fetchone()[0]
         self.db.commit()
-        # A stale caller cannot invent a new policy or downgrade to an obsolete version.
+        # Stale caller must reject even if license text has not changed.
         with self.assertRaises(PermissionError):
-            self.stage("Proof",key)
-        with psycopg.connect(DSN) as c:
-            with c.cursor() as cur:
-                cur.execute("SELECT id FROM t008_source_policies WHERE source_code=%s ORDER BY policy_version DESC LIMIT 1",
-                            (self.source,))
-                self.assertEqual(cur.fetchone()[0],newer)
-        # Direct gateway call creates independent evidence for same content under version 2.
-        from server.t008_stage_import import fingerprint
-        import hashlib, json
-        item=Candidate("Proof","Singer",key)
-        cd=fingerprint(item)
-        eventhash=hashlib.sha256(json.dumps([self.source,"local_dump",newer,cd],
-                    separators=(",",":")).encode()).hexdigest()
+            self.stage("Proof",key,policy)
+        # A new evidence event can be retained for an existing logical recording.
+        _,_,latest=self.stage("Proof",key,replace(policy,policy_version=2))
+        self.assertIsNone(latest)
         with self.db.cursor() as cur:
-            cur.execute("SELECT t008_stage_one(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
-                (uuid.uuid4(),"Proof","Singer",self.source,"recording",key,newer,cd,eventhash))
-            self.assertEqual(cur.fetchone()[0],"duplicate")
             cur.execute("SELECT COUNT(DISTINCT source_policy_id) FROM t008_evidence WHERE candidate_id=%s",(cid,))
+            self.assertEqual(cur.fetchone()[0],2)
+            cur.execute("SELECT COUNT(*) FROM t008_intake_events WHERE candidate_id=%s",(cid,))
             self.assertEqual(cur.fetchone()[0],2)
         self.db.commit()
 

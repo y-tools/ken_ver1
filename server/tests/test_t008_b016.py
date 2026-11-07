@@ -145,6 +145,38 @@ class B016Test(unittest.TestCase):
                 cur.execute("SELECT count(*) FROM t008_publication_preview WHERE candidate_id IN (%s,%s) AND state='revoked'",(first,second))
                 self.assertEqual(cur.fetchone()[0],2)
 
+    def test_intake_vs_publish_same_identity_no_deadlock(self):
+        key=uuid.uuid4().hex
+        _,cid=self.stage(key)
+        with psycopg.connect(DSN) as c:
+            c.execute("SELECT t008_review_mark(%s,'ready to publish',true)",(cid,))
+            c.execute("SELECT t008_approve_candidate(%s,'approved')",(cid,))
+            c.commit()
+        start=Event()
+        def publish():
+            with psycopg.connect(DSN) as c:
+                c.execute("SET lock_timeout='5s'")
+                c.commit()
+                start.wait(5)
+                value=c.execute("SELECT t008_publish_preview(%s)",(cid,)).fetchone()[0]
+                c.commit()
+                return value
+        def ingest():
+            start.wait(5)
+            return self.stage(key)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            p=pool.submit(publish)
+            i=pool.submit(ingest)
+            start.set()
+            self.assertEqual(p.result(timeout=9),"published")
+            counts,other=i.result(timeout=9)
+            self.assertEqual(counts["duplicate"],1)
+            self.assertIsNone(other)
+        with psycopg.connect(DSN) as c:
+            with c.cursor() as cur:
+                cur.execute("SELECT count(*) FROM t008_evidence WHERE candidate_id=%s",(cid,))
+                self.assertEqual(cur.fetchone()[0],2)
+
     def test_concurrent_issue_resolution_exactly_once(self):
         key=uuid.uuid4().hex
         self.stage(key)

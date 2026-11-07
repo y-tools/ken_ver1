@@ -100,7 +100,7 @@ REVOKE UPDATE(status) ON t008_review_queue FROM t008_reviewer;
 REVOKE ALL ON FUNCTION t008_review_mark(uuid,text,boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION t008_review_mark(uuid,text,boolean) TO t008_reviewer;
 
--- Input digest revalidation occurs at the DB trust boundary, BEFORE any writes.
+-- Block direct audit fabrication by stage writers; only SECURITY DEFINER gateway\n-- can create trusted intake audit entries.\nREVOKE EXECUTE ON FUNCTION t008_stage_audit(UUID,JSONB) FROM t008_stage_writer;\n\n-- Input digest revalidation occurs at the DB trust boundary, BEFORE any writes.
 CREATE OR REPLACE FUNCTION t008_stage_one(
  p_batch UUID,p_title TEXT,p_artist TEXT,p_source TEXT,p_entity_type TEXT,
  p_external_id TEXT,p_policy_id BIGINT,p_content_digest TEXT,p_input_digest TEXT
@@ -167,6 +167,10 @@ BEGIN
    acquisition_method,original_data_hash,source_policy_id)
  VALUES(cid,'title',p_source,p_external_id,pol.acquisition_method,md5(p_title),p_policy_id),
        (cid,'artist',p_source,p_external_id,pol.acquisition_method,md5(p_artist),p_policy_id);
+ INSERT INTO t008_audit(batch_id,action,details) VALUES
+ (p_batch,'intake_event',jsonb_build_object('actor',t008_actor(),
+  'source',p_source,'entity_type',p_entity_type,'outcome',outcome,
+  'policy_id',p_policy_id,'event_digest',expected_event));
  RETURN outcome;
 END $$;
 REVOKE ALL ON FUNCTION t008_stage_one(UUID,TEXT,TEXT,TEXT,TEXT,TEXT,BIGINT,TEXT,TEXT) FROM PUBLIC;

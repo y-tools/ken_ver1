@@ -7,7 +7,7 @@ END$$;
 -- clock_timestamp() must be evaluated per statement, not fixed to
 -- the transaction start; function volatility must reflect that.
 CREATE OR REPLACE FUNCTION t008_policy_storage_ok(p_id BIGINT,p_source TEXT,p_method TEXT)
-RETURNS BOOLEAN LANGUAGE sql VOLATILE SET search_path=pg_catalog,public AS $$
+RETURNS BOOLEAN LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog,public AS $$
  SELECT EXISTS(
  SELECT 1 FROM t008_source_policies p
  JOIN t008_policy_authorizations a ON a.policy_id=p.id

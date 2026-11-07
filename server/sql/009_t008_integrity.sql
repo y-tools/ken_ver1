@@ -47,14 +47,17 @@ BEGIN
  IF reason_text IS NULL THEN
    RAISE EXCEPTION 'T008 verification transition requires reason';
  END IF;
- cid:=CASE WHEN TG_TABLE_NAME='t008_candidates' THEN NEW.id ELSE NEW.candidate_id END;
+ IF TG_TABLE_NAME='t008_candidates' THEN
+   cid:=NEW.id;
+ ELSE
+   cid:=NEW.candidate_id;
+ END IF;
  SELECT batch_id INTO bid FROM t008_candidates WHERE id=cid;
  INSERT INTO t008_audit(batch_id,action,details) VALUES
  (bid,'verification_changed',jsonb_build_object(
     'actor',session_user,'role',current_setting('role',true),
     'candidate_id',cid,'table',TG_TABLE_NAME,
-    'record_id',CASE WHEN TG_TABLE_NAME='t008_candidates'
-                  THEN NEW.id::text ELSE NEW.id::text END,
+    'record_id',NEW.id::text,
     'before',OLD.verification,'after',NEW.verification,'reason',reason_text,
     'at',clock_timestamp()));
  RETURN NEW;

@@ -117,3 +117,21 @@ CI fixture policy authorization is not a real license review; sample source valu
 - Regression file `tests/test_t008_b018.py` covers public A + pending B/C, atomic A->B supersession and injected failure rollback, distinct identity reject, missing identity decision reject, concurrent intake+publish, competing B/C promotions, revocation versus reacquisition, and a direct SQL duplicate-live-preview constraint test.
 - The role model for real deployment requires individually authenticated reviewer/publisher principals, separate memberships, evidence-linked adjudications, protected immutable audit, nonowner execution, secure approval identity binding (not client-supplied), and a two-person review rule for high-risk identity conflicts. No real user authentication bridge was deployed. All SQL remains disposable-only.
 - The user-facing catalog, real server topology and backup-restoration results are **unverified**; no connection to production VPS was attempted without an operator-verified, least-privileged read-only DB endpoint and an approved access route. No production data, indexes, configuration, accounts or APIs were altered.
+
+
+## B-020 release-gate hardening — preview-only (2026-11-07)
+
+- `sql/015_t008_b020.sql` adds non-NULL publication key columns, composite candidate-to-active and candidate-to-preview foreign keys, and composite evidence-to-identity-decision foreign keys. All migration operations are disposable PostgreSQL-only. Direct SQL that fabricates a published row or mismatches the active pointer must be rejected by DB constraints.
+- Evidence-backed identity decisions now capture the full canonical evidence snapshot SHA-256 when recorded. Publishing requires the evidence IDs, candidate ownership, verified state, and current snapshot to match the recorded adjudication. A post-decision evidence mutation cannot retain the old approval as valid.
+- `t008_visible_publications` is a **license-revalidated read projection**. Every SELECT requires the latest policy version for every contributing source/method to permit publication and have verified title+artist evidence. On a revoked/expired policy, the historical active pointer may remain momentarily for auditing, but this read projection immediately returns no row; `t008_reconcile_visibility` atomically removes the active pointer, revokes the preview and appends history.
+- Do NOT use `t008_active_publications` or `t008_publication_preview` directly as an audience-facing search source. No current Denmok public API is connected to the T008 preview.
+- Dedicated temporary `t008_publish_login` CI user is granted only publisher role. It can invoke the audited publication function but must not mutate candidate/evidence/active tables or record identity judgments. This is not a deployed user authentication or separation-of-duties solution.
+- `tests/test_t008_b020.py` covers instant invisibility after source policy loss, immutable audit/history reconciliation, evidence modification after identity adjudication, NULL and composite-FK SQL attacks and non-owner publisher permissions.
+
+### B-020-06: server inventory and restore rehearsal — still blocked on safe access
+1. Operator to confirm the exact PostgreSQL database, approved host, non-owner read-only user, separate off-host backup location and contact for recovery.
+2. Use the already-available `server/t008_inventory_readonly.py` with a trusted **private** DSN; it reports only aggregate DB metadata, code route counts and host-resource counters. It never queries or outputs real song/user rows.
+3. In a separately authorized isolated DB, restore a consistent backup and compare schema, legacy-song-ID invariants, representative API response and p50/p95/p99 metrics. Record RTO/RPO, role grants, storage and backup retention without publishing sensitive details.
+4. If connection cannot be verified or a query fails, mark the item unverified and stop. Do **not** escalate privileges, guess credentials, stop services or modify production configuration.
+
+Remaining blockers: no verified access to real VPS, no independently restored backup, no public API compatibility proof, no real source-lawful-use signoff and no unique human reviewer/publisher identity. Draft PR #3 remains unmerged and cannot be deployed as-is.

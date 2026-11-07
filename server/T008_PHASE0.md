@@ -34,3 +34,23 @@ CI applies 001, 004 and 005 SQL to GitHub Actions disposable database, uses a fi
 6. Review static GitHub Pages catalog separately; no blanket claim of 2 million verified songs.
 
 **Merge and production deployment remain on hold.**
+
+
+## B-008 independent review prototype (2026-11-07)
+
+The following is a **disposable PostgreSQL-only proof**, not a production deployment.
+
+- `sql/006_t008_review.sql` creates immutable, version-numbered source-policy rows; input event records, external-ID claims, approval records, and revocable publication *preview* records.
+- `sql/007_t008_roles_test.sql` establishes NOLOGIN test roles `t008_stage_writer`, `t008_reviewer`, `t008_publisher` with column-scoped writes. It refuses to execute outside `ken_test` and `t008_test`.
+- `t008_stage_import.py` now looks up an administrator-provisioned policy version, checks access and storage only (not publication), records intake events, retains conflicting external IDs as distinct review candidates, and stores field evidence linked to immutable license policy.
+- `tests/test_t008_review.py` verifies cross-batch collision preservation, exact repeat deduplication, immutable source policies, PostgreSQL role denial, private staging without public rights, explicit reviewer approval, idempotent publish, revoke, and injected publish failure.
+- No preview record is exposed by `server/api/main.py`. Neither the legacy importer nor the legacy `songs` identifiers were modified.
+
+**Important implementation boundaries:**
+1. This review protocol validates only explicit title and artist evidence from synthetic test data. Real catalog field provenance and source-contract interpretation remain unverified.
+2. The preview remains **private**; there is no public promotion to legacy `songs`.
+3. Candidate verification transitions are currently made through test-review SQL; actual authenticated reviewer service and its durable identity management have not been deployed.
+4. The test DB uses PostgreSQL superuser for schema provisioning; this must not be copied to an application service.
+5. Revoke changes only the preview state and preserves append-only audit; it does not roll back existing legacy database edits because this prototype makes none.
+
+**Before deploying:** independently review complete permissions and defaults (including table ownership, sequence grants, function EXECUTE, schema search paths, SET ROLE and concurrency); verify all rejection cases and recovery under a non-owner connection, and conduct a read-only inventory of the VPS. Draft PR remains HOLD.

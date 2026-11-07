@@ -18,3 +18,6 @@ A source may be allowed for one field (e.g. title) but denied for another (e.g. 
 - G2 real metadata acquisition must have a usable rights record for each source/method/field and separate storage/publication decisions.
 - Any public search requires a live, revocable policy gate and G3-G5. Provider presence in a list does not constitute permission.
 - This matrix documents unknown statuses, not confirmation of DAM/JOYSOUND prohibitions or MusicBrainz blanket rights.
+
+## B-026-04 G2 control: manual permission is not automated permission
+Current `server/t008_policy.py:acquisition_allowed` requires `automated_access_allowed is True` for ALL methods, including any future `manual` method. This existing implementation is conservative but cannot itself authorize a legitimate manual-only source. Fix later in G2 with acquisition-method-specific entitlement logic and separate tests. Do not set an automated permission bit to True merely to pass a manual scenario; pending manual-only acquisition stays unapproved/unstaged until G2 support is designed and tested. This discrepancy does not block fictional T1/T2 tests.

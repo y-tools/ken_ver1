@@ -64,6 +64,7 @@ jobs:
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/013_t008_b016_review.sql
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/014_t008_active_publication.sql
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/015_t008_b020.sql
+          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/016_t008_b022.sql
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_stage_login LOGIN PASSWORD 't008-ephemeral-test'; GRANT t008_stage_writer TO t008_stage_login"
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_review_login LOGIN PASSWORD 't008-review-ephemeral'; GRANT t008_reviewer TO t008_review_login; INSERT INTO t008_reviewer_principals(login_name,reviewer_id) VALUES ('t008_review_login','CI-REVIEWER-ROLE')"
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_publish_login LOGIN PASSWORD 't008-publish-ephemeral'; GRANT t008_publisher TO t008_publish_login"

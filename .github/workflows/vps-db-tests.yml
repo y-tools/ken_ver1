@@ -70,7 +70,7 @@ jobs:
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_stage_login LOGIN PASSWORD 't008-ephemeral-test'; GRANT t008_stage_writer TO t008_stage_login"
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_review_login LOGIN PASSWORD 't008-review-ephemeral'; GRANT t008_reviewer TO t008_review_login; INSERT INTO t008_reviewer_principals(login_name,reviewer_id) VALUES ('t008_review_login','CI-REVIEWER-ROLE')"
           psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_publish_login LOGIN PASSWORD 't008-publish-ephemeral'; GRANT t008_publisher TO t008_publish_login"
-          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_search_login LOGIN PASSWORD 't008-search-ephemeral'; GRANT USAGE ON SCHEMA public TO t008_search_login; GRANT SELECT ON t008_visible_publications TO t008_search_login"
+          psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -c "CREATE ROLE t008_search_login LOGIN PASSWORD 't008-search-ephemeral'; GRANT USAGE ON SCHEMA public TO t008_search_login; GRANT SELECT ON t008_visible_publications TO t008_search_login; GRANT EXECUTE ON FUNCTION t008_policy_storage_ok(BIGINT,TEXT,TEXT) TO t008_search_login"
       - name: Import one small source file
         run: python server/import_catalog.py --dataset japanese --max-files 1 --batch-size 500
       - name: Initialize separate database editor audit schema

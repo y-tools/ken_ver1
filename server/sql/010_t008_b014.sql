@@ -21,7 +21,7 @@ CREATE OR REPLACE FUNCTION t008_is_fixture_policy(p t008_source_policies)
  'n/a','na','not checked','not reviewed','unspecified','不明','未確認','未審査','未定')
  AND (p.source_code='synthetic_fixture'
  OR p.source_code LIKE 'b008_%' OR p.source_code LIKE 'b010_%'
- OR p.source_code LIKE 'b012_%' OR p.source_code LIKE 'pub_%'
+ OR p.source_code LIKE 'b012_%' OR p.source_code LIKE 'b014_%' OR p.source_code LIKE 'pub_%'
  OR p.source_code LIKE 'policyupgrade_%' OR p.source_code LIKE 'policy_race_%'
  OR p.source_code LIKE 'versioned_%' OR p.source_code LIKE 'fixture_private_%')
  ) IS TRUE

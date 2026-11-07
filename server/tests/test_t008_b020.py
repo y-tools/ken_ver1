@@ -126,7 +126,7 @@ class B020SafetyTest(unittest.TestCase):
             with self.assertRaises(errors.ForeignKeyViolation):
                 with conn.transaction():
                     conn.execute("""INSERT INTO t008_active_publications(source_code,entity_type,external_id,candidate_id)
-                      VALUES (%s,'recording',%s,%s)""",(self.source,key,b))
+                      VALUES (%s,'recording',%s,%s)""",(self.source,uuid.uuid4().hex,b))
             conn.rollback()
             self.assertEqual(conn.execute("SELECT candidate_id FROM t008_active_publications WHERE external_id=%s AND source_code=%s",(key,self.source)).fetchone()[0],a)
 

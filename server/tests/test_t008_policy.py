@@ -6,7 +6,9 @@ from server.t008_policy import SourcePolicy, acquisition_allowed, publication_al
 class T008PolicyTests(unittest.TestCase):
     def setUp(self):
         self.policy = SourcePolicy("fixture", "local_dump", "CC0", "reviewed fixture terms",
-                                   frozenset({"title","artist"}), True, True, True, True,\n                                   datetime.now(timezone.utc) - timedelta(days=1),\n                                   datetime.now(timezone.utc) + timedelta(days=1))
+                                   frozenset({"title","artist"}), True, True, True, True,
+                                   datetime.now(timezone.utc) - timedelta(days=1),
+                                   datetime.now(timezone.utc) + timedelta(days=1))
 
     def test_unknown_access_denied(self):
         p = SourcePolicy("x","api","CC0","unknown",frozenset({"title"}))
@@ -14,7 +16,9 @@ class T008PolicyTests(unittest.TestCase):
     def test_wrong_method_denied(self):
         self.assertFalse(acquisition_allowed(self.policy,"api"))
     def test_unknown_publication_denied(self):
-        p = SourcePolicy("x","dump","CC0","terms",frozenset({"title"}),True,True,None,True,\n                         datetime.now(timezone.utc)-timedelta(days=1),\n                         datetime.now(timezone.utc)+timedelta(days=1))
+        p = SourcePolicy("x","dump","CC0","terms",frozenset({"title"}),True,True,None,True,
+                         datetime.now(timezone.utc)-timedelta(days=1),
+                         datetime.now(timezone.utc)+timedelta(days=1))
         self.assertFalse(publication_allowed(p,"dump",{"title"},{"title"},True))
     def test_field_evidence_required(self):
         self.assertFalse(publication_allowed(self.policy,"local_dump",{"title","artist"},{"title"},True))

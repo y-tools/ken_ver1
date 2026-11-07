@@ -31,6 +31,13 @@ def snapshot(conn):
         state[table+"_count"]=len(rows)
     return state
 
+def preview_stable(conn):
+    # NULL keys are intentionally backfilled; compare all OTHER preview values.
+    rows=conn.execute("""SELECT (to_jsonb(p)-'source_code'-'entity_type'
+                -'external_id')::text FROM t008_publication_preview p
+                ORDER BY candidate_id""").fetchall()
+    return hashlib.sha256(json.dumps([r[0] for r in rows]).encode()).hexdigest()
+
 def prepare():
     now=datetime.now(timezone.utc)
     source="b014_upgrade_"+uuid.uuid4().hex
@@ -77,7 +84,7 @@ def prepare():
             candidate_ids.append(str(cid))
             conn.commit()
         state=snapshot(conn)
-        SNAP.write_text(json.dumps({"state":state,"ids":candidate_ids,"source":source}))
+        SNAP.write_text(json.dumps({"state":state,"stable_preview":preview_stable(conn), "ids":candidate_ids,"source":source}))
         print("B024_MIGRATION_BEFORE statuses=published,revoked,superseded,published; bad_nonnull=1")
         print("B024_MIGRATION_BEFORE counts",
             {t:state[t+"_count"] for t in TABLES})
@@ -104,6 +111,7 @@ def repair():
             WHERE candidate_id=%s AND source_code='wrong-but-nonnull'""",(cid,))
         conn.commit()
         data["state"]=snapshot(conn)
+        data["stable_preview"]=preview_stable(conn)
         SNAP.write_text(json.dumps(data))
         print("B024_MIGRATION_REPAIRED synthetic conflicting value explicitly quarantined")
 
@@ -132,7 +140,12 @@ def test_timeout():
 def after():
     data=json.loads(SNAP.read_text())
     with database() as conn:
-        assert snapshot(conn)==data["state"],"Data or history changed during migration"
+        current=snapshot(conn)
+        for table in TABLES:
+            assert current[table+"_count"]==data["state"][table+"_count"],table
+            if table!="t008_publication_preview":
+                assert current[table]==data["state"][table],table
+        assert preview_stable(conn)==data["stable_preview"],"Unexpected preview history changes"
         ids=conn.execute("""SELECT id::text FROM t008_candidates
                WHERE id=ANY(%s) ORDER BY id""",([uuid.UUID(x) for x in data["ids"]],)).fetchall()
         assert {x[0] for x in ids}==set(data["ids"])

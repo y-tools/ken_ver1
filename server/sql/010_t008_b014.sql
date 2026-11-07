@@ -15,7 +15,7 @@ CREATE TRIGGER t008_policy_auth_immutable BEFORE UPDATE OR DELETE
 CREATE OR REPLACE FUNCTION t008_is_fixture_policy(p t008_source_policies)
  RETURNS boolean LANGUAGE sql STABLE SET search_path=pg_catalog,public AS $$
  SELECT (
- p.content_license IN ('test-only','CC0')
+ p.content_license IN ('test-only','CC0','CC0-test')
  AND lower(btrim(coalesce(p.access_terms,''))) NOT IN
  ('','unknown','undefined','none','null','pending','unreviewed','tbd',
  'n/a','na','not checked','not reviewed','unspecified','不明','未確認','未審査','未定')

@@ -100,7 +100,11 @@ REVOKE UPDATE(status) ON t008_review_queue FROM t008_reviewer;
 REVOKE ALL ON FUNCTION t008_review_mark(uuid,text,boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION t008_review_mark(uuid,text,boolean) TO t008_reviewer;
 
--- Block direct audit fabrication by stage writers; only SECURITY DEFINER gateway\n-- can create trusted intake audit entries.\nREVOKE EXECUTE ON FUNCTION t008_stage_audit(UUID,JSONB) FROM t008_stage_writer;\n\n-- Input digest revalidation occurs at the DB trust boundary, BEFORE any writes.
+-- Block direct audit fabrication by stage writers; only SECURITY DEFINER gateway
+-- can create trusted intake audit entries.
+REVOKE EXECUTE ON FUNCTION t008_stage_audit(UUID,JSONB) FROM t008_stage_writer;
+
+-- Input digest revalidation occurs at the DB trust boundary, BEFORE any writes.
 CREATE OR REPLACE FUNCTION t008_stage_one(
  p_batch UUID,p_title TEXT,p_artist TEXT,p_source TEXT,p_entity_type TEXT,
  p_external_id TEXT,p_policy_id BIGINT,p_content_digest TEXT,p_input_digest TEXT

@@ -20,8 +20,15 @@ BEGIN
 END $$;
 GRANT USAGE ON SCHEMA public TO t008_stage_writer,t008_reviewer,t008_publisher;
 GRANT SELECT ON t008_source_policies TO t008_stage_writer,t008_reviewer,t008_publisher;
-GRANT SELECT,INSERT ON t008_batches,t008_candidates,t008_evidence,
- t008_review_queue,t008_external_claims,t008_intake_events TO t008_stage_writer;
+GRANT SELECT ON t008_batches,t008_candidates,t008_evidence,t008_review_queue,
+ t008_external_claims,t008_intake_events TO t008_stage_writer;
+GRANT INSERT(id) ON t008_batches TO t008_stage_writer;
+GRANT INSERT(id,batch_id,title,artist,title_key,artist_key,external_source,
+ external_entity_type,external_id,input_digest) ON t008_candidates TO t008_stage_writer;
+GRANT INSERT(candidate_id,field_name,source_code,source_record_id,acquisition_method,
+ original_data_hash,source_policy_id) ON t008_evidence TO t008_stage_writer;
+GRANT INSERT(candidate_id,reason) ON t008_review_queue TO t008_stage_writer;
+GRANT INSERT ON t008_external_claims,t008_intake_events TO t008_stage_writer;
 GRANT USAGE,SELECT ON SEQUENCE t008_evidence_id_seq,t008_review_queue_id_seq,
  t008_intake_events_id_seq TO t008_stage_writer;
 GRANT EXECUTE ON FUNCTION t008_stage_audit(UUID,JSONB) TO t008_stage_writer;

@@ -54,3 +54,30 @@ The following is a **disposable PostgreSQL-only proof**, not a production deploy
 5. Revoke changes only the preview state and preserves append-only audit; it does not roll back existing legacy database edits because this prototype makes none.
 
 **Before deploying:** independently review complete permissions and defaults (including table ownership, sequence grants, function EXECUTE, schema search paths, SET ROLE and concurrency); verify all rejection cases and recovery under a non-owner connection, and conduct a read-only inventory of the VPS. Draft PR remains HOLD.
+
+## B-012 hardening (disposable database only)
+
+Files:
+- `sql/009_t008_integrity.sql`: PostgreSQL-side SHA-256 content/event digests, policy serialization, verification audits, reviewer gateway, current policy evidence selection, append-only approval revisions; no changes to legacy songs.
+- `tests/test_t008_b012.py`: 20/50-connection contention, lock timeout and retry, concurrent review vs publication, forged-digest rejection, Unicode hashes, current-license evidence and reapproval tests.
+- `t008_inventory_readonly.py`: opt-in safe read-only VPS inspection. No actual VPS connection has been performed.
+
+### License and approval lifecycle
+
+Old policies and evidence remain in immutable history. For publication, current verified title/artist evidence must exist under the newest policy version for each contributing source/method. When proofs change, a new approval revision is required. Existing published/revoked previews are non-reapprovable. The preview is private and not exposed in user-facing Denmok search.
+
+### Verification and audit boundaries
+
+Reviewer status changes use `t008_review_mark(candidate_id, reason, verified)`. Direct reviewer UPDATE grants are revoked. Trigger audit includes login, role, reason, before/after status and timestamp. This test design is not a real production authentication service or externally tamper-proof audit ledger.
+
+### Read-only VPS inventory runbook (NOT yet executed)
+
+1. Obtain authorized PostgreSQL read-only credentials. Never use a production superuser for inspection; never paste DSNs or secrets into issues, logs or CI.
+2. Run `KEN_T008_AUDIT_DSN=... python server/t008_inventory_readonly.py` **only on an approved host**. Supply the DSN privately; do not paste literal credentials into shell history. The tool establishes a READ ONLY transaction with 2500 ms statement timeout and only exports aggregate DB metadata, API decorator counts and resource statistics.
+3. Record anonymized schema/index totals, DB version, active connections, memory/CPU/disk headroom; separately document backup method, retention and encrypted off-host copies without opening backup contents.
+4. Compare real existing API response shapes and all legacy song identifiers against a separately restored isolated clone. Establish p50/p95/p99, check backend authentication, and measure restoration time. Do not modify the production DB or stop existing services.
+5. Local no-DB smoke check: `python server/t008_inventory_readonly.py --no-db`.
+
+### Remaining release blockers
+
+Production actor identity/credentials, DB default privileges, untrusted-source rights proof, multi-connection recovery under real VPS limits, restoration rehearsal, API compatibility and stable legacy IDs are unverified. MD5 approval digests remain test-only integrity hints; deployable audit integrity needs a stronger, separately controlled design. Draft PR #3 stays unmerged.

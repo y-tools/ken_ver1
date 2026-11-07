@@ -95,7 +95,8 @@ class T008ConcurrencyTests(unittest.TestCase):
         with self.assertRaises(PermissionError):
             self.stage("Proof",key,policy)
         # A new evidence event can be retained for an existing logical recording.
-        _,_,latest=self.stage("Proof",key,replace(policy,policy_version=2))
+        result,latest=self.stage("Proof",key,replace(policy,policy_version=2))
+        self.assertEqual(result["duplicate"],1)
         self.assertIsNone(latest)
         with self.db.cursor() as cur:
             cur.execute("SELECT COUNT(DISTINCT source_policy_id) FROM t008_evidence WHERE candidate_id=%s",(cid,))

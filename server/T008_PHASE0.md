@@ -148,3 +148,30 @@ Remaining blockers: no verified access to real VPS, no independently restored ba
 - CI `server/t008_b022_upgrade_fixture.py` provisions a separate `t008_test` DB, applies migrations 001+004..014, inserts a published candidate with 014-era NULL preview key columns and existing append-only history, snapshots candidate ID and table totals, then applies 015 and 016 and checks the *same candidate UUID*, preserved preview/history counts, current active pointer, correctly backfilled keys and protected-view lookup. No legacy songs were migrated.
 
 **Remaining mandatory production gates:** operator-verified read-only nonowner VPS DB connection, aggregate-only inventory, isolated backup restore and RTO/RPO proof, legacy song ID/API compatibility checks, real-data licensing review, user-bound reviewer/publisher identity and performance benchmarking. Never use test credentials, CI fixture policies or these disposable-only SQL scripts against a production database. Keep Draft PR #3 unmerged.
+
+
+## B-024: snapshot isolation, HTTP cache, rollback and legacy shadow (2026-11-07)
+
+**Scope:** all changes remain on Draft PR #3 and disposable PostgreSQL 16 CI. The live `server/api/main.py` and VPS are unchanged.
+
+### Public rights visibility and HTTP caches
+- The isolated `server/t008_preview_api.py` explicitly begins a short **READ COMMITTED READ ONLY** PostgreSQL transaction per HTTP request, sets a 2.5-second statement timeout and validates a distinct least-privilege `t008_search_login`. This avoids reusing a long-held REPEATABLE READ snapshot.
+- Every response, including 422/503, receives `Cache-Control: private, no-store, no-cache, max-age=0, must-revalidate`, `Surrogate-Control: no-store`, `Pragma: no-cache`, `Expires: 0`. Requests with old `If-None-Match`/`If-Modified-Since` do not return stale 304; the API queries the rights-filtered view again. Browsers, reverse proxies, service workers and CDN configuration on actual production routes remain unverified.
+- An adversarial REPEATABLE READ transaction test deliberately demonstrates that an old policy can remain visible after a newer revocation commits, even when `clock_timestamp()` advances. A separate new READ COMMITTED transaction correctly observes revocation. This is a **documented isolation hazard**, not a passing RR safety guarantee.
+
+### Multirow 014 -> 015 DDL rehearsal
+- `server/t008_b024_upgrade_failure.py` seeds four historical records (published, revoked, superseded, published), mixing NULL keys, valid non-NULL keys and a conflicting non-NULL source. It snapshots stable hashes, all candidate UUIDs, active pointer, history and preview counts.
+- Applying `015_t008_b020.sql` with conflicting preexisting keys **must fail**. The independent job verifies the whole transaction rolled back, historical data hashes are byte-stable and 015 schema alterations did not persist.
+- After explicit fixture-only correction of the bad source key to NULL, an independent ACCESS SHARE lock forces a short DDL lock timeout. The subsequent verification again confirms no partial schema or row changes.
+- A final normal 015 + 016 application must succeed, backfill only known-NULL keys, keep the four UUIDs and original preview/history fields, retain the original active pointers and preserve counts. The fixture output records each checkpoint. This procedure is **NOT** a production data-repair script.
+
+### Concurrency and shadow comparison
+- Two concurrent license-reconciliation calls for one revoked key must produce exactly one `revoked` transition and one `not_active` result; exactly one append-only revocation history and audit event may exist.
+- A disposable historical `artists`/`songs` record with release year and kana/romaji search metadata is queried through the **unchanged** real FastAPI `/api/v1/search` handler. Creating a separate T008 staging candidate does not change the legacy title/artist HTTP response, ID, release metadata or readings. This is a **shadow-isolation regression**, not a future merged API compatibility certification.
+
+### Remaining production gates
+1. Operator confirms the precise VPS/DB identity and permits an aggregate-only least-privilege read-only connection with bounded timeouts; no guessed credentials or privilege escalation.
+2. Separately authorized, isolated restore of an actual consistent backup, compare DB integrity and original song IDs, measure recovery time/objective and verify off-server backup retention.
+3. Verify real public legacy API response schema, search semantics, readings, rights-filtered visibility, HTTP cache behavior (including intermediary proxies and service workers) and p50/p95/p99 before any production switch.
+4. Authenticate unique real human reviewers and publishers, approve real acquisition/storage/publication rights and preserve tamper-evident history.
+5. This Draft PR remains unmerged. **No production DDL, Denmok API changes or mass registration is authorized.**

@@ -1,0 +1,202 @@
+"""T008 B-018: active-publication pointer and evidence-backed collision tests.
+Only the disposable PostgreSQL CI database is used.
+"""
+import os, uuid, unittest, time
+from datetime import datetime, timedelta, timezone
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
+import psycopg
+from psycopg import errors
+from server.t008_stage_import import Candidate, stage_candidates
+from server.t008_policy import SourcePolicy
+
+DSN=os.environ.get("KEN_T008_TEST_DATABASE_URL","")
+@unittest.skipUnless(DSN and os.environ.get("KEN_T008_ALLOW_DISPOSABLE")=="YES",
+                     "disposable PostgreSQL required")
+class B018ActivePublicationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.source="b014_b018_"+uuid.uuid4().hex
+        now=datetime.now(timezone.utc)
+        cls.policy=SourcePolicy(cls.source,"local_dump","test-only","fixture approved",
+             frozenset({"title","artist"}),True,True,True,True,
+             now-timedelta(minutes=1),now+timedelta(hours=1))
+        with psycopg.connect(DSN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT current_database()")
+                assert cur.fetchone()[0] in ("ken_test","t008_test")
+                cur.execute("""INSERT INTO t008_source_policies(source_code,
+                   acquisition_method,content_license,access_terms,allowed_fields,
+                   automated_access_allowed,storage_allowed,publication_allowed,
+                   reviewed_at,expires_at,policy_version)
+                   VALUES(%s,'local_dump','test-only','fixture approved',
+                   %s,true,true,true,%s,%s,1)""",
+                   (cls.source,["title","artist"],cls.policy.reviewed_at,cls.policy.expires_at))
+            conn.commit()
+
+    def stage(self, external, title):
+        batch=uuid.uuid4()
+        with psycopg.connect(DSN) as conn:
+            counts=stage_candidates(conn,batch,[Candidate(title,"Singer",external)],self.policy)
+            conn.commit()
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM t008_candidates WHERE batch_id=%s",(batch,))
+                row=cur.fetchone()
+            conn.commit()
+        return counts,row[0] if row else None
+
+    def initial_publish(self,key,title="Song A"):
+        _,cid=self.stage(key,title)
+        with psycopg.connect(DSN) as conn:
+            conn.execute("SELECT t008_review_mark(%s,'fictional fixture checked',true)",(cid,))
+            conn.execute("SELECT t008_approve_candidate(%s,'initial approval')",(cid,))
+            self.assertEqual(conn.execute("SELECT t008_publish_preview(%s)",(cid,)).fetchone()[0],"published")
+            conn.commit()
+        return cid
+
+    def review_candidate(self,cid):
+        with psycopg.connect(DSN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id FROM t008_evidence WHERE candidate_id=%s ORDER BY id",(cid,))
+                items=[row[0] for row in cur.fetchall()]
+                cur.execute("SELECT id FROM t008_review_queue WHERE candidate_id=%s AND status='open' ORDER BY id",(cid,))
+                issues=[row[0] for row in cur.fetchall()]
+                for item in items:
+                    cur.execute("SELECT t008_review_evidence(%s,'confirmed synthetic field evidence')",(item,))
+                for issue in issues:
+                    cur.execute("SELECT t008_resolve_issue(%s,'recording identity requires independent mapping')",(issue,))
+                cur.execute("SELECT t008_finalize_review(%s,'all synthetic evidence inspected')",(cid,))
+            conn.commit()
+        return items
+
+    def decide(self,cid,compared,decision,items):
+        with psycopg.connect(DSN) as conn:
+            conn.execute("SELECT t008_identity_decide(%s,%s,%s,%s,%s,%s)",
+                (cid,compared,items[0],items[1],decision,
+                 "Two original synthetic records independently checked and compared"))
+            conn.commit()
+
+    def test_two_pending_candidates_do_not_change_active_pointer(self):
+        key=uuid.uuid4().hex
+        a=self.initial_publish(key)
+        _,b=self.stage(key,"Song B")
+        _,c=self.stage(key,"Song C")
+        with psycopg.connect(DSN) as conn:
+            cur=conn.cursor()
+            cur.execute("SELECT candidate_id FROM t008_active_publications WHERE external_id=%s",(key,))
+            self.assertEqual(cur.fetchone()[0],a)
+            cur.execute("SELECT candidate_id FROM t008_external_claims WHERE external_id=%s AND source_code=%s",(key,self.source))
+            self.assertEqual(cur.fetchone()[0],b)
+            cur.execute("SELECT COUNT(*) FROM t008_candidates WHERE external_id=%s AND external_source=%s",(key,self.source))
+            self.assertEqual(cur.fetchone()[0],3)
+            cur.execute("SELECT count(*) FROM t008_publication_preview p WHERE p.external_id=%s AND p.state='published'",(key,))
+            self.assertEqual(cur.fetchone()[0],1)
+            cur.execute("SELECT status FROM t008_review_queue WHERE candidate_id=%s",(c,))
+            self.assertEqual(cur.fetchone()[0],"open")
+
+    def test_atomic_promotion_supersedes_and_failure_rolls_back(self):
+        key=uuid.uuid4().hex
+        a=self.initial_publish(key)
+        _,b=self.stage(key,"New Synthetic Title")
+        items=self.review_candidate(b)
+        self.decide(b,a,"same_recording",items)
+        with psycopg.connect(DSN) as conn:
+            conn.execute("SELECT t008_approve_candidate(%s,'approve reviewed identity')",(b,))
+            conn.commit()
+        with psycopg.connect(DSN) as conn:
+            with self.assertRaises(errors.RaiseException):
+                with conn.transaction():
+                    conn.execute("SELECT t008_publish_preview(%s,true)",(b,))
+            conn.rollback()
+            cur=conn.cursor()
+            cur.execute("SELECT candidate_id FROM t008_active_publications WHERE external_id=%s",(key,))
+            self.assertEqual(cur.fetchone()[0],a)
+            cur.execute("SELECT count(*) FROM t008_publication_preview WHERE candidate_id=%s",(b,))
+            self.assertEqual(cur.fetchone()[0],0)
+        with psycopg.connect(DSN) as conn:
+            self.assertEqual(conn.execute("SELECT t008_publish_preview(%s)",(b,)).fetchone()[0],"published")
+            conn.commit()
+            cur=conn.cursor()
+            cur.execute("SELECT candidate_id FROM t008_active_publications WHERE external_id=%s",(key,))
+            self.assertEqual(cur.fetchone()[0],b)
+            cur.execute("SELECT state FROM t008_publication_preview WHERE candidate_id=%s",(a,))
+            self.assertEqual(cur.fetchone()[0],"superseded")
+            cur.execute("SELECT count(*) FROM t008_publication_preview WHERE external_id=%s AND state='published'",(key,))
+            self.assertEqual(cur.fetchone()[0],1)
+            cur.execute("SELECT count(*) FROM t008_publication_history WHERE external_id=%s AND action='supersede'",(key,))
+            self.assertEqual(cur.fetchone()[0],1)
+
+    def test_distinct_recording_identity_decision_blocks_publish(self):
+        key=uuid.uuid4().hex
+        a=self.initial_publish(key)
+        _,b=self.stage(key,"Unrelated Other Song")
+        items=self.review_candidate(b)
+        self.decide(b,a,"distinct_recording",items)
+        with psycopg.connect(DSN) as conn:
+            conn.execute("SELECT t008_approve_candidate(%s,'reviewed fixture')",(b,))
+            conn.commit()
+        with psycopg.connect(DSN) as conn:
+            with self.assertRaises(errors.RaiseException):
+                with conn.transaction():
+                    conn.execute("SELECT t008_publish_preview(%s)",(b,))
+            conn.rollback()
+            cur=conn.cursor()
+            cur.execute("SELECT candidate_id FROM t008_active_publications WHERE external_id=%s",(key,))
+            self.assertEqual(cur.fetchone()[0],a)
+            cur.execute("SELECT COUNT(*) FROM t008_publication_preview WHERE external_id=%s AND state='published'",(key,))
+            self.assertEqual(cur.fetchone()[0],1)
+            cur.execute("SELECT decision,reviewer_id FROM t008_identity_decisions WHERE candidate_id=%s",(b,))
+            self.assertEqual(cur.fetchone(),("distinct_recording","CI-REVIEWER-POSTGRES"))
+
+    def test_pending_candidate_without_identity_decision_cannot_publish(self):
+        key=uuid.uuid4().hex
+        a=self.initial_publish(key)
+        _,b=self.stage(key,"Changed Again")
+        self.review_candidate(b)
+        with psycopg.connect(DSN) as conn:
+            conn.execute("SELECT t008_approve_candidate(%s,'reviewed fields, identity unresolved')",(b,))
+            conn.commit()
+        with psycopg.connect(DSN) as conn:
+            with self.assertRaises(errors.RaiseException):
+                with conn.transaction():
+                    conn.execute("SELECT t008_publish_preview(%s)",(b,))
+            conn.rollback()
+            self.assertEqual(conn.execute("SELECT candidate_id FROM t008_active_publications WHERE external_id=%s",(key,)).fetchone()[0],a)
+
+    def test_concurrent_promotion_and_reingestion_preserves_one_active(self):
+        key=uuid.uuid4().hex
+        a=self.initial_publish(key)
+        _,b=self.stage(key,"Updated Recording")
+        items=self.review_candidate(b)
+        self.decide(b,a,"same_recording",items)
+        with psycopg.connect(DSN) as conn:
+            conn.execute("SELECT t008_approve_candidate(%s,'reviewed mapping')",(b,))
+            conn.commit()
+        gate=Event()
+        def publish():
+            with psycopg.connect(DSN) as conn:
+                conn.execute("SET lock_timeout='5s'");conn.commit()
+                gate.wait(6)
+                value=conn.execute("SELECT t008_publish_preview(%s)",(b,)).fetchone()[0]
+                conn.commit()
+                return value
+        def ingest():
+            gate.wait(6)
+            return self.stage(key,"Third Pending Version")
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future=executor.submit(publish)
+            pending=executor.submit(ingest)
+            gate.set()
+            self.assertEqual(future.result(timeout=9),"published")
+            counts,c=pending.result(timeout=9)
+            self.assertEqual(counts["collision"],1)
+            self.assertNotEqual(c,b)
+        with psycopg.connect(DSN) as conn:
+            cur=conn.cursor()
+            cur.execute("SELECT candidate_id FROM t008_active_publications WHERE external_id=%s",(key,))
+            self.assertEqual(cur.fetchone()[0],b)
+            cur.execute("SELECT COUNT(*) FROM t008_publication_preview WHERE external_id=%s AND state='published'",(key,))
+            self.assertEqual(cur.fetchone()[0],1)
+
+if __name__=="__main__":
+    unittest.main()

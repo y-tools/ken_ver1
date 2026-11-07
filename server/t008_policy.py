@@ -35,6 +35,7 @@ class SourcePolicy:
     reviewed: bool = False
     reviewed_at: datetime | None = None
     expires_at: datetime | None = None
+    policy_version: int = 1
 
 
 def _valid_dates(policy: SourcePolicy, now: datetime) -> bool:

@@ -118,6 +118,8 @@ BEGIN
  VALUES(p_candidate,'review_reopened:'||left(p_reason,200));
  END IF;
 END $$;
+-- Bulk fixture helper remains callable only by database owner, not reviewer role.
+REVOKE EXECUTE ON FUNCTION t008_review_mark(UUID,TEXT,BOOLEAN) FROM t008_reviewer;
 REVOKE ALL ON FUNCTION t008_reviewer_id(),t008_review_evidence(BIGINT,TEXT),
  t008_resolve_issue(BIGINT,TEXT),t008_finalize_review(UUID,TEXT) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION t008_review_evidence(BIGINT,TEXT),

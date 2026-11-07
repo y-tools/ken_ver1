@@ -25,6 +25,15 @@ class T008DatabaseTests(unittest.TestCase):
         cls.policy=SourcePolicy("synthetic_fixture","local_dump","CC0-test","test-only",
             frozenset({"title","artist"}),True,True,True,True,
             now-timedelta(hours=1),now+timedelta(hours=1))
+        with cls.conn.cursor() as cur:
+            cur.execute("""INSERT INTO t008_source_policies
+             (source_code,acquisition_method,content_license,access_terms,allowed_fields,
+              automated_access_allowed,storage_allowed,publication_allowed,reviewed_at,expires_at,policy_version)
+              VALUES(%s,%s,%s,%s,%s,true,true,true,%s,%s,1)""",
+              (cls.policy.source_code,cls.policy.method,cls.policy.content_license,
+               cls.policy.access_terms,list(cls.policy.allowed_fields),
+               cls.policy.reviewed_at,cls.policy.expires_at))
+        cls.conn.commit()
 
     @classmethod
     def tearDownClass(cls):
@@ -47,11 +56,11 @@ class T008DatabaseTests(unittest.TestCase):
                         f"recording-{i}") for i in range(500)]
         result=stage_candidates(self.conn,batch,rows,self.policy)
         self.conn.commit()
-        self.assertEqual(result,{"inserted":500,"duplicate":0,"rejected":0})
+        self.assertEqual(result,{"inserted":500,"duplicate":0,"collision":0,"rejected":0})
         self.assertEqual(self._count("t008_candidates",batch),500)
         second=stage_candidates(self.conn,batch,rows,self.policy)
         self.conn.commit()
-        self.assertEqual(second,{"inserted":0,"duplicate":500,"rejected":0})
+        self.assertEqual(second,{"inserted":0,"duplicate":500,"collision":0,"rejected":0})
         self.assertEqual(self._count("t008_candidates",batch),500)
         with self.conn.cursor() as cur:
             cur.execute("SELECT COUNT(*) FROM t008_evidence e JOIN t008_candidates c ON e.candidate_id=c.id WHERE c.batch_id=%s",(batch,))

@@ -87,6 +87,13 @@ class T008ReviewTests(unittest.TestCase):
                             with conn.transaction():
                                 cur.execute("UPDATE t008_candidates SET verification='verified'")
                         conn.rollback()
+                        with self.assertRaises(errors.InsufficientPrivilege):
+                            with conn.transaction():
+                                cur.execute("""INSERT INTO t008_candidates
+                                    (id,batch_id,title,artist,title_key,artist_key,verification)
+                                    VALUES(%s,%s,'forge','forge','forge','forge','verified')""",
+                                    (uuid.uuid4(),uuid.uuid4()))
+                        conn.rollback()
                     cur.execute("RESET ROLE")
         self.conn.rollback()
 

@@ -102,8 +102,7 @@ class T008ReviewTests(unittest.TestCase):
     def test_private_staging_cannot_publish(self):
         _,_,candidate=self.stage("Private", "private-"+uuid.uuid4().hex)
         with self.conn.cursor() as cur:
-            cur.execute("UPDATE t008_candidates SET verification='verified' WHERE id=%s",(candidate,))
-            cur.execute("UPDATE t008_evidence SET verification='verified' WHERE candidate_id=%s",(candidate,))
+            cur.execute("SELECT t008_review_mark(%s,'fixture evidence verification',true)",(candidate,))
         self.conn.commit()
         with self.assertRaises(errors.RaiseException):
             with self.conn.transaction():
@@ -132,8 +131,7 @@ class T008ReviewTests(unittest.TestCase):
         with self.conn.cursor() as cur:
             cur.execute("SELECT id FROM t008_candidates WHERE batch_id=%s",(batch,))
             cid=cur.fetchone()[0]
-            cur.execute("UPDATE t008_candidates SET verification='verified' WHERE id=%s",(cid,))
-            cur.execute("UPDATE t008_evidence SET verification='verified' WHERE candidate_id=%s",(cid,))
+            cur.execute("SELECT t008_review_mark(%s,'fixture evidence verification',true)",(cid,))
         self.conn.commit()
         with psycopg.connect(DSN) as rev:
             with rev.cursor() as cur:

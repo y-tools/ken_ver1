@@ -1,6 +1,24 @@
 -- T008 B-020, disposable PostgreSQL 16 ONLY.
 BEGIN;
 DO $$BEGIN IF current_database() NOT IN ('ken_test','t008_test') THEN RAISE EXCEPTION 'T008 disposable only'; END IF; END$$;
+-- Upgrade populated 014 schemas without losing preview IDs/history. Reject corrupt
+-- preexisting non-null keys instead of silently rewriting them.
+DO $BEGIN
+ IF EXISTS(
+   SELECT 1 FROM t008_publication_preview p
+   LEFT JOIN t008_candidates c ON c.id=p.candidate_id
+   WHERE c.id IS NULL OR
+     (p.source_code IS NOT NULL AND p.source_code IS DISTINCT FROM c.external_source) OR
+     (p.entity_type IS NOT NULL AND p.entity_type IS DISTINCT FROM c.external_entity_type) OR
+     (p.external_id IS NOT NULL AND p.external_id IS DISTINCT FROM c.external_id)
+ ) THEN RAISE EXCEPTION 'T008 preview key mismatch: manual reconciliation required'; END IF;
+END$;
+UPDATE t008_publication_preview p
+ SET source_code=c.external_source,
+     entity_type=c.external_entity_type,
+     external_id=c.external_id
+ FROM t008_candidates c WHERE p.candidate_id=c.id
+ AND (p.source_code IS NULL OR p.entity_type IS NULL OR p.external_id IS NULL);
 ALTER TABLE t008_publication_preview ALTER COLUMN source_code SET NOT NULL,
  ALTER COLUMN entity_type SET NOT NULL, ALTER COLUMN external_id SET NOT NULL;
 ALTER TABLE t008_candidates ADD CONSTRAINT t008_candidate_external_tuple UNIQUE

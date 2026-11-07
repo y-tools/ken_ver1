@@ -283,7 +283,8 @@ BEGIN
  SELECT * INTO STRICT c FROM t008_candidates WHERE id=p_candidate FOR UPDATE;
  PERFORM t008_lock_candidate_sources(p_candidate);
  PERFORM t008_check_publishable(p_candidate);
- SELECT * INTO a FROM t008_approval_revisions WHERE candidate_id=p_candidate\n ORDER BY revision DESC LIMIT 1;
+ SELECT * INTO a FROM t008_approval_revisions WHERE candidate_id=p_candidate
+ ORDER BY revision DESC LIMIT 1;
  IF NOT FOUND OR a.content_digest IS DISTINCT FROM t008_candidate_digest(p_candidate)
  OR a.proof_digest IS DISTINCT FROM t008_proof_digest(p_candidate)
  THEN RAISE EXCEPTION 'T008 approval missing or stale'; END IF;

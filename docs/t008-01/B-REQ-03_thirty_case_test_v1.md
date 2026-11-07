@@ -27,3 +27,14 @@ G1 FAIL on unproven value marked verified, official English generated from trans
 G1 PASS is a functional specification test, NOT a statistically valid 10k or 2m song accuracy guarantee. Real-data test requires G2 rights clearance; G3-G5 remain separate production gates.
 ## Required outputs
 machine-readable 30-case fixture, expected-results manifest, execution log, per-field missing/error matrix, source-policy decisions and a reviewer-signable summary. Document is a test plan; it does NOT claim fixture execution occurred.
+
+## B-026-02/03 binding test execution contract
+- T1: execute all 30 JSON manifest cases from `server/fixtures/t008_g1_30_cases.json` against independent assertions for field rules, identity, rights and staged isolation. A Stub is a helper only, never proof of production search behavior.
+- T2: use the ACTUAL existing `server.api.main.app` GET `/api/v1/search` handler with disposable PostgreSQL; snapshot title and artist mode JSON, including IDs, `items`, releaseDate, releasePrecision, `readings.type=verified_or_estimated`, and estimated name verification. Stage candidate(s) and compare the unchanged JSON and legacy IDs after, without modifying the API.
+- Identity fixture I02: identical song title and artist but external recording ID differs; outcome `distinct_recording` with NO automatic legacy merge.
+- Identity fixture I08: identical external ID, conflicting title/artist; outcome `review`, NO overwrites.
+- Orthography fixture F10: store only official English label; machine translation not official, must not appear among verified English aliases.
+- `per_field_accuracy = correct_verified_assessments / verified_assessments` only when denominator >=1. If denominator == 0, show `NOT_EVALUATED` and G1 field-coverage FAIL for every required field; NEVER interpret 0/0 as 100%.
+- For all 30 cases record `expected`, `observed` and PASS/FAIL with corresponding evidence. Required field categories: title, artist, release year (where known), song/artist hiragana, katakana, romaji, official English. Report unknown/null separately, including rationale; NULL is permissible when justified.
+- Overall G1 PASS requires 30/30 expected-vs-observed cases, evaluated fields 100% in their nonzero applicable denominator, no auto-merges/deletes/ID changes/rights bypass, supported search cases equal their expected result, and zero unexpected legacy API response differences. A passed T1 alone is not passed G1.
+- G2 manual versus automated access distinction is tracked in B-REQ-04; do NOT enable automated_access_allowed=True as a workaround for manual permission.

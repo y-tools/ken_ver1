@@ -87,6 +87,8 @@ class T008ReviewTests(unittest.TestCase):
                             with conn.transaction():
                                 cur.execute("UPDATE t008_candidates SET verification='verified'")
                         conn.rollback()
+                        # ROLLBACK also undoes SET ROLE issued within this transaction.
+                        cur.execute("SET ROLE t008_stage_writer")
                         with self.assertRaises(errors.InsufficientPrivilege):
                             with conn.transaction():
                                 cur.execute("""INSERT INTO t008_candidates

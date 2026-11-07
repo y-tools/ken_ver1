@@ -1,0 +1,2110 @@
+{
+  "schema_version": "1.0",
+  "description": "All names are fictional; no live catalog data; expected-only, not actual test observations.",
+  "cases": [
+    {
+      "id": "N01",
+      "group": "normal",
+      "synthetic": true,
+      "title": "架空の星",
+      "artist": "架空歌手あ",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-n01",
+      "year": {
+        "value": 2024,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのほし",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": {
+            "value": "カクウノホシ",
+            "verification": "derived_from_confirmed",
+            "evidence_ref": "derived-from-title.hiragana",
+            "derived_from": "title.hiragana"
+          },
+          "romaji": {
+            "value": "kakuu no hoshi",
+            "verification": "derived_from_confirmed",
+            "evidence_ref": "derived-from-title.hiragana",
+            "derived_from": "title.hiragana"
+          },
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅあ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": {
+            "value": "カクウカシュア",
+            "verification": "derived_from_confirmed",
+            "evidence_ref": "derived-from-artist.hiragana",
+            "derived_from": "artist.hiragana"
+          },
+          "romaji": {
+            "value": "kakuu kashu a",
+            "verification": "derived_from_confirmed",
+            "evidence_ref": "derived-from-artist.hiragana",
+            "derived_from": "artist.hiragana"
+          },
+          "english": {
+            "value": "Fictional Singer A",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          }
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の星",
+          "evidence_ref": "fictional_title_N01",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手あ",
+          "evidence_ref": "fictional_artist_N01",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2024,
+          "evidence_ref": "fictional_date_N01",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "N02",
+      "group": "normal",
+      "synthetic": true,
+      "title": "架空の海",
+      "artist": "架空歌手い",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-n02",
+      "year": {
+        "value": null,
+        "precision": "unknown",
+        "semantics": "unknown",
+        "unknown_reason": "not_checked"
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのうみ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅい",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の海",
+          "evidence_ref": "fictional_title_N02",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手い",
+          "evidence_ref": "fictional_artist_N02",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "N03",
+      "group": "normal",
+      "synthetic": true,
+      "title": "架空の空",
+      "artist": "架空歌手う",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-n03",
+      "year": {
+        "value": 2006,
+        "precision": "year",
+        "semantics": "work_first_published",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのそら",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅう",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の空",
+          "evidence_ref": "fictional_title_N03",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手う",
+          "evidence_ref": "fictional_artist_N03",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2006,
+          "evidence_ref": "fictional_date_N03",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "N04",
+      "group": "normal",
+      "synthetic": true,
+      "title": "架空の森",
+      "artist": "架空歌手え",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-n04",
+      "year": {
+        "value": 2020,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのもり",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": {
+            "value": "Fictional Forest",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          }
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅえ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の森",
+          "evidence_ref": "fictional_title_N04",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手え",
+          "evidence_ref": "fictional_artist_N04",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2020,
+          "evidence_ref": "fictional_date_N04",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": "Fictional Forest",
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "N05",
+      "group": "normal",
+      "synthetic": true,
+      "title": "架空の雨",
+      "artist": "架空歌手お",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-n05",
+      "year": {
+        "value": 2025,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのあめ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅお",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の雨",
+          "evidence_ref": "fictional_title_N05",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手お",
+          "evidence_ref": "fictional_artist_N05",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2025,
+          "evidence_ref": "fictional_date_N05",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "N06",
+      "group": "normal",
+      "synthetic": true,
+      "title": "架空の風",
+      "artist": "架空歌手か",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-n06",
+      "year": {
+        "value": null,
+        "precision": "unknown",
+        "semantics": "unknown",
+        "unknown_reason": "not_checked"
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのかぜ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅか",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の風",
+          "evidence_ref": "fictional_title_N06",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手か",
+          "evidence_ref": "fictional_artist_N06",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "N07",
+      "group": "normal",
+      "synthetic": true,
+      "title": "架空の月",
+      "artist": "架空歌手き",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-n07",
+      "year": {
+        "value": 2022,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのつき",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅき",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の月",
+          "evidence_ref": "fictional_title_N07",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手き",
+          "evidence_ref": "fictional_artist_N07",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2022,
+          "evidence_ref": "fictional_date_N07",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "N08",
+      "group": "normal",
+      "synthetic": true,
+      "title": "架空の虹",
+      "artist": "架空歌手く",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-n08",
+      "year": {
+        "value": 2003,
+        "precision": "year",
+        "semantics": "work_first_published",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのにじ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅく",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の虹",
+          "evidence_ref": "fictional_title_N08",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手く",
+          "evidence_ref": "fictional_artist_N08",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2003,
+          "evidence_ref": "fictional_date_N08",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "N09",
+      "group": "normal",
+      "synthetic": true,
+      "title": "架空の花",
+      "artist": "架空歌手け",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-n09",
+      "year": {
+        "value": 2026,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのはな",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅけ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の花",
+          "evidence_ref": "fictional_title_N09",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手け",
+          "evidence_ref": "fictional_artist_N09",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2026,
+          "evidence_ref": "fictional_date_N09",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "N10",
+      "group": "normal",
+      "synthetic": true,
+      "title": "架空の光",
+      "artist": "架空歌手こ",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-n10",
+      "year": {
+        "value": 2011,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのひかり",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅこ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の光",
+          "evidence_ref": "fictional_title_N10",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手こ",
+          "evidence_ref": "fictional_artist_N10",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2011,
+          "evidence_ref": "fictional_date_N10",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "F01",
+      "group": "orthography",
+      "synthetic": true,
+      "title": "架空ＡＢＣ",
+      "artist": "架空歌手さ",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-f01",
+      "year": {
+        "value": 2024,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうえーびーしー",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅさ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空ＡＢＣ",
+          "evidence_ref": "fictional_title_F01",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手さ",
+          "evidence_ref": "fictional_artist_F01",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2024,
+          "evidence_ref": "fictional_date_F01",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "F02",
+      "group": "orthography",
+      "synthetic": true,
+      "title": "架空ｶﾅ",
+      "artist": "架空歌手し",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-f02",
+      "year": {
+        "value": 2024,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうかな",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅし",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空ｶﾅ",
+          "evidence_ref": "fictional_title_F02",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手し",
+          "evidence_ref": "fictional_artist_F02",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2024,
+          "evidence_ref": "fictional_date_F02",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "F03",
+      "group": "orthography",
+      "synthetic": true,
+      "title": "架空の声́",
+      "artist": "架空歌手す",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-f03",
+      "year": {
+        "value": 2024,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのこえ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅす",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の声́",
+          "evidence_ref": "fictional_title_F03",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手す",
+          "evidence_ref": "fictional_artist_F03",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2024,
+          "evidence_ref": "fictional_date_F03",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "F04",
+      "group": "orthography",
+      "synthetic": true,
+      "title": "架空の長音ー",
+      "artist": "架空歌手せ",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-f04",
+      "year": {
+        "value": 2024,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのちょうおん",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅせ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の長音ー",
+          "evidence_ref": "fictional_title_F04",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手せ",
+          "evidence_ref": "fictional_artist_F04",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2024,
+          "evidence_ref": "fictional_date_F04",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "F05",
+      "group": "orthography",
+      "synthetic": true,
+      "title": "架空・星",
+      "artist": "架空歌手そ",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-f05",
+      "year": {
+        "value": 2024,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうほし",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅそ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空・星",
+          "evidence_ref": "fictional_title_F05",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手そ",
+          "evidence_ref": "fictional_artist_F05",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2024,
+          "evidence_ref": "fictional_date_F05",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "F06",
+      "group": "orthography",
+      "synthetic": true,
+      "title": "架空の🌙",
+      "artist": "架空歌手た",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-f06",
+      "year": {
+        "value": 2024,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのつき",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅた",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の🌙",
+          "evidence_ref": "fictional_title_F06",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手た",
+          "evidence_ref": "fictional_artist_F06",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2024,
+          "evidence_ref": "fictional_date_F06",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "F07",
+      "group": "orthography",
+      "synthetic": true,
+      "title": "架空　音",
+      "artist": "架空歌手ち",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-f07",
+      "year": {
+        "value": 2024,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうおと",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅち",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空　音",
+          "evidence_ref": "fictional_title_F07",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手ち",
+          "evidence_ref": "fictional_artist_F07",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2024,
+          "evidence_ref": "fictional_date_F07",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "F08",
+      "group": "orthography",
+      "synthetic": true,
+      "title": "架空の文字々",
+      "artist": "架空歌手つ",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-f08",
+      "year": {
+        "value": 2024,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのもじ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅつ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の文字々",
+          "evidence_ref": "fictional_title_F08",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手つ",
+          "evidence_ref": "fictional_artist_F08",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2024,
+          "evidence_ref": "fictional_date_F08",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "F09",
+      "group": "orthography",
+      "synthetic": true,
+      "title": "架空の響",
+      "artist": "架空歌手て",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-f09",
+      "year": {
+        "value": null,
+        "precision": "unknown",
+        "semantics": "unknown",
+        "unknown_reason": "not_checked"
+      },
+      "names": {
+        "title": {
+          "hiragana": null,
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": null,
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {
+        "title.hiragana": "no_reliable_source",
+        "artist.hiragana": "no_reliable_source"
+      },
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の響",
+          "evidence_ref": "fictional_title_F09",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手て",
+          "evidence_ref": "fictional_artist_F09",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "F10",
+      "group": "orthography",
+      "synthetic": true,
+      "title": "架空蒼夜",
+      "artist": "架空歌手と",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "syn-f10",
+      "year": {
+        "value": 2024,
+        "precision": "year",
+        "semantics": "specific_release_date",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうそうや",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": {
+            "value": "Official Sapphire Night",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          }
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅと",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空蒼夜",
+          "evidence_ref": "fictional_title_F10",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手と",
+          "evidence_ref": "fictional_artist_F10",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2024,
+          "evidence_ref": "fictional_date_F10",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": "Sapphire Night (unverified translation)",
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": "Official Sapphire Night",
+        "reject_translation": true,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "I01",
+      "group": "identity",
+      "synthetic": true,
+      "title": "架空の録音",
+      "artist": "架空歌手な",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "rec-01",
+      "year": {
+        "value": 2023,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのろくおん",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅな",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の録音",
+          "evidence_ref": "fictional_title_I01",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手な",
+          "evidence_ref": "fictional_artist_I01",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2023,
+          "evidence_ref": "fictional_date_I01",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "I02",
+      "group": "identity",
+      "synthetic": true,
+      "title": "架空の録音",
+      "artist": "架空歌手な",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "rec-02",
+      "year": {
+        "value": 2023,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのろくおん",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅな",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の録音",
+          "evidence_ref": "fictional_title_I02",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手な",
+          "evidence_ref": "fictional_artist_I02",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2023,
+          "evidence_ref": "fictional_date_I02",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "distinct_recording",
+        "compare_to": "I01",
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "I03",
+      "group": "identity",
+      "synthetic": true,
+      "title": "架空の録音",
+      "artist": "架空歌手に",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "rec-03",
+      "year": {
+        "value": 2023,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのろくおん",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅに",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の録音",
+          "evidence_ref": "fictional_title_I03",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手に",
+          "evidence_ref": "fictional_artist_I03",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2023,
+          "evidence_ref": "fictional_date_I03",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "review",
+        "compare_to": "I01",
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "I04",
+      "group": "identity",
+      "synthetic": true,
+      "title": "架空の録音",
+      "artist": "架空歌手な",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "rec-cover",
+      "year": {
+        "value": 2023,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのろくおん",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅな",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の録音",
+          "evidence_ref": "fictional_title_I04",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手な",
+          "evidence_ref": "fictional_artist_I04",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2023,
+          "evidence_ref": "fictional_date_I04",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "distinct_recording",
+        "compare_to": "I01",
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "I05",
+      "group": "identity",
+      "synthetic": true,
+      "title": "架空の録音",
+      "artist": "架空歌手な",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "rec-live",
+      "year": {
+        "value": 2023,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのろくおん",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅな",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の録音",
+          "evidence_ref": "fictional_title_I05",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手な",
+          "evidence_ref": "fictional_artist_I05",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2023,
+          "evidence_ref": "fictional_date_I05",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "distinct_recording",
+        "compare_to": "I01",
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "I06",
+      "group": "identity",
+      "synthetic": true,
+      "title": "架空の録音",
+      "artist": "架空歌手な",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "rec-remix",
+      "year": {
+        "value": 2023,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのろくおん",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅな",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の録音",
+          "evidence_ref": "fictional_title_I06",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手な",
+          "evidence_ref": "fictional_artist_I06",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2023,
+          "evidence_ref": "fictional_date_I06",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "distinct_recording",
+        "compare_to": "I01",
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "I07",
+      "group": "identity",
+      "synthetic": true,
+      "title": "架空の識別",
+      "artist": "架空歌手ぬ",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "collision-id",
+      "year": {
+        "value": 2023,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのしきべつ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅぬ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の識別",
+          "evidence_ref": "fictional_title_I07",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手ぬ",
+          "evidence_ref": "fictional_artist_I07",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2023,
+          "evidence_ref": "fictional_date_I07",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "I08",
+      "group": "identity",
+      "synthetic": true,
+      "title": "架空の別作品",
+      "artist": "架空歌手ね",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "collision-id",
+      "year": {
+        "value": 2023,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのべつさくひん",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅね",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の別作品",
+          "evidence_ref": "fictional_title_I08",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手ね",
+          "evidence_ref": "fictional_artist_I08",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2023,
+          "evidence_ref": "fictional_date_I08",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "review",
+        "compare_to": "I07",
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "I09",
+      "group": "identity",
+      "synthetic": true,
+      "title": "架空の識別",
+      "artist": "架空歌手ぬ",
+      "source_code": "synthetic_secondary",
+      "entity_type": "recording",
+      "external_id": "collision-id",
+      "year": {
+        "value": 2023,
+        "precision": "year",
+        "semantics": "recording_first_released",
+        "unknown_reason": null
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのしきべつ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅぬ",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の識別",
+          "evidence_ref": "fictional_title_I09",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手ぬ",
+          "evidence_ref": "fictional_artist_I09",
+          "policy_version": 1
+        },
+        {
+          "field": "release_year",
+          "value": 2023,
+          "evidence_ref": "fictional_date_I09",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "review",
+        "compare_to": "I07",
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    },
+    {
+      "id": "I10",
+      "group": "identity",
+      "synthetic": true,
+      "title": "架空の異なる発売年",
+      "artist": "架空歌手の",
+      "source_code": "synthetic_primary",
+      "entity_type": "recording",
+      "external_id": "rec-year-unknown",
+      "year": {
+        "value": null,
+        "precision": "unknown",
+        "semantics": "unknown",
+        "unknown_reason": "conflicting_sources"
+      },
+      "names": {
+        "title": {
+          "hiragana": {
+            "value": "かくうのことなるはつばいねん",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        },
+        "artist": {
+          "hiragana": {
+            "value": "かくうかしゅの",
+            "verification": "source_confirmed",
+            "evidence_ref": "synthetic-evidence",
+            "derived_from": null
+          },
+          "katakana": null,
+          "romaji": null,
+          "english": null
+        }
+      },
+      "missing_reasons": {},
+      "claims": [
+        {
+          "field": "title",
+          "value": "架空の異なる発売年",
+          "evidence_ref": "fictional_title_I10",
+          "policy_version": 1
+        },
+        {
+          "field": "artist",
+          "value": "架空歌手の",
+          "evidence_ref": "fictional_artist_I10",
+          "policy_version": 1
+        }
+      ],
+      "machine_translation": null,
+      "expected": {
+        "identity": "candidate",
+        "compare_to": null,
+        "official_english": null,
+        "reject_translation": false,
+        "no_legacy_write": true,
+        "legacy_display_id_unchanged": true
+      }
+    }
+  ]
+}

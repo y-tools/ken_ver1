@@ -236,5 +236,144 @@ class T008IntegrityTests(unittest.TestCase):
             print(f"B012 load={count} completed={count} rejected=0 deadlocks=0 duplicate_candidates=0 "+
                   f"latency_ms_p50={pct(.50)} p95={pct(.95)} p99={pct(.99)} max={round(max(latencies),2)}")
 
+
+    def test_concurrent_evidence_edit_then_approval(self):
+        _,cid,_=self._stage("Edit before approval "+uuid.uuid4().hex,uuid.uuid4().hex)
+        with psycopg.connect(DSN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT t008_review_mark(%s,'initial verification',true)",(cid,))
+            conn.commit()
+        started=Event(); release=Event()
+        def modifying():
+            with psycopg.connect(DSN) as conn:
+                with conn.transaction():
+                    with conn.cursor() as cur:
+                        cur.execute("""UPDATE t008_evidence SET source_url='https://fictional.test/source'
+                        WHERE candidate_id=%s AND field_name='title'""",(cid,))
+                        started.set()
+                        if not release.wait(8):
+                            raise TimeoutError("evidence lock test")
+        def approving():
+            with psycopg.connect(DSN) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SET lock_timeout='5s'")
+                    cur.execute("SELECT t008_approve_candidate(%s,'after evidence change')",(cid,))
+                conn.commit()
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            a=executor.submit(modifying)
+            self.assertTrue(started.wait(8))
+            b=executor.submit(approving)
+            time.sleep(.1)
+            release.set()
+            a.result(timeout=8); b.result(timeout=8)
+        with psycopg.connect(DSN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT t008_publish_preview(%s)",(cid,))
+                self.assertEqual(cur.fetchone()[0],"published")
+                cur.execute("""SELECT count(*) FROM t008_audit WHERE action='approved'
+                    AND details->>'candidate_id'=%s""",(str(cid),))
+                self.assertEqual(cur.fetchone()[0],1)
+            conn.commit()
+
+    def test_concurrent_policy_revocation_before_publish(self):
+        source="policy_race_"+uuid.uuid4().hex
+        now=datetime.now(timezone.utc)
+        pol=SourcePolicy(source,"local_dump","test-only","fixture",
+             frozenset({"title","artist"}),True,True,True,True,
+             now-timedelta(minutes=1),now+timedelta(hours=1))
+        with psycopg.connect(DSN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""INSERT INTO t008_source_policies
+                (source_code,acquisition_method,content_license,access_terms,allowed_fields,
+                automated_access_allowed,storage_allowed,publication_allowed,reviewed_at,
+                expires_at,policy_version)
+                VALUES(%s,'local_dump','test-only','fixture',%s,true,true,true,%s,%s,1)""",
+                (source,["title","artist"],pol.reviewed_at,pol.expires_at))
+            conn.commit()
+        _,cid,_=self._stage("Race policy",uuid.uuid4().hex,pol)
+        with psycopg.connect(DSN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT t008_review_mark(%s,'verified before race',true)",(cid,))
+                cur.execute("SELECT t008_approve_candidate(%s,'approved before race')",(cid,))
+            conn.commit()
+        started=Event();release=Event()
+        def revoke_policy():
+            with psycopg.connect(DSN) as conn:
+                with conn.transaction():
+                    with conn.cursor() as cur:
+                        cur.execute("""INSERT INTO t008_source_policies
+                            (source_code,acquisition_method,content_license,access_terms,
+                             allowed_fields,automated_access_allowed,storage_allowed,
+                             publication_allowed,reviewed_at,expires_at,policy_version)
+                            VALUES(%s,'local_dump','test-only','fixture',%s,true,true,false,%s,%s,2)""",
+                            (source,["title","artist"],pol.reviewed_at,pol.expires_at))
+                        started.set()
+                        if not release.wait(8):
+                            raise TimeoutError("policy test handoff")
+        def publish():
+            with psycopg.connect(DSN) as conn:
+                with self.assertRaises(errors.RaiseException):
+                    with conn.transaction():
+                        with conn.cursor() as cur:
+                            cur.execute("SET LOCAL lock_timeout='5s'")
+                            cur.execute("SELECT t008_publish_preview(%s)",(cid,))
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            a=executor.submit(revoke_policy)
+            self.assertTrue(started.wait(8))
+            b=executor.submit(publish)
+            time.sleep(.1)
+            release.set()
+            a.result(timeout=8); b.result(timeout=8)
+        with psycopg.connect(DSN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM t008_publication_preview WHERE candidate_id=%s",(cid,))
+                self.assertEqual(cur.fetchone()[0],0)
+
+    def test_connection_termination_rolls_back_and_retries(self):
+        source=self.source
+        key="disconnect-"+uuid.uuid4().hex
+        batch=uuid.uuid4()
+        content=fingerprint(Candidate("Disconnected","Singer",key))
+        event=hashlib.sha256(json.dumps([source,"local_dump",self.policy_id,content],
+             separators=(",",":")).encode("utf-8")).hexdigest()
+        inserted=Event();release=Event();info={}
+        def dying_writer():
+            try:
+                with psycopg.connect(DSN) as conn:
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT pg_backend_pid()")
+                        info["pid"]=cur.fetchone()[0]
+                        cur.execute("SELECT t008_stage_one(%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                            (batch,"Disconnected","Singer",source,"recording",key,
+                             self.policy_id,content,event))
+                        self.assertEqual(cur.fetchone()[0],"new")
+                        inserted.set()
+                        release.wait(8)
+                    conn.commit()
+            except psycopg.OperationalError:
+                info["terminated"]=True
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            job=executor.submit(dying_writer)
+            self.assertTrue(inserted.wait(8))
+            with psycopg.connect(DSN) as killer:
+                with killer.cursor() as cur:
+                    cur.execute("SELECT pg_terminate_backend(%s)",(info["pid"],))
+                    self.assertTrue(cur.fetchone()[0])
+            release.set()
+            job.result(timeout=8)
+        self.assertTrue(info.get("terminated"))
+        # A PostgreSQL backend termination must have rolled back the uncommitted
+        # candidate, evidence, intake event and external-claim atomically.
+        with psycopg.connect(DSN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM t008_candidates WHERE batch_id=%s",(batch,))
+                self.assertEqual(cur.fetchone()[0],0)
+        result,_,_=self._stage("Disconnected",key,self.policy,batch)
+        self.assertEqual(result["inserted"],1)
+        with psycopg.connect(DSN) as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM t008_candidates WHERE batch_id=%s",(batch,))
+                self.assertEqual(cur.fetchone()[0],1)
+
 if __name__=="__main__":
     unittest.main()

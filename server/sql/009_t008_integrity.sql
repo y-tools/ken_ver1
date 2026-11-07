@@ -19,8 +19,9 @@ $$;
 CREATE OR REPLACE FUNCTION t008_event_sha256(p_source text,p_method text,
  p_policy bigint,p_content text)
 RETURNS text LANGUAGE sql IMMUTABLE SET search_path=pg_catalog,public AS $$
- SELECT encode(sha256(convert_to(array_to_json(ARRAY[
-     p_source,p_method,p_policy::text,p_content])::text,'UTF8')),'hex')
+ SELECT encode(sha256(convert_to(
+ format('[%s,%s,%s,%s]',to_json(p_source)::text,to_json(p_method)::text,
+        p_policy::text,to_json(p_content)::text),'UTF8')),'hex')
 $$;
 
 -- Share source-version serialization between new policy insertion and publish.

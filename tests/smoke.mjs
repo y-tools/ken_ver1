@@ -19,72 +19,48 @@ try{
  await page.locator("#listenerView").waitFor({state:"visible"});
  await check((await text(page.locator("#listenerStreamLabel")))==="OFF AIR","Listener starts OFF AIR");
  await page.waitForFunction(
-  () => window.KEN_CATALOG_STATS?.vocadbSourceCount===100000,
-  null,{timeout:90000}
+  () => document.querySelector("#catalogStatus")?.textContent?.includes("TK専用カタログ"),
+  null,{timeout:30000}
  );
- const stats=await page.evaluate(()=>window.KEN_CATALOG_STATS);
- await check(stats.extensionSourceCount===140983,"New catalog extension contains 140983 songs");
- await check(stats.searchableUniqueCount===300000 && stats.targetReached===true,"Exactly 300000 unique songs are searchable");
- await page.locator("#searchInput").fill("流恋情歌");
- await page.waitForFunction(()=>document.querySelector("#searchResults")?.textContent?.includes("流恋情歌"),null,{timeout:30000});
- await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),"Japanese song catalog search succeeds");
- await check(await page.locator("#searchResults .karaoke-coverage").count()>0,"DAM and JOYSOUND verification panel shown on catalog results");
- await check((await page.locator("#searchResults .karaoke-coverage").first().textContent()).includes("収録未確認"),
-  "Unverified titles do not claim karaoke availability");
- await check(await page.locator("#searchResults .karaoke-coverage").first().locator('a[href*="clubdam.com"]').count()>0,
-  "DAM official lookup link included for each song");
- await check(await page.locator("#searchResults .karaoke-coverage").first().locator('a[href*="joysound.com"]').count()>0,
-  "JOYSOUND official lookup link included for each song");
+ const tkName="TK from 凛として時雨";
+ const tkCatalog=await page.evaluate(async()=>await (await fetch("./catalog.json")).json());
+ await check(tkCatalog.length===98 && tkCatalog.every(row=>row[1]===tkName),
+   "Static catalog contains exactly 98 TK solo songs, no other artists");
+ await page.locator("#searchInput").fill("unravel");
+ await page.waitForFunction(()=>window.__searchResults?.some(row=>row.title==="unravel"),null,{timeout:30000});
+ await check((await page.locator("#searchResults").textContent()).includes("unravel"),
+   "TK title search finds unravel");
  await check(await page.locator("#searchArtistInput").count()===1,
-  "Separate artist input exists without search-mode toggle");
- await check(await page.locator("[data-search-mode]").count()===0,
-  "Legacy title/artist toggle removed");
- const firstSong=await page.evaluate(()=>(window.__searchResults||[]).find(s=>s.title==="流恋情歌"));
- await check(Boolean(firstSong?.artist),"Title-only result supplies an artist for AND test");
- await page.locator("#searchArtistInput").fill(firstSong.artist);
- await page.waitForTimeout(650);
- await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),
-  "Title AND artist fields both match the song");
- await check((await page.locator("#searchInput").inputValue())==="流恋情歌",
-  "Filling artist leaves title query unchanged");
- await page.locator("#searchArtistInput").fill("存在しない試験用歌手名xyz");
- await page.waitForTimeout(650);
- await check((await page.locator("#searchResults .song-row").count())===0,
-  "Title AND mismatched artist returns no results");
- await page.locator("#searchArtistInput").fill(firstSong.artist);
+   "Separate artist search input remains available");
+ await page.locator("#searchArtistInput").fill(tkName);
+ await page.waitForTimeout(700);
+ const tkResults=await page.evaluate(()=>window.__searchResults||[]);
+ await check(tkResults.some(row=>row.title==="unravel")&&tkResults.every(row=>row.artist===tkName),
+   "Title + TK artist query returns TK only");
+ await page.locator("#searchArtistInput").fill("B'z");
+ await page.waitForTimeout(700);
+ await check((await page.evaluate(()=>window.__searchResults||[])).length===0,
+   "Non-TK artist cannot appear even when a TK title is entered");
  await page.locator("#searchInput").fill("");
- await page.waitForTimeout(650);
- await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),
-  "Artist-only search finds the known song");
+ await page.locator("#searchArtistInput").fill("B'z");
+ await page.waitForTimeout(700);
+ await check((await page.evaluate(()=>window.__searchResults||[])).length===0,
+   "Non-TK artist-only query returns no results");
+ await page.locator("#searchArtistInput").fill(tkName);
+ await page.waitForTimeout(700);
+ await check((await page.evaluate(()=>window.__searchResults||[])).every(row=>row.artist===tkName),
+   "TK artist-only search returns only TK");
+ await page.locator("#searchInput").fill("unravel");
  await page.locator("#searchArtistInput").fill("");
- await page.locator("#searchInput").fill("流恋情歌");
- await page.waitForTimeout(650);
- await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),
-  "Title-only search remains available");
-
- const mbMetadata=await page.evaluate(async()=>{
-  const manifest=await window.KEN_MB_SEARCH.ready();
-  if(!manifest)return null;
-  const indexResponse=await fetch("./data/musicbrainz_700k/bucket_00.json");
-  if(!indexResponse.ok)return null;
-  const sample=(await indexResponse.json()).find(row=>row[0]&&Array.from(row[0]).length>=2);
-  if(!sample)return null;
-  const normalized=sample[0].normalize("NFKC").toLowerCase()
-   .replace(/[ァ-ヶ]/g,c=>String.fromCharCode(c.charCodeAt(0)-96))
-   .replace(/[\s・ー‐-]/g,"");
-  const query=Array.from(normalized).slice(0,2).join("");
-  const results=await window.KEN_MB_SEARCH.search(query,30);
-  return {manifest,sample,query,results};
- });
- await check(mbMetadata?.manifest?.targetUnique===1000000 && mbMetadata?.manifest?.additionalUnique===700000,
-  "One million song manifest is published and verified");
- await check(Array.isArray(mbMetadata.results)&&mbMetadata.results.length>0,
-  "On-demand MusicBrainz prefix search returns songs");
- await page.locator("#searchInput").fill(mbMetadata.query);
- await page.waitForFunction(q=>window.__searchResults?.some(row=>row.source==="catalog"&&
-  (row.title.toLowerCase().includes(q)||row.artist.toLowerCase().includes(q))),mbMetadata.query,{timeout:30000});
- await check((await page.locator("#searchResults .song-row").count())>0,
-  "Additional MusicBrainz song can be searched in the listener UI");
+ await page.waitForTimeout(700);
+ await check(await page.locator("#searchResults .karaoke-coverage").count()>0,
+   "DAM/JOYSOUND verification remains available for TK songs");
+ await check((await page.locator("#searchResults .karaoke-coverage").first().textContent()).includes("収録未確認"),
+   "Unverified TK songs do not falsely claim karaoke availability");
+ await check(await page.locator("#searchResults .karaoke-coverage").first().locator('a[href*="clubdam.com"]').count()>0,
+   "DAM official lookup remains available");
+ await check(await page.locator("#searchResults .karaoke-coverage").first().locator('a[href*="joysound.com"]').count()>0,
+   "JOYSOUND official lookup remains available");
  await check((await page.locator("#today-history-section").count())===1,"Today sung-history section exists");
  await check((await page.locator("#practice-section .section-no").textContent()).trim()==="04","Practice section is number 04");
  await admin();

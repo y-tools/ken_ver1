@@ -18,14 +18,12 @@ from pathlib import Path
 import psycopg
 
 ROOT = Path(__file__).resolve().parents[1]
+# All non-TK source datasets were removed on 2026-11-09. Never reimport them.
+# Only the 98-row TK-only catalog is valid for a disposable test import.
 DATASETS = {
-    "world": ("catalog.json", "wikidata", "Wikidata", "CC0", "https://www.wikidata.org"),
-    "japanese": ("data/japanese_popular_10000.json", "wikidata", "Wikidata", "CC0", "https://www.wikidata.org"),
-    "vocadb": ("data/vocadb_100k/manifest.json", "vocadb", "VocaDB", "CC-BY", "https://vocadb.net"),
-    "extra_300k": ("data/extra_to_300k/manifest.json", "vocadb", "VocaDB", "CC-BY", "https://vocadb.net"),
-    "mb_700k": ("data/musicbrainz_700k/manifest.json", "musicbrainz", "MusicBrainz", "CC0", "https://musicbrainz.org"),
-    "mb_1m": ("data/musicbrainz_next_1m/manifest.json", "musicbrainz", "MusicBrainz", "CC0", "https://musicbrainz.org"),
+    "tk_only": ("catalog.json", "musicbrainz", "TK curated MusicBrainz metadata", "CC0", "https://musicbrainz.org"),
 }
+
 NAME_COLUMNS = [
     ("title_hira", "title", "hiragana"),
     ("title_kata", "title", "katakana"),

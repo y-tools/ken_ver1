@@ -163,7 +163,8 @@ async def session_check(token_hash: str = Depends(auth)):
 
 
 def encode_artist(row):
-    return {"id": row["id"], "name": row["name"], "version": as_iso(row["updated_at"])}
+    return {"id": row["id"], "name": row["name"], "version": as_iso(row["updated_at"]),
+            "lastResearchedOn": as_iso(row.get("last_researched_on"))}
 
 
 def encode_song(row):
@@ -196,7 +197,7 @@ async def artists(request: Request, q: str = Query(min_length=2, max_length=80),
                   UNION
                   SELECT artist_id FROM artist_names WHERE search_key LIKE %s ESCAPE '!'
                 )
-                SELECT a.id, a.name, a.updated_at
+                SELECT a.id, a.name, a.updated_at, a.last_researched_on
                 FROM matches m JOIN artists a ON a.id=m.artist_id
                 ORDER BY a.name LIMIT 40
                 """, (pattern, pattern))
@@ -213,7 +214,7 @@ async def artist_detail(
 ):
     async with request.app.state.pool.connection() as conn:
         async with conn.cursor() as cur:
-            await cur.execute("SELECT id,name,updated_at FROM artists WHERE id=%s", (artist_id,))
+            await cur.execute("SELECT id,name,updated_at,last_researched_on FROM artists WHERE id=%s", (artist_id,))
             artist = await cur.fetchone()
             if not artist:
                 raise HTTPException(404, "アーティストが見つかりません")
@@ -269,6 +270,18 @@ class ArtistUpdate(BaseModel):
         if not value.strip():
             raise ValueError("アーティスト名が空です")
         return value.strip()
+
+
+class ArtistResearchUpdate(BaseModel):
+    version: datetime
+    lastResearchedOn: date | None
+
+    @field_validator("lastResearchedOn")
+    @classmethod
+    def reject_future_research_date(cls, value: date | None):
+        if value and (value < date(1980, 1, 1) or value > datetime.now(timezone(timedelta(hours=9))).date()):
+            raise ValueError("最終調査日は1980年以降の実際に調査した日付を指定してください")
+        return value
 
 
 class SongUpdate(BaseModel):
@@ -350,6 +363,33 @@ async def update_artist(artist_id: int, body: ArtistUpdate, request: Request, to
                                 {"name": before["name"]}, {"name": after["name"]})
     except UniqueViolation:
         raise HTTPException(409, "同じ名前のアーティストが既にあります。統合作業が必要です")
+    return {"artist": encode_artist(after)}
+
+
+@app.post("/api/admin/artists/{artist_id}/research")
+async def update_artist_research(
+    artist_id: int, body: ArtistResearchUpdate, request: Request, token_hash: str = Depends(auth)
+):
+    async with request.app.state.pool.connection() as conn:
+        async with conn.transaction():
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    "SELECT id,name,updated_at,last_researched_on FROM artists WHERE id=%s FOR UPDATE",
+                    (artist_id,),
+                )
+                before = await cur.fetchone()
+                if not before:
+                    raise HTTPException(404, "アーティストが見つかりません")
+                if before["updated_at"] != body.version:
+                    raise HTTPException(409, "ほかの編集が先に保存されました。再読み込みしてください")
+                await cur.execute("""
+                    UPDATE artists SET last_researched_on=%s,updated_at=now()
+                    WHERE id=%s RETURNING id,name,updated_at,last_researched_on
+                """, (body.lastResearchedOn, artist_id))
+                after = await cur.fetchone()
+                await audit(cur, "artist_research_date_update", "artist", artist_id,
+                            {"lastResearchedOn": as_iso(before["last_researched_on"])},
+                            {"lastResearchedOn": as_iso(after["last_researched_on"])})
     return {"artist": encode_artist(after)}
 
 

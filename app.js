@@ -8,6 +8,8 @@ const preview = params.get("embed")==="1";
 if(preview) document.body.classList.add("embed-mode");
 const config = window.KEN_CONFIG || {};
 const storageKey = "ken-denmoku-v2";
+const TK_ONLY_ARTIST = "TK from 凛として時雨";
+const isTKArtist = artist => norm(artist)===norm(TK_ONLY_ARTIST);
 const initial = {songs:[],requests:[],name:"Ken",streamLive:false,sessions:[],activeSessionId:null,chatNotes:[]};
 let state = initial;
 try {
@@ -132,17 +134,14 @@ function renderSearch(){
  const unchanged=()=>sequence===extendedSearchSequence&&
   $("#searchInput").value.trim()===titleQuery&&
   $("#searchArtistInput").value.trim()===artistQuery;
- const ready=state.songs.filter(s=>s.status==="ready");
+ const ready=state.songs.filter(s=>s.status==="ready" && isTKArtist(s.artist));
  const statusLookup=new Map(state.songs.map(s=>[readyKey(s.title,s.artist),s.status]));
- const oneMillion=window.KEN_MB_CATALOG_STATS?.ready;
- const twoMillion=window.KEN_2M_STATS?.ready;
  $("#searchHelper").textContent=catalog.ready
-  ? "楽曲カタログ "+(twoMillion?"2,000,000":oneMillion?"1,000,000":catalog.rows.length.toLocaleString("ja-JP"))+
-    "曲。曲名・アーティスト名は片方だけでも両方でも検索できます。大量追加分は先頭2文字以上で検索。"
-  : catalog.error?"カタログを読み込めませんでした。登録済み曲は検索できます。":"楽曲カタログを読み込み中です…";
+  ? "TK from 凛として時雨のみ "+catalog.rows.length.toLocaleString("ja-JP")+"曲。曲名・アーティスト名は片方だけでも両方でも検索できます。"
+  : catalog.error?"TK限定カタログを読み込めませんでした。":"TK限定カタログを読み込み中です…";
  const list=[],indices=new Map();
  const add=song=>{
-  if(!matchesBothFields(song,titleTerm,artistTerm))return;
+  if(!isTKArtist(song.artist)||!matchesBothFields(song,titleTerm,artistTerm))return;
   const key=readyKey(song.title,song.artist);
   const i=indices.get(key);
   if(i!==undefined){
@@ -419,7 +418,7 @@ function render(){
  $("#streamerName").textContent=state.name;
  document.title=state.name+"のデンモク";
  renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
- $("#catalogStatus").textContent=catalog.ready?"楽曲検索利用可":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
+ $("#catalogStatus").textContent=catalog.ready?"TK専用カタログ":catalog.error?"カタログ読込失敗":"TKカタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  $("#toListener").hidden=!adminMode || preview;
  document.body.classList.toggle("admin-active",adminMode&&!preview);
@@ -549,8 +548,9 @@ async function loadCatalog(){
   const res=await fetch("./catalog.json",{cache:"force-cache"});
   if(!res.ok)throw Error("HTTP "+res.status);
   const rows=await res.json();if(!Array.isArray(rows))throw Error("Invalid catalog");
-  catalog.rows=rows;
-  catalog.idx=rows.map(r=>[norm(r[0]),norm(r[1])]);
+  // Force TK-only even when a browser cache still has older catalog.json.
+  catalog.rows=rows.filter(r=>Array.isArray(r)&&r.length>=2&&isTKArtist(r[1]));
+  catalog.idx=catalog.rows.map(r=>[norm(r[0]),norm(r[1])]);
   catalog.ready=true;
  }catch(e){catalog.error=true;console.warn("Catalog unavailable",e);}
  render();

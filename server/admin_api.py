@@ -356,7 +356,7 @@ async def update_artist(artist_id: int, body: ArtistUpdate, request: Request, to
                         raise HTTPException(422, "アーティスト名が空です")
                     await cur.execute("""
                       UPDATE artists SET name=%s,name_key=%s,identity_status='human_confirmed',updated_at=now()
-                      WHERE id=%s RETURNING id,name,updated_at
+                      WHERE id=%s RETURNING id,name,updated_at,last_researched_on
                     """, (body.name, key, artist_id))
                     after = await cur.fetchone()
                     await audit(cur, "artist_update", "artist", artist_id,

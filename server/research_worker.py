@@ -248,9 +248,15 @@ def song_lane(db, client, budget=25):
         if not valid_mbid(rid) or not isinstance(title,str) or not 1 <= len(title.strip()) <= 300:
             continue
         discovered+=1
+        credits=rec.get("artist-credit") or []
         credit_ok=credits_include_artist(rec,mbid)
+        credited_artists=sum(1 for entry in credits
+            if isinstance(entry,dict) and isinstance(entry.get("artist"),dict))
+        length=rec.get("length")
         clean=safe_title(title)
         reason = ("artist_credit_mismatch" if not credit_ok else
+                  "collaboration_requires_review" if credited_artists != 1 else
+                  "unverified_recording_length" if not isinstance(length,int) or length < 30000 else
                   "version_or_non_song_requires_review" if not clean else None)
         status="verified" if not reason else "review"
         with db.transaction():
@@ -263,6 +269,14 @@ def song_lane(db, client, budget=25):
                   rec.get("first-release-date"),credit_ok,status,reason))
             staged+=1
             if not reason:
+                linked=db.execute("""SELECT r.song_id FROM recordings r
+                    JOIN songs s ON s.id=r.song_id
+                    WHERE r.musicbrainz_recording_id=%s""",(rid,)).fetchone()
+                if linked:
+                    db.execute("""UPDATE ken_research_songs SET status='review',
+                        review_reason='recording_id_already_in_catalog'
+                        WHERE recording_mbid=%s AND status<>'registered'""",(rid,))
+                    continue
                 title_key=key(title)
                 same=db.execute("""SELECT id FROM songs WHERE title_key=%s AND primary_artist_id=%s""",
                                 (title_key,artist["master_artist_id"])).fetchone()

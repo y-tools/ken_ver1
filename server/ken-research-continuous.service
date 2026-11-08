@@ -1,0 +1,30 @@
+[Unit]
+Description=Ken continuous Japanese artist and song metadata research
+Wants=network-online.target
+After=network-online.target postgresql.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=kenresearch
+Group=kenresearch
+WorkingDirectory=/opt/ken-song-api
+ExecStart=/opt/ken-song-api/.venv/bin/python -u /opt/ken-song-api/server/research_worker.py --lane both --continuous
+Restart=always
+RestartSec=20s
+TimeoutStartSec=45s
+TimeoutStopSec=45s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=220M
+TasksMax=40
+CPUQuota=50%
+Nice=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ken-research
+
+[Install]
+WantedBy=multi-user.target

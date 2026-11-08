@@ -1,4 +1,37 @@
-# Ken daily research queue and unattended importer (2026-11-09)
+# Ken continuous research queue and unattended importer (2026-11-09)
+
+## 2026-11-09 continuous mode (supersedes the daily VPS timers)
+
+After explicit user request, the VPS no longer needs to wait for 08:35 / 09:35 before running its next batch.
+
+- `ken-research-continuous.service` runs continuously under Linux user `kenresearch`. In one non-overlapping process, it alternates **5 Japan-related artist checks** and **25 recordings for one artist**, and then immediately starts the next pair. The sequence is bounded by external service pacing, not a daily schedule.
+- Old `ken-research-artists.timer` and `ken-research-songs.timer` are disabled and stopped before enabling the continuous service. Keep their unit files for a possible rollback but never run both old timers and the continuous service at the same time.
+- All HTTP requests stay rate limited at >=1.2s with the same persistent client instance for both lanes; batch boundaries wait 1.5s. On 429, 5xx, timeout, or malformed data, the worker backs off (15s up to 15min) and systemd restarts unexpectedly exited processes after 20 seconds. No bypass of source usage policies.
+- **Eligible new artists go straight into the catalog with `identity_status='provisional'`**, without requiring Wikidata/official-homepage confirmation: MusicBrainz artist UUID, explicit country JP, Person/Group type, valid normalized name and a collision-free existing catalog check are mandatory. If official homepage and reciprocal Wikidata ID are independently confirmed, the record has `identity_status='source_confirmed'`. Name collisions / missing country / unsuitable types are *not* automatically registered.
+- Eligible unique new songs go straight into the catalog only when the MusicBrainz artist recording credit is exactly one artist, recording length is >=30 seconds, the title is non-media/non-version, the recording MBID is unique, and no normalized title collision exists. All unconfirmed dates, kana, romanization and English titles remain NULL. Ambiguous/duplicate rows are retained in the queue as review history but **do not block the next batch**.
+- Durable cursors mean the next batch continues from where the prior batch finished. `ken_research_runs` still logs each bounded batch for auditing and unexpected failures; database records are append-only and deletion of master data is forbidden to this role.
+- CPU <=50%, memory <=220MB and journald monitoring. The operator can disable continuous operation immediately with `sudo systemctl stop ken-research-continuous.service`. Use `journalctl -u ken-research-continuous.service -n 100 --no-pager` for recent results.
+- The two separate **ChatGPT scheduled tasks** remain daily **reports**. ChatGPT scheduled tasks are not continuous trigger-on-completion jobs; do not claim that ChatGPT itself is running non-stop. VPS is continuous, ChatGPT research is not.
+
+### Deployment
+```sh
+sudo systemctl disable --now ken-research-artists.timer ken-research-songs.timer
+sudo systemctl stop ken-research-artists.service ken-research-songs.service
+sudo install -m 644 server/ken-research-continuous.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now ken-research-continuous.service
+sudo systemctl status ken-research-continuous.service --no-pager
+```
+
+### Rollback
+```sh
+sudo systemctl disable --now ken-research-continuous.service
+sudo systemctl enable --now ken-research-artists.timer ken-research-songs.timer
+```
+
+The prior backup and worker version should be preserved before swapping executable files.
+
+
 
 ## Purpose
 Separate ChatGPT's source-cited reporting from **autonomous server-side collection**. The installed `ken-research-artists.timer` and `ken-research-songs.timer` run without Desktop Commander or an interactive ChatGPT approval. Their **own** source fetches can reach PostgreSQL directly; ChatGPT reports are **not** automatically ingested into this worker.

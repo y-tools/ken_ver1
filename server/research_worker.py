@@ -181,8 +181,15 @@ def artist_lane(db, client, budget=5):
         name = item.get("name", "")
         if not isinstance(name, str) or not 1 <= len(name.strip()) <= 200:
             continue
-        valid, qid, official, reason = artist_identity(client, item)
+        linked, qid, official, reason = artist_identity(client, item)
         country = item.get("country")
+        # MusicBrainz artist UUID + explicit JP country and a unique normalized
+        # name are sufficient for a *provisional* identity. Independent Wikidata
+        # corroboration upgrades source confidence but is not a publication gate.
+        # Conflicting country / invalid UUID / name collision remain in review.
+        valid = (country == "JP" and valid_mbid(mbid)
+                 and item.get("type") in ("Person", "Group")
+                 and len(key(name)) >= 2)
         status = "verified" if valid else "review"
         with db.transaction():
             db.execute("""INSERT INTO ken_research_artists
@@ -196,7 +203,8 @@ def artist_lane(db, client, budget=5):
                  status=CASE WHEN ken_research_artists.status='registered'
                      THEN 'registered' ELSE EXCLUDED.status END""",
                 (mbid, name, country, item.get("type"), MB+"/artist/"+mbid,
-                 qid, official, 2 if valid else 1, status, reason or None))
+                 qid, official, 2 if linked else 1, status,
+                 (reason if not linked else None)))
             staged += 1
             if valid:
                 normalized = key(name)
@@ -211,15 +219,18 @@ def artist_lane(db, client, budget=5):
                 elif len(normalized) >= 2:
                     # Name identity and Wiki ↔ MusicBrainz linkage were verified.
                     row = db.execute("""INSERT INTO artists(name,name_key,identity_status)
-                        VALUES(%s,%s,'source_confirmed')
+                        VALUES(%s,%s,%s)
                         ON CONFLICT(name_key) DO NOTHING RETURNING id""",
-                        (name, normalized)).fetchone()
+                        (name, normalized,
+                         "source_confirmed" if linked else "provisional")).fetchone()
                     if row:
                         db.execute("""UPDATE ken_research_artists SET status='registered',
                           master_artist_id=%s,registered_at=now(),review_reason=NULL
                           WHERE artist_mbid=%s""", (row["id"], mbid))
                         record_event(db,"artists",mbid,"registered",{
-                            "artist_id":row["id"],"wikidata":qid,"source":MB+"/artist/"+mbid})
+                            "artist_id":row["id"],"wikidata":qid,
+                            "confidence":"source_confirmed" if linked else "provisional",
+                            "source":MB+"/artist/"+mbid})
                         promoted += 1
     if not listings:
         offset = 0
@@ -313,14 +324,81 @@ def song_lane(db, client, budget=25):
     return discovered,staged,promoted
 
 
+
+def execute_lane(db, client, lane, budget):
+    """One bounded batch, with a durable run record and independent rollback."""
+    with db.transaction():
+        run=db.execute("""INSERT INTO ken_research_runs(lane)
+            VALUES(%s) RETURNING id""",(lane,)).fetchone()["id"]
+    try:
+        counts=(artist_lane(db,client,budget) if lane=="artists"
+                else song_lane(db,client,budget))
+    except Exception as error:
+        with db.transaction():
+            db.execute("""UPDATE ken_research_runs SET status='failed',
+                error=%s,finished_at=now() WHERE id=%s""",
+                (str(error)[:400],run))
+        raise
+    with db.transaction():
+        db.execute("""UPDATE ken_research_runs SET
+            status='succeeded',discovered=%s,staged=%s,promoted=%s,
+            finished_at=now() WHERE id=%s""",(*counts,run))
+    print(json.dumps({"lane":lane,"run_id":run,
+        "discovered":counts[0],"staged":counts[1],
+        "promoted":counts[2]},ensure_ascii=False),flush=True)
+    return counts
+
+
+def run_forever(db, client, max_cycles=None, sleep=time.sleep):
+    """Back-to-back artist and song batches, with shared per-host pacing.
+
+    When sources fail, pause rather than overwhelm their infrastructure.
+    The systemd unit supervises this process for 24/7 operation.
+    """
+    consecutive_failures=0
+    cycle=0
+    while max_cycles is None or cycle < max_cycles:
+        for lane, budget in (("artists",5),("songs",25)):
+            try:
+                execute_lane(db,client,lane,budget)
+            except (urllib.error.HTTPError,urllib.error.URLError,
+                    TimeoutError,psycopg.Error,ValueError) as error:
+                consecutive_failures+=1
+                backoff=min(900,15*(2**min(consecutive_failures-1,6)))
+                print(json.dumps({"lane":lane,"status":"retry_later",
+                    "backoff_seconds":backoff,"error":str(error)[:200]},
+                    ensure_ascii=False),file=sys.stderr,flush=True)
+                sleep(backoff)
+                if db.closed:
+                    raise
+            else:
+                consecutive_failures=0
+            # Shared MusicBrainz client persists across both lanes; this
+            # delay ensures no back-to-back burst at the batch boundary.
+            sleep(1.5)
+        cycle+=1
+
+
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument("--lane",choices=["artists","songs"],required=True)
+    parser.add_argument("--lane",choices=["artists","songs","both"],required=True)
+    parser.add_argument("--continuous",action="store_true",
+                        help="Run immediately after each bounded batch, continuously")
     parser.add_argument("--max-items",type=int,default=None)
+    parser.add_argument("--max-cycles",type=int,default=None,
+                        help="Limit continuous cycles for tests only")
     parser.add_argument("--dry-run",action="store_true")
     args=parser.parse_args()
+    if args.continuous and args.lane!="both":
+        parser.error("--continuous requires --lane both")
+    if not args.continuous and args.lane=="both":
+        parser.error("--lane both requires --continuous")
+    if args.max_cycles is not None and (not args.continuous or args.max_cycles<1):
+        parser.error("--max-cycles requires continuous mode and a positive integer")
+    if args.continuous and args.max_items is not None:
+        parser.error("Continuous mode uses fixed bounded batches of 5 artists/25 recordings")
     budget=args.max_items or (5 if args.lane=="artists" else 25)
-    if not 1 <= budget <= (5 if args.lane=="artists" else 25):
+    if not args.continuous and not 1 <= budget <= (5 if args.lane=="artists" else 25):
         parser.error("Limit is 5 artists or 25 recordings per invocation")
     if args.dry_run:
         print("DRY_RUN; no network/DB writes. Verify in disposable DB first.")
@@ -330,28 +408,15 @@ def main():
         raise SystemExit("Unknown database")
     client=Client()
     with psycopg.connect("dbname="+dbname,row_factory=dict_row,autocommit=True) as db:
-        # Prevent overlapping workers and concurrent queue processing.
+        # Session lock stays held for all batches: never overlap cron or
+        # multiple live services. Unclean process exit frees lock automatically.
         locked=db.execute("SELECT pg_try_advisory_lock(214748,20261109) AS ok").fetchone()["ok"]
-        if not locked: raise RuntimeError("Another research worker running")
-        with db.transaction():
-            run=db.execute("""INSERT INTO ken_research_runs(lane)
-                VALUES(%s) RETURNING id""",(args.lane,)).fetchone()["id"]
-        try:
-            counts=(artist_lane(db,client,budget) if args.lane=="artists"
-                    else song_lane(db,client,budget))
-        except Exception as error:
-            with db.transaction():
-                db.execute("""UPDATE ken_research_runs SET status='failed',
-                    error=%s,finished_at=now() WHERE id=%s""",(str(error)[:400],run))
-            raise
+        if not locked:
+            raise RuntimeError("Another research worker running")
+        if args.continuous:
+            run_forever(db,client,max_cycles=args.max_cycles)
         else:
-            with db.transaction():
-                db.execute("""UPDATE ken_research_runs SET
-                    status='succeeded',discovered=%s,staged=%s,promoted=%s,
-                    finished_at=now() WHERE id=%s""",(*counts,run))
-            print(json.dumps({"lane":args.lane,"run_id":run,
-                "discovered":counts[0],"staged":counts[1],
-                "promoted":counts[2]},ensure_ascii=False))
+            execute_lane(db,client,args.lane,budget)
 
 
 if __name__=="__main__":

@@ -35,16 +35,33 @@ try{
   "DAM official lookup link included for each song");
  await check(await page.locator("#searchResults .karaoke-coverage").first().locator('a[href*="joysound.com"]').count()>0,
   "JOYSOUND official lookup link included for each song");
- await check(await page.locator('[data-search-mode="title"]').getAttribute("aria-pressed")==="true","Title search selected by default");
- const titleResult=await page.locator("#searchResults").textContent();
- await page.locator('[data-search-mode="artist"]').click();
- await check(await page.locator('[data-search-mode="artist"]').getAttribute("aria-pressed")==="true","Artist search switch activates");
- await check((await page.locator("#searchInput").inputValue())==="流恋情歌","Switch retains the existing query");
- await page.waitForTimeout(400);
- await check(!(await page.locator("#searchResults").textContent()).includes("流恋情歌"),"Artist search excludes a title-only match");
- await page.locator('[data-search-mode="title"]').click();
- await check(await page.locator('[data-search-mode="title"]').getAttribute("aria-pressed")==="true","Switch back to title search works");
- await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),"Title results return on switching back");
+ await check(await page.locator("#searchArtistInput").count()===1,
+  "Separate artist input exists without search-mode toggle");
+ await check(await page.locator("[data-search-mode]").count()===0,
+  "Legacy title/artist toggle removed");
+ const firstSong=await page.evaluate(()=>(window.__searchResults||[]).find(s=>s.title==="流恋情歌"));
+ await check(Boolean(firstSong?.artist),"Title-only result supplies an artist for AND test");
+ await page.locator("#searchArtistInput").fill(firstSong.artist);
+ await page.waitForTimeout(650);
+ await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),
+  "Title AND artist fields both match the song");
+ await check((await page.locator("#searchInput").inputValue())==="流恋情歌",
+  "Filling artist leaves title query unchanged");
+ await page.locator("#searchArtistInput").fill("存在しない試験用歌手名xyz");
+ await page.waitForTimeout(650);
+ await check((await page.locator("#searchResults .song-row").count())===0,
+  "Title AND mismatched artist returns no results");
+ await page.locator("#searchArtistInput").fill(firstSong.artist);
+ await page.locator("#searchInput").fill("");
+ await page.waitForTimeout(650);
+ await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),
+  "Artist-only search finds the known song");
+ await page.locator("#searchArtistInput").fill("");
+ await page.locator("#searchInput").fill("流恋情歌");
+ await page.waitForTimeout(650);
+ await check((await page.locator("#searchResults").textContent()).includes("流恋情歌"),
+  "Title-only search remains available");
+
  const mbMetadata=await page.evaluate(async()=>{
   const manifest=await window.KEN_MB_SEARCH.ready();
   if(!manifest)return null;

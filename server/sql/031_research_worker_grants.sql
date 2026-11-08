@@ -18,4 +18,5 @@ GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO kenresearch;
 REVOKE DELETE,TRUNCATE,REFERENCES,TRIGGER ON artists,songs,recordings,
   ken_research_runs,ken_research_artists,ken_research_songs,ken_research_state,
   ken_research_events FROM kenresearch;
+GRANT SELECT ON ken_research_runs,ken_research_artists,ken_research_songs,ken_research_events TO keneditor;
 COMMIT;

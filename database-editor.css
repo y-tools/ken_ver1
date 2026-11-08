@@ -47,3 +47,8 @@ form{display:grid;gap:11px}
 footer{padding:12px;text-align:center;color:var(--dim);font-size:11px}
 @media(max-width:800px){.layout{grid-template-columns:1fr}.sidebar{position:static;max-height:320px}.song-form{grid-template-columns:repeat(2,minmax(0,1fr))}.alias-form{grid-template-columns:repeat(2,minmax(0,1fr))}.alias-form label:nth-of-type(3){grid-column:1/-1}}
 @media(max-width:500px){.panel{padding:12px}.alias-form,.song-form{grid-template-columns:1fr}.alias-form>*{grid-column:1/-1!important}.song-form .wide{grid-column:1}.topbar{padding:12px}}
+
+/* Artist research date is independent from name edits. */
+.artist-research-form{margin-top:14px;padding:13px;border:1px solid var(--line);border-radius:10px;background:#102030;display:grid;grid-template-columns:minmax(180px,280px) auto;align-items:end;gap:10px}
+.artist-research-form .hint{grid-column:1/-1;margin:0}
+@media(max-width:540px){.artist-research-form{grid-template-columns:1fr}}

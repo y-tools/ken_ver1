@@ -76,7 +76,7 @@ try{
   && document.querySelector("#totalSongs")?.textContent==="98");
  assert.equal(await page.locator("#totalArtists").textContent(),"1");
  assert.equal(await page.locator("#totalSongs").textContent(),"98");
- assert.equal(await page.locator(".sidebar h2").textContent(),"アーティスト検索");
+ assert.equal(await page.locator("aside.sidebar > h2").textContent(),"アーティスト検索");
  console.log("PASS Authenticated database totals displayed above artist search");
  await page.waitForFunction(()=>document.querySelector("#researchCandidates")?.textContent?.includes("架空検証バンド"));
  assert.match(await page.locator("#researchSummary").textContent(),/アーティスト/);

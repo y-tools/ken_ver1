@@ -421,21 +421,14 @@ body.embed-mode .listener-broadcast-detail{font-size:11px;flex-basis:100%}
 @media(max-width:680px){.reading-grid{grid-template-columns:1fr}}
 
 
-/* Field-specific song search tabs - both mobile and desktop */
-.song-search-tabs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:2px 0 12px}
-.song-search-tabs button{
- appearance:none;min-width:0;min-height:43px;padding:9px 12px;
- border:1px solid var(--edge);border-radius:11px;background:var(--raised);
- color:var(--soft);font:inherit;font-size:13px;font-weight:800;
- line-height:1.25;cursor:pointer;transition:background .15s,border-color .15s
-}
-.song-search-tabs button.active,.song-search-tabs button[aria-pressed="true"]{
- color:#fff;border-color:#5cacf8;background:linear-gradient(120deg,#1964a2,#174979);
- box-shadow:inset 0 0 0 1px rgba(137,202,255,.24)
-}
-.song-search-tabs button:focus-visible{outline:3px solid #8acaff;outline-offset:2px}
-@media(max-width:480px){.song-search-tabs button{font-size:12px;min-height:40px;padding:7px 6px}}
-
+/* Two independent song/artist search fields. They combine with AND matching. */
+.song-search-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:2px 0 12px}
+.song-search-field{min-width:0;display:grid;gap:6px}
+.song-search-field label.field{display:block;margin:0 0 1px}
+.song-search-fields .searchbox{min-height:47px}
+.song-search-fields .searchbox:focus-within{border-color:#7abcf4;box-shadow:0 0 0 1px rgba(122,188,244,.35)}
+@media(max-width:640px){.song-search-fields{grid-template-columns:minmax(0,1fr);gap:10px}}
+body.embed-mode .song-search-fields{grid-template-columns:minmax(0,1fr);gap:8px}
 
 /* Official DAM / JOYSOUND lookup and individually verified status */
 .karaoke-coverage{margin:5px 0 0;max-width:100%;font-size:11px;line-height:1.45;color:var(--soft)}

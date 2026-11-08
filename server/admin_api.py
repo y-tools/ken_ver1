@@ -183,6 +183,20 @@ def encode_alias(row):
     }
 
 
+@app.get("/api/admin/stats")
+async def database_stats(request: Request, token_hash: str = Depends(auth)):
+    """Actual catalog row counts, available only to logged-in editors."""
+    async with request.app.state.pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute("""
+                SELECT
+                  (SELECT COUNT(*) FROM artists) AS artist_count,
+                  (SELECT COUNT(*) FROM songs) AS song_count
+            """)
+            row = await cur.fetchone()
+    return {"artists": row["artist_count"], "songs": row["song_count"]}
+
+
 @app.get("/api/admin/artists")
 async def artists(request: Request, q: str = Query(min_length=2, max_length=80), token_hash: str = Depends(auth)):
     term = normalized(q)

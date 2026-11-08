@@ -52,3 +52,10 @@ footer{padding:12px;text-align:center;color:var(--dim);font-size:11px}
 .artist-research-form{margin-top:14px;padding:13px;border:1px solid var(--line);border-radius:10px;background:#102030;display:grid;grid-template-columns:minmax(180px,280px) auto;align-items:end;gap:10px}
 .artist-research-form .hint{grid-column:1/-1;margin:0}
 @media(max-width:540px){.artist-research-form{grid-template-columns:1fr}}
+
+/* Database-wide totals above the artist search, only visible after login. */
+.database-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:18px}
+.database-stat{background:#0f1827;border:1px solid var(--line);border-radius:10px;padding:11px 9px;min-width:0}
+.database-stat-label{display:block;color:var(--dim);font-weight:700;font-size:11px;line-height:1.4}
+.database-stat-value{display:block;font-size:clamp(20px,2.2vw,26px);font-variant-numeric:tabular-nums;color:var(--text);margin-top:4px}
+.database-stats-note{grid-column:1/-1;color:var(--dim);font-size:11px;margin:0;line-height:1.4}

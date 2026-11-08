@@ -6,9 +6,9 @@
 <meta name="robots" content="noindex,nofollow">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://kenapi.153-127-64-17.sslip.io; base-uri 'none'; object-src 'none'; img-src 'self' data:">
 <title>楽曲データベース編集 | Kenのデンモク</title>
-<link rel="stylesheet" href="./database-editor.css?v=20261109-research-date-v1">
+<link rel="stylesheet" href="./database-editor.css?v=20261109-stats-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
-<script src="./database-editor.js?v=20261109-research-date-v1" defer></script>
+<script src="./database-editor.js?v=20261109-stats-v1" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -28,6 +28,17 @@
 <div id="editorPanel" hidden>
  <div class="layout">
   <aside class="panel sidebar">
+    <section class="database-stats" aria-label="楽曲データベース登録件数" aria-live="polite">
+      <div class="database-stat">
+        <span class="database-stat-label">総アーティスト数</span>
+        <strong id="totalArtists" class="database-stat-value">—</strong>
+      </div>
+      <div class="database-stat">
+        <span class="database-stat-label">総楽曲数</span>
+        <strong id="totalSongs" class="database-stat-value">—</strong>
+      </div>
+      <p id="statsNotice" class="database-stats-note">ログイン後にデータベースから取得します</p>
+    </section>
     <h2>アーティスト検索</h2>
     <form id="artistSearchForm">
       <label>アーティスト名・読み・ローマ字<input id="artistSearch" type="search" required minlength="2" maxlength="80" placeholder="2文字以上で検索"></label>

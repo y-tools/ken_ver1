@@ -18,10 +18,31 @@ async function call(path,body){
  return data;
 }
 const task=fn=>Promise.resolve().then(fn).catch(e=>say(e.message,true));
-function logged(v){$("#loginPanel").hidden=v;$("#editorPanel").hidden=!v;$("#logout").hidden=!v;if(!v){$("#artistPanel").hidden=true;$("#songListPanel").hidden=true;$("#songPanel").hidden=true;$("#adminSecret").value="";}}
+function logged(v){
+ $("#loginPanel").hidden=v;$("#editorPanel").hidden=!v;$("#logout").hidden=!v;
+ if(!v){
+  $("#artistPanel").hidden=true;$("#songListPanel").hidden=true;$("#songPanel").hidden=true;$("#adminSecret").value="";
+  $("#totalArtists").textContent="—";$("#totalSongs").textContent="—";$("#statsNotice").textContent="ログイン後にデータベースから取得します";
+ }
+}
+async function refreshStats(){
+ $("#statsNotice").textContent="登録件数を取得しています…";
+ try{
+  const stats=await call("/api/admin/stats");
+  if(!Number.isSafeInteger(stats.artists)||stats.artists<0||!Number.isSafeInteger(stats.songs)||stats.songs<0)
+   throw Error("データベースの登録件数を取得できませんでした");
+  $("#totalArtists").textContent=stats.artists.toLocaleString("ja-JP");
+  $("#totalSongs").textContent=stats.songs.toLocaleString("ja-JP");
+  $("#statsNotice").textContent="VPSデータベースの現在の登録件数";
+ }catch(e){
+  $("#totalArtists").textContent="—";$("#totalSongs").textContent="—";
+  $("#statsNotice").textContent="件数を取得できませんでした";
+  throw e;
+ }
+}
 $("#loginForm").addEventListener("submit",e=>{e.preventDefault();task(async()=>{
  const data=await call("/api/admin/login",{password:$("#adminSecret").value});
- token=data.token;logged(true);$("#adminSecret").value="";say("ログイン成功。アーティストを検索してください");$("#artistSearch").focus();
+ token=data.token;logged(true);$("#adminSecret").value="";say("ログイン成功。アーティストを検索してください");$("#artistSearch").focus();await refreshStats();
 })});
 $("#logout").addEventListener("click",()=>task(async()=>{if(token)await call("/api/admin/logout",{}).catch(()=>{});token="";logged(false);say("ログアウトしました");}));
 $("#artistSearchForm").addEventListener("submit",e=>{e.preventDefault();task(searchArtists);});

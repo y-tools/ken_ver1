@@ -44,6 +44,8 @@ class EditorTests(unittest.TestCase):
                             (song_title, song_title, artist_id))
                 song_id = cur.fetchone()[0]
 
+        stats_unauthorized=self.client.get("/api/admin/stats")
+        self.assertEqual(stats_unauthorized.status_code,401)
         unauthorized = self.client.get("/api/admin/artists", params={"q":"管理テスト"})
         self.assertEqual(unauthorized.status_code, 401)
         wrong = self.client.post("/api/admin/login", json={"password":"definitely-wrong-pass"})
@@ -52,6 +54,12 @@ class EditorTests(unittest.TestCase):
         self.assertEqual(login.status_code, 200, login.text)
         token = login.json()["token"]
         headers={"Authorization":"Bearer "+token, "Origin":"https://y-tools.github.io"}
+        with psycopg.connect(os.environ["KEN_ADMIN_DATABASE_URL"]) as conn:
+            expected_artists=conn.execute("SELECT COUNT(*) FROM artists").fetchone()[0]
+            expected_songs=conn.execute("SELECT COUNT(*) FROM songs").fetchone()[0]
+        stats=self.client.get("/api/admin/stats",headers=headers)
+        self.assertEqual(stats.status_code,200,stats.text)
+        self.assertEqual(stats.json(),{"artists":expected_artists,"songs":expected_songs})
         bad_origin = self.client.get("/api/admin/artists",params={"q":"管理テスト"},headers={**headers,"Origin":"https://evil.example"})
         self.assertEqual(bad_origin.status_code,403)
         list_resp=self.client.get("/api/admin/artists", params={"q":"管理テスト"},headers=headers)

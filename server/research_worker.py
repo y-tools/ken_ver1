@@ -278,7 +278,13 @@ def song_lane(db, client, budget=25):
                  (recording_mbid,artist_mbid,title,source_url,first_release_date,
                   artist_credit_verified,status,review_reason)
                  VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
-                 ON CONFLICT(recording_mbid) DO UPDATE SET last_checked_at=now()""",
+                 ON CONFLICT(recording_mbid) DO UPDATE SET
+                  last_checked_at=now(),
+                  artist_credit_verified=EXCLUDED.artist_credit_verified,
+                  review_reason=CASE WHEN ken_research_songs.status='registered'
+                      THEN ken_research_songs.review_reason ELSE EXCLUDED.review_reason END,
+                  status=CASE WHEN ken_research_songs.status='registered'
+                      THEN 'registered' ELSE EXCLUDED.status END""",
                  (rid,mbid,title,MB+"/recording/"+rid,
                   rec.get("first-release-date"),credit_ok,status,reason))
             staged+=1

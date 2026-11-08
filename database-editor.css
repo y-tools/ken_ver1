@@ -59,3 +59,13 @@ footer{padding:12px;text-align:center;color:var(--dim);font-size:11px}
 .database-stat-label{display:block;color:var(--dim);font-weight:700;font-size:11px;line-height:1.4}
 .database-stat-value{display:block;font-size:clamp(20px,2.2vw,26px);font-variant-numeric:tabular-nums;color:var(--text);margin-top:4px}
 .database-stats-note{grid-column:1/-1;color:var(--dim);font-size:11px;margin:0;line-height:1.4}
+
+/* Read-only unattended research queue monitor. */
+.research-queue{border:1px solid var(--line);background:#101d2d;border-radius:12px;padding:12px;margin-bottom:18px}
+.research-queue h2{font-size:15px;margin:0}
+.research-queue .section-head{margin-bottom:8px}
+.research-queue .muted{white-space:pre-line;overflow-wrap:anywhere;font-size:11px}
+.research-candidates{display:grid;gap:6px;margin:8px 0 0;max-height:230px;overflow:auto}
+.research-entry{border:1px solid var(--line);border-radius:7px;padding:8px;font-size:12px;display:grid;gap:3px}
+.research-entry small{color:var(--dim);overflow-wrap:anywhere}
+.research-entry a{color:var(--blue);font-size:11px}

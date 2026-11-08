@@ -1,0 +1,19 @@
+[Unit]
+Description=Ken research - discover and verify Japanese artists
+Wants=network-online.target
+After=network-online.target postgresql.service
+
+[Service]
+Type=oneshot
+User=kenresearch
+Group=kenresearch
+WorkingDirectory=/opt/ken-song-api
+ExecStart=/opt/ken-song-api/.venv/bin/python /opt/ken-song-api/server/research_worker.py --lane artists --max-items 5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+MemoryMax=180M
+TasksMax=40
+TimeoutStartSec=12min
+Nice=10

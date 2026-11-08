@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Ken Japanese artist discovery
+
+[Timer]
+OnCalendar=*-*-* 08:35:00
+Persistent=true
+RandomizedDelaySec=120
+Unit=ken-research-artists.service
+
+[Install]
+WantedBy=timers.target

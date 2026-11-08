@@ -183,6 +183,43 @@ def encode_alias(row):
     }
 
 
+@app.get("/api/admin/research/overview")
+async def research_overview(request: Request, token_hash: str = Depends(auth)):
+    """Private status of unattended research, no public or passwordless access."""
+    async with request.app.state.pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute("""
+               SELECT status, COUNT(*)::int AS count FROM ken_research_artists GROUP BY status
+            """)
+            artists = {r["status"]: r["count"] for r in await cur.fetchall()}
+            await cur.execute("""
+               SELECT status, COUNT(*)::int AS count FROM ken_research_songs GROUP BY status
+            """)
+            songs = {r["status"]: r["count"] for r in await cur.fetchall()}
+            await cur.execute("""
+               SELECT lane,status,started_at,finished_at,discovered,staged,promoted,error
+               FROM ken_research_runs ORDER BY id DESC LIMIT 8
+            """)
+            runs = [dict(r) for r in await cur.fetchall()]
+    return {"artists": artists, "songs": songs, "recentRuns": runs}
+
+
+@app.get("/api/admin/research/candidates")
+async def research_candidates(request: Request, lane: Literal["artists", "songs"] = "artists",
+                              token_hash: str = Depends(auth)):
+    table = "ken_research_artists" if lane == "artists" else "ken_research_songs"
+    fields = ("artist_mbid::text AS source_id,name AS title,status,review_reason,"
+              "source_url,last_checked_at") if lane == "artists" else (
+              "recording_mbid::text AS source_id,title,status,review_reason,"
+              "source_url,last_checked_at")
+    async with request.app.state.pool.connection() as conn:
+        async with conn.cursor() as cur:
+            await cur.execute(f"""SELECT {fields} FROM {table}
+              ORDER BY last_checked_at DESC LIMIT 25""")
+            items = [dict(r) for r in await cur.fetchall()]
+    return {"items": items, "lane": lane}
+
+
 @app.get("/api/admin/stats")
 async def database_stats(request: Request, token_hash: str = Depends(auth)):
     """Actual catalog row counts, available only to logged-in editors."""

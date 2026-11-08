@@ -110,9 +110,11 @@ class Client:
         return self.get(WD + "/wiki/Special:EntityData/" + qid + ".json")
 
     def recordings(self, mbid, offset=0, limit=25):
+        # MusicBrainz browse omits artist-credit by default. Without inc,
+        # every recording was incorrectly marked artist_credit_mismatch.
         query = urllib.parse.urlencode({
-            "artist": mbid, "limit": limit, "offset": offset,
-            "fmt": "json"})
+            "artist": mbid, "inc": "artist-credits",
+            "limit": limit, "offset": offset, "fmt": "json"})
         return self.get(MB + "/ws/2/recording?" + query).get("recordings", [])
 
 
@@ -267,6 +269,7 @@ def song_lane(db, client, budget=25):
         clean=safe_title(title)
         reason = ("artist_credit_mismatch" if not credit_ok else
                   "collaboration_requires_review" if credited_artists != 1 else
+                  "video_recording_not_audio_catalog" if rec.get("video") is True else
                   "unverified_recording_length" if not isinstance(length,int) or length < 30000 else
                   "version_or_non_song_requires_review" if not clean else None)
         status="verified" if not reason else "review"

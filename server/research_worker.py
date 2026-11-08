@@ -181,8 +181,13 @@ def artist_lane(db, client, budget=5):
         name = item.get("name", "")
         if not isinstance(name, str) or not 1 <= len(name.strip()) <= 200:
             continue
-        valid, qid, official, reason = artist_identity(client, item)
+        linked, qid, official, reason = artist_identity(client, item)
         country = item.get("country")
+        # MusicBrainz artist UUID + explicit JP country and a unique normalized
+        # name are sufficient for a *provisional* identity. Independent Wikidata
+        # corroboration upgrades source confidence but is not a publication gate.
+        # Conflicting country / invalid UUID / name collision remain in review.
+        valid = country == "JP" and valid_mbid(mbid)
         status = "verified" if valid else "review"
         with db.transaction():
             db.execute("""INSERT INTO ken_research_artists
@@ -196,7 +201,8 @@ def artist_lane(db, client, budget=5):
                  status=CASE WHEN ken_research_artists.status='registered'
                      THEN 'registered' ELSE EXCLUDED.status END""",
                 (mbid, name, country, item.get("type"), MB+"/artist/"+mbid,
-                 qid, official, 2 if valid else 1, status, reason or None))
+                 qid, official, 2 if linked else 1, status,
+                 (reason if not linked else None)))
             staged += 1
             if valid:
                 normalized = key(name)
@@ -211,15 +217,18 @@ def artist_lane(db, client, budget=5):
                 elif len(normalized) >= 2:
                     # Name identity and Wiki ↔ MusicBrainz linkage were verified.
                     row = db.execute("""INSERT INTO artists(name,name_key,identity_status)
-                        VALUES(%s,%s,'source_confirmed')
+                        VALUES(%s,%s,%s)
                         ON CONFLICT(name_key) DO NOTHING RETURNING id""",
-                        (name, normalized)).fetchone()
+                        (name, normalized,
+                         "source_confirmed" if linked else "provisional")).fetchone()
                     if row:
                         db.execute("""UPDATE ken_research_artists SET status='registered',
                           master_artist_id=%s,registered_at=now(),review_reason=NULL
                           WHERE artist_mbid=%s""", (row["id"], mbid))
                         record_event(db,"artists",mbid,"registered",{
-                            "artist_id":row["id"],"wikidata":qid,"source":MB+"/artist/"+mbid})
+                            "artist_id":row["id"],"wikidata":qid,
+                            "confidence":"source_confirmed" if linked else "provisional",
+                            "source":MB+"/artist/"+mbid})
                         promoted += 1
     if not listings:
         offset = 0

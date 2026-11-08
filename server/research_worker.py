@@ -170,7 +170,9 @@ def artist_lane(db, client, budget=5):
     offset_row = db.execute("SELECT value FROM ken_research_state WHERE key='artist_offset'").fetchone()
     offset = int(offset_row["value"]) if offset_row else 0
     discovered = staged = promoted = 0
-    for listing in client.artist_search(offset, budget):
+    listings = client.artist_search(offset, budget)
+    for listing in listings:
+        offset += 1
         mbid = listing.get("id")
         if not valid_mbid(mbid):
             continue
@@ -219,7 +221,8 @@ def artist_lane(db, client, budget=5):
                         record_event(db,"artists",mbid,"registered",{
                             "artist_id":row["id"],"wikidata":qid,"source":MB+"/artist/"+mbid})
                         promoted += 1
-        offset += 1
+    if not listings:
+        offset = 0
     with db.transaction():
         db.execute("""INSERT INTO ken_research_state(key,value) VALUES('artist_offset',%s)
              ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()""", (str(offset),))
@@ -286,6 +289,8 @@ def song_lane(db, client, budget=25):
                             "song_id":row["id"],"artist_id":artist["master_artist_id"]})
                         promoted+=1
         offset+=1
+    if len(records) < budget:
+        offset = 0
     with db.transaction():
         db.execute("""INSERT INTO ken_research_state(key,value) VALUES(%s,%s)
             ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()""",
@@ -312,9 +317,9 @@ def main():
     client=Client()
     with psycopg.connect("dbname="+dbname,row_factory=dict_row,autocommit=True) as db:
         # Prevent overlapping workers and concurrent queue processing.
+        locked=db.execute("SELECT pg_try_advisory_lock(214748,20261109) AS ok").fetchone()["ok"]
+        if not locked: raise RuntimeError("Another research worker running")
         with db.transaction():
-            locked=db.execute("SELECT pg_try_advisory_xact_lock(214748,20261109) AS ok").fetchone()["ok"]
-            if not locked: raise RuntimeError("Another research worker running")
             run=db.execute("""INSERT INTO ken_research_runs(lane)
                 VALUES(%s) RETURNING id""",(args.lane,)).fetchone()["id"]
         try:

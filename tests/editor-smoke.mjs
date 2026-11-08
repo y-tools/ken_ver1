@@ -26,6 +26,14 @@ await page.route("https://kenapi.153-127-64-17.sslip.io/api/admin/**",async rout
  if(path==="/api/admin/login")return answer(route,{token:"test-only-bearer-token",expiresIn:1800});
  if(!req.headers().authorization)return answer(route,{detail:"ログインしてください"},401);
  if(path==="/api/admin/stats"&&method==="GET")return answer(route,{artists:1,songs:98});
+ if(path==="/api/admin/research/overview"&&method==="GET")
+   return answer(route,{artists:{candidate:1,registered:1},songs:{review:2},
+      recentRuns:[{lane:"artists",status:"succeeded",discovered:2,staged:2,promoted:1}]});
+ if(path==="/api/admin/research/candidates"&&method==="GET")
+   return answer(route,{lane:url.searchParams.get("lane")||"artists",
+    items:[{title:"架空検証バンド",source_id:"test",status:"candidate",
+      review_reason:"verify_identity",source_url:"https://musicbrainz.org/artist/example"}]});
+
  if(path==="/api/admin/artists"&&method==="GET")return answer(route,{items:[state.artist]});
  if(path==="/api/admin/artists/101"&&method==="GET")
    return answer(route,{artist:state.artist,aliases:state.aliases,songs:state.songs,total:1,offset:0,limit:50});
@@ -70,6 +78,10 @@ try{
  assert.equal(await page.locator("#totalSongs").textContent(),"98");
  assert.equal(await page.locator(".sidebar h2").textContent(),"アーティスト検索");
  console.log("PASS Authenticated database totals displayed above artist search");
+ await page.waitForFunction(()=>document.querySelector("#researchCandidates")?.textContent?.includes("架空検証バンド"));
+ assert.match(await page.locator("#researchSummary").textContent(),/アーティスト/);
+ console.log("PASS Restricted research overview and candidate list");
+
  await page.locator("#artistSearch").fill("テスト");
  await page.locator("#artistSearchForm button[type=submit]").click();
  await page.locator("#artistResults button").first().click();

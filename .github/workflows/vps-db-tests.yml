@@ -45,6 +45,8 @@ jobs:
           node --check data/vps-search.js
       - name: Apply database schema to disposable PostgreSQL
         run: psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/001_init.sql
+      - name: Apply artist research date migration
+        run: psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/020_artist_last_researched_on.sql
       - name: Import one small source file
         run: python server/import_catalog.py --dataset japanese --max-files 1 --batch-size 500
       - name: Initialize separate database editor audit schema

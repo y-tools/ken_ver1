@@ -7,7 +7,7 @@ const page=await browser.newPage({viewport:{width:1440,height:900}});
 const pageErrors=[];
 page.on("pageerror",error=>pageErrors.push(error.message));
 const state={
- artist:{id:101,name:"テスト歌手",version:"2026-11-06T00:00:00+00:00"},
+ artist:{id:101,name:"テスト歌手",version:"2026-11-06T00:00:00+00:00",lastResearchedOn:null},
  songs:[{id:202,title:"テスト曲",version:"2026-11-06T00:00:00+00:00",
          releasePrecision:"unknown",releaseYear:null,releaseMonth:null,releaseDay:null}],
  aliases:[],
@@ -30,6 +30,12 @@ await page.route("https://kenapi.153-127-64-17.sslip.io/api/admin/**",async rout
    return answer(route,{artist:state.artist,aliases:state.aliases,songs:state.songs,total:1,offset:0,limit:50});
  if(path==="/api/admin/songs/202"&&method==="GET")
    return answer(route,{song:{...state.songs[0],artistId:101},aliases:state.songAliases});
+ if(path==="/api/admin/artists/101/research"&&method==="POST"){
+  const incoming=req.postDataJSON();
+  state.artist={...state.artist,lastResearchedOn:incoming.lastResearchedOn,
+    version:"2026-11-06T00:00:30+00:00"};
+  return answer(route,{artist:state.artist});
+ }
  if(path==="/api/admin/artists/101"&&method==="POST"){
   state.artist={...state.artist,...req.postDataJSON(),version:"2026-11-06T00:01:00+00:00"};
   return answer(route,{artist:state.artist});
@@ -63,6 +69,12 @@ try{
  await page.locator("#artistPanel").waitFor({state:"visible"});
  assert.equal(await page.locator("#artistName").inputValue(),"テスト歌手");
  console.log("PASS Artist search and selection");
+ assert.equal(await page.locator("#artistLastResearchedOn").inputValue(),"");
+ await page.locator("#artistLastResearchedOn").fill("2026-11-08");
+ await page.locator("#artistResearchForm button[type=submit]").click();
+ await page.waitForFunction(()=>document.querySelector("#artistLastResearchedOn")?.value==="2026-11-08");
+ assert.equal(state.artist.lastResearchedOn,"2026-11-08");
+ console.log("PASS Last-researched artist date save, read back, and no other field mutation");
  await page.locator("#songList button").first().click();
  await page.locator("#songPanel").waitFor({state:"visible"});
  await page.locator("#songForm [name=title]").fill("テスト曲・改訂版");

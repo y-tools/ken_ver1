@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]))
 from server.research_worker import (Client,artist_identity,credits_include_artist,key,
-                                    safe_title,valid_mbid,valid_qid,init_artist_rows,run_forever,artist_lane)
+                                    safe_title,valid_mbid,valid_qid,init_artist_rows,run_forever,artist_lane,song_lane)
 import psycopg
 
 MBID="6114677c-fa8f-4d87-960a-3f1169aaef89"
@@ -27,6 +27,16 @@ class ResearchValidationTests(unittest.TestCase):
         self.assertFalse(valid_mbid("not-a-uuid"))
         self.assertTrue(valid_qid("Q1234"))
         self.assertFalse(valid_qid("Q1/../anything"))
+
+    def test_musicbrainz_recording_requires_artist_credits(self):
+        c=Client()
+        requested=[]
+        c.get=lambda url: (requested.append(url) or {"recordings":[]})
+        self.assertEqual(c.recordings(MBID,offset=25,limit=10),[])
+        from urllib.parse import parse_qs,urlparse
+        args=parse_qs(urlparse(requested[0]).query)
+        self.assertEqual(args.get("inc"),["artist-credits"])
+        self.assertEqual(args.get("offset"),["25"])
 
     def test_artist_credit(self):
         self.assertTrue(credits_include_artist(
@@ -110,6 +120,52 @@ class ResearchDatabaseTests(unittest.TestCase):
                 con.execute("DELETE FROM ken_research_artists WHERE artist_mbid=%s",(test_id,))
                 con.execute("DELETE FROM artists WHERE id=%s",(state["master_artist_id"],))
                 con.execute("DELETE FROM ken_research_state WHERE key='artist_offset'")
+
+    def test_song_cursor_and_registration_after_known_recording(self):
+        url=os.environ.get("KEN_IMPORT_DATABASE_URL")
+        if not url:
+            self.skipTest("Requires disposable CI database")
+        import psycopg.rows
+        aid=str(uuid.uuid4())
+        old_id=str(uuid.uuid4())
+        new_id=str(uuid.uuid4())
+        class RollbackProbe(Exception):
+            pass
+        with psycopg.connect(url,autocommit=True,row_factory=psycopg.rows.dict_row) as con:
+            try:
+                with con.transaction():
+                    artist=con.execute("""INSERT INTO artists(name,name_key,identity_status)
+                        VALUES(%s,%s,'provisional') RETURNING id""",
+                        ("Ken統合試験"+aid[:8],"ken_test_"+aid)).fetchone()["id"]
+                    con.execute("""INSERT INTO ken_research_artists(
+                        artist_mbid,name,country,source_url,status,master_artist_id)
+                        VALUES(%s,%s,'JP',%s,'registered',%s)""",
+                        (aid,"Ken統合試験"+aid[:8],"https://musicbrainz.org/artist/"+aid,artist))
+                    existing=con.execute("""INSERT INTO songs(title,title_key,primary_artist_id)
+                        VALUES('Existing Test Song',%s,%s) RETURNING id""",
+                        ("existingtestsong",artist)).fetchone()["id"]
+                    con.execute("""INSERT INTO recordings(song_id,musicbrainz_recording_id)
+                        VALUES(%s,%s)""",(existing,old_id))
+                    fake=Mock()
+                    def recording(recording_id,title):
+                        return {"id":recording_id,"title":title,"length":180000,"video":False,
+                                "artist-credit":[{"artist":{"id":aid}}]}
+                    fake.recordings.return_value=[
+                        recording(old_id,"Existing Test Song"),
+                        recording(new_id,"New Verified Test Song")]
+                    with patch("server.research_worker.init_artist_rows"):
+                        discovered,staged,promoted=song_lane(con,fake,budget=2)
+                    self.assertEqual((discovered,staged,promoted),(2,2,1))
+                    self.assertEqual(fake.recordings.call_args.args[1:],(0,2))
+                    self.assertEqual(con.execute(
+                        "SELECT value FROM ken_research_state WHERE key=%s",
+                        ("song_offset:"+aid,)).fetchone()["value"],"2")
+                    self.assertEqual(con.execute(
+                        "SELECT COUNT(*) AS n FROM recordings WHERE musicbrainz_recording_id=%s",
+                        (new_id,)).fetchone()["n"],1)
+                    raise RollbackProbe()
+            except RollbackProbe:
+                pass
 
     def test_private_queue_tables_and_bounded_initial_state(self):
         url=os.environ.get("KEN_IMPORT_DATABASE_URL")

@@ -316,7 +316,10 @@ def song_lane(db, client, budget=25):
                         record_event(db,"songs",rid,"registered",{
                             "song_id":row["id"],"artist_id":artist["master_artist_id"]})
                         promoted+=1
-        offset+=1
+    # The source cursor advances for *every page item*, even when an item
+    # is skipped for invalid metadata or an already-known recording. Otherwise
+    # we repeatedly fetch the same page and never reach later new songs.
+    offset += len(records)
     if len(records) < budget:
         offset = 0
     with db.transaction():

@@ -6,9 +6,9 @@
 <meta name="robots" content="noindex,nofollow">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://kenapi.153-127-64-17.sslip.io; base-uri 'none'; object-src 'none'; img-src 'self' data:">
 <title>楽曲データベース編集 | Kenのデンモク</title>
-<link rel="stylesheet" href="./database-editor.css?v=20261106-v1">
+<link rel="stylesheet" href="./database-editor.css?v=20261109-research-date-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
-<script src="./database-editor.js?v=20261106-v1" defer></script>
+<script src="./database-editor.js?v=20261109-research-date-v1" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -41,6 +41,13 @@
      <form id="artistForm">
        <label>アーティスト名<input id="artistName" required maxlength="200"></label>
        <button type="submit" class="primary">アーティスト名を保存</button>
+     </form>
+     <form id="artistResearchForm" class="artist-research-form">
+       <label for="artistLastResearchedOn">最終調査日（JST・未調査は空欄）
+         <input id="artistLastResearchedOn" name="lastResearchedOn" type="date" aria-describedby="artistResearchHelp">
+       </label>
+       <button type="submit" class="primary">最終調査日を保存</button>
+       <p id="artistResearchHelp" class="hint">実際にアーティスト情報を調査した日付を記録します。名前や楽曲を編集しただけでは更新されません。</p>
      </form>
      <h3>アーティストの読み・正式表記</h3>
      <div id="artistAliases"></div>

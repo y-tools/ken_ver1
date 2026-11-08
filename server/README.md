@@ -86,3 +86,11 @@ ssh -t ubuntu@153.127.64.17 "sudo /opt/ken-song-api/.venv/bin/python /opt/ken-so
 
 ## 重要な未完了項目
 VPS実機容量検証、DBユーザー設定、HTTPS API公開、200万件の移行、公式読み・発売日の全面照合、定期収集は**まだ未実施**です。ファイルをGitHubへ置いただけで本番サービスが稼働したとは扱いません。
+
+## アーティスト最終調査日（2026-11-09）
+
+- `artists.last_researched_on DATE NULL` を追加。空欄は未確認で、アーティスト名・曲情報を通常編集しても自動更新しません。
+- 管理者画面の「アーティスト基本情報」で最終調査日を独立して表示・保存できます。管理APIは `GET /api/admin/artists/{id}` と `POST /api/admin/artists/{id}/research`（本人確認済みBearerセッション、楽観ロック、履歴記録）です。
+- 未来の日付は登録できず、意図的に空欄へ戻せます。履歴は `ken_admin_audit` に保管します。通常の公開検索APIに変更はありません。
+- 実際に調査した TK from 凛として時雨（ID 643167）の最終調査日は **2026-11-08**。他のアーティストの既存レコードはNULLのままです。
+- 初回は `server/sql/003_admin_editor.sql` の後に `server/sql/020_artist_last_researched_on.sql` を実行し、当該アーティストの記録は `server/sql/021_tk_research_date_20261108.sql` に記載。修正・適用前にバックアップと検証を行ってください。

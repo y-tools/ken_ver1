@@ -2,7 +2,7 @@
 BEGIN;
 CREATE TABLE IF NOT EXISTS ken_admin_audit(
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  action TEXT NOT NULL CHECK (action IN ('artist_update','song_update','artist_alias_upsert','song_alias_upsert')),
+  action TEXT NOT NULL CHECK (action IN ('artist_update','song_update','artist_alias_upsert','song_alias_upsert','artist_research_date_update')),
   entity_type TEXT NOT NULL CHECK (entity_type IN ('artist','song')),
   entity_id BIGINT NOT NULL,
   before_json JSONB NOT NULL,

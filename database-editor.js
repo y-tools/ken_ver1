@@ -73,6 +73,9 @@ async function loadArtist(id,page=0){
  artist=data.artist;artistAliases=data.aliases;offset=page;total=data.total;
  song=null;$("#songPanel").hidden=true;$("#artistPanel").hidden=false;$("#songListPanel").hidden=false;
  $("#artistName").value=artist.name;$("#artistIdLabel").textContent="ID "+artist.id;
+ $("#artistLastResearchedOn").value=artist.lastResearchedOn||"";
+ $("#artistLastResearchedOn").max=new Intl.DateTimeFormat("en-CA",
+  {timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
  makeAliasList("artist");showSongList(data.songs);
  $("#songsCount").textContent=total.toLocaleString("ja-JP")+"曲";
  $("#prevSongs").disabled=page===0;$("#nextSongs").disabled=page+50>=total;
@@ -94,6 +97,14 @@ $("#artistForm").addEventListener("submit",e=>{e.preventDefault();task(async()=>
  if(!artist)return;const value=$("#artistName").value.trim();
  const result=await call("/api/admin/artists/"+artist.id,{name:value,version:artist.version});
  await loadArtist(result.artist.id,offset);say("アーティスト名を更新しました");
+})});
+$("#artistResearchForm").addEventListener("submit",e=>{e.preventDefault();task(async()=>{
+ if(!artist)return;
+ const value=$("#artistLastResearchedOn").value||null;
+ const result=await call("/api/admin/artists/"+artist.id+"/research",
+  {version:artist.version,lastResearchedOn:value});
+ await loadArtist(result.artist.id,offset);
+ say("最終調査日を保存しました");
 })});
 function updateDateFields(){
  const f=$("#songForm").elements,kind=f.releasePrecision.value;

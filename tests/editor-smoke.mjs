@@ -25,6 +25,7 @@ await page.route("https://kenapi.153-127-64-17.sslip.io/api/admin/**",async rout
  if(method==="OPTIONS")return answer(route,{},200);
  if(path==="/api/admin/login")return answer(route,{token:"test-only-bearer-token",expiresIn:1800});
  if(!req.headers().authorization)return answer(route,{detail:"ログインしてください"},401);
+ if(path==="/api/admin/stats"&&method==="GET")return answer(route,{artists:1,songs:98});
  if(path==="/api/admin/artists"&&method==="GET")return answer(route,{items:[state.artist]});
  if(path==="/api/admin/artists/101"&&method==="GET")
    return answer(route,{artist:state.artist,aliases:state.aliases,songs:state.songs,total:1,offset:0,limit:50});
@@ -63,6 +64,12 @@ try{
  await page.locator("#loginForm button[type=submit]").click();
  await page.locator("#editorPanel").waitFor({state:"visible"});
  console.log("PASS Secure login screen and unlock");
+ await page.waitForFunction(()=>document.querySelector("#totalArtists")?.textContent==="1"
+  && document.querySelector("#totalSongs")?.textContent==="98");
+ assert.equal(await page.locator("#totalArtists").textContent(),"1");
+ assert.equal(await page.locator("#totalSongs").textContent(),"98");
+ assert.equal(await page.locator(".sidebar h2").textContent(),"アーティスト検索");
+ console.log("PASS Authenticated database totals displayed above artist search");
  await page.locator("#artistSearch").fill("テスト");
  await page.locator("#artistSearchForm button[type=submit]").click();
  await page.locator("#artistResults button").first().click();
@@ -95,6 +102,8 @@ try{
  await page.locator("#logout").click();
  await page.locator("#loginPanel").waitFor({state:"visible"});
  assert.equal(await page.locator("#editorPanel").isVisible(),false);
+ assert.equal(await page.locator("#totalArtists").textContent(),"—");
+ assert.equal(await page.locator("#totalSongs").textContent(),"—");
  assert.deepEqual(pageErrors,[]);
  console.log("ALL DATABASE EDITOR BROWSER TESTS PASSED");
 }finally{

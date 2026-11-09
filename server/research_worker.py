@@ -31,10 +31,10 @@ TK_MBID = "6114677c-fa8f-4d87-960a-3f1169aaef89"
 TK_ARTIST_ID = 643167
 NON_SONG = re.compile(r"(?:\binterview\b|\bdocumentary\b|\btrailer\b|\bmusic video\b|"
                       r"\bbehind the scenes\b|^mc(?:\s|$)|^_fragment|"
-                      r"ノンクレジット|(?:^|\s)talk(?:\s|$))", re.I)
+                      r"ノンクレジット|ってなに[?？]|(?:^|\s)talk(?:\s|$))", re.I)
 VERSION = re.compile(r"(?:\blive\b|\bremix\b|\binstrumental\b|\bacoustic\b|"
                      r"\btv size\b|\bversion\b|\bedit\b|"
-                     r"\bfirst take\b|\bbootleg\b|\breconstructed\b)", re.I)
+                     r"\bfirst take\b|\bbootleg\b|\breconstructed\b|ピアノver\.?|(?:^|[\s(])ver\.?(?:$|[\s)）]))", re.I)
 
 
 def key(text):

@@ -6,9 +6,9 @@
 <meta name="robots" content="noindex,nofollow">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://kenapi.153-127-64-17.sslip.io; base-uri 'none'; object-src 'none'; img-src 'self' data:">
 <title>楽曲データベース編集 | Kenのデンモク</title>
-<link rel="stylesheet" href="./database-editor.css?v=20261109-research-v1">
+<link rel="stylesheet" href="./database-editor.css?v=20261109-stats-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
-<script src="./database-editor.js?v=20261109-research-v1" defer></script>
+<script src="./database-editor.js?v=20261109-stats-v1" defer></script>
 </head>
 <body>
 <header class="topbar">
@@ -38,16 +38,6 @@
         <strong id="totalSongs" class="database-stat-value">—</strong>
       </div>
       <p id="statsNotice" class="database-stats-note">ログイン後にデータベースから取得します</p>
-    </section>
-    <section class="research-queue" aria-label="自動調査の進捗">
-      <div class="section-head"><h2>自動調査キュー</h2><button id="refreshResearch" type="button" class="secondary">更新</button></div>
-      <p id="researchSummary" class="muted">ログイン後に調査状況を読み込みます</p>
-      <label>確認する候補
-        <select id="researchLane">
-          <option value="artists">アーティスト</option><option value="songs">楽曲</option>
-        </select>
-      </label>
-      <div id="researchCandidates" class="research-candidates" aria-live="polite"></div>
     </section>
     <h2>アーティスト検索</h2>
     <form id="artistSearchForm">

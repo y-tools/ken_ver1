@@ -137,11 +137,11 @@ function renderSearch(){
  const ready=state.songs.filter(s=>s.status==="ready" && isTKArtist(s.artist));
  const statusLookup=new Map(state.songs.map(s=>[readyKey(s.title,s.artist),s.status]));
  $("#searchHelper").textContent=catalog.ready
-  ? "静的カタログ "+catalog.rows.length.toLocaleString("ja-JP")+"曲。VPSに追加されたアーティストと楽曲も検索できます。"
-  : catalog.error?"静的カタログを読み込めませんでした。VPSの検索は引き続き利用できます。":"静的カタログを読み込み中です…";
+  ? "TK from 凛として時雨のみ "+catalog.rows.length.toLocaleString("ja-JP")+"曲。曲名・アーティスト名は片方だけでも両方でも検索できます。"
+  : catalog.error?"TK限定カタログを読み込めませんでした。":"TK限定カタログを読み込み中です…";
  const list=[],indices=new Map();
  const add=song=>{
-  if(!matchesBothFields(song,titleTerm,artistTerm))return;
+  if(!isTKArtist(song.artist)||!matchesBothFields(song,titleTerm,artistTerm))return;
   const key=readyKey(song.title,song.artist);
   const i=indices.get(key);
   if(i!==undefined){

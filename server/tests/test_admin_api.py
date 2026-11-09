@@ -44,8 +44,6 @@ class EditorTests(unittest.TestCase):
                             (song_title, song_title, artist_id))
                 song_id = cur.fetchone()[0]
 
-        research_unauthorized=self.client.get("/api/admin/research/overview")
-        self.assertEqual(research_unauthorized.status_code,401)
         stats_unauthorized=self.client.get("/api/admin/stats")
         self.assertEqual(stats_unauthorized.status_code,401)
         unauthorized = self.client.get("/api/admin/artists", params={"q":"管理テスト"})
@@ -62,13 +60,6 @@ class EditorTests(unittest.TestCase):
         stats=self.client.get("/api/admin/stats",headers=headers)
         self.assertEqual(stats.status_code,200,stats.text)
         self.assertEqual(stats.json(),{"artists":expected_artists,"songs":expected_songs})
-        research=self.client.get("/api/admin/research/overview",headers=headers)
-        self.assertEqual(research.status_code,200,research.text)
-        self.assertIn("recentRuns",research.json())
-        candidates=self.client.get("/api/admin/research/candidates?lane=artists",headers=headers)
-        self.assertEqual(candidates.status_code,200,candidates.text)
-        self.assertIn("items",candidates.json())
-
         bad_origin = self.client.get("/api/admin/artists",params={"q":"管理テスト"},headers={**headers,"Origin":"https://evil.example"})
         self.assertEqual(bad_origin.status_code,403)
         list_resp=self.client.get("/api/admin/artists", params={"q":"管理テスト"},headers=headers)

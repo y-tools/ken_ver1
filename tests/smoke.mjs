@@ -44,9 +44,8 @@ try{
  await page.locator("#searchInput").fill("");
  await page.locator("#searchArtistInput").fill("B'z");
  await page.waitForTimeout(700);
- const existingArtistMatches=await page.evaluate(()=>window.__searchResults||[]);
- await check(existingArtistMatches.every(row=>row.artist==="B'z"),
-   "Artist-only query stays scoped even when VPS catalog grows");
+ await check((await page.evaluate(()=>window.__searchResults||[])).length===0,
+   "Non-TK artist-only query returns no results");
  await page.locator("#searchArtistInput").fill(tkName);
  await page.waitForTimeout(700);
  await check((await page.evaluate(()=>window.__searchResults||[])).every(row=>row.artist===tkName),
@@ -54,21 +53,6 @@ try{
  await page.locator("#searchInput").fill("unravel");
  await page.locator("#searchArtistInput").fill("");
  await page.waitForTimeout(700);
- // A newly registered VPS artist must appear, even though the static snapshot is TK-only.
- await page.evaluate(()=>{
-  window.__originalVps=window.KEN_VPS_SEARCH;
-  window.KEN_VPS_SEARCH={apiConfigured:true,search:async q=>({
-   items:q.includes("研究自動検証曲")?[{title:"研究自動検証曲",artist:"研究自動検証バンド",readings:{}}]:[]
-  })};
- });
- await page.locator("#searchInput").fill("研究自動検証曲");
- await page.waitForFunction(()=>window.__searchResults?.some(row=>row.artist==="研究自動検証バンド"),
-  null,{timeout:10000});
- await check((await page.evaluate(()=>window.__searchResults)).some(row=>row.title==="研究自動検証曲"),
-  "New non-TK songs from VPS can appear without republishing the static catalog");
- await page.evaluate(()=>{window.KEN_VPS_SEARCH=window.__originalVps;});
- await page.locator("#searchInput").fill("unravel");
- await page.waitForTimeout(600);
  await check(await page.locator("#searchResults .karaoke-coverage").count()>0,
    "DAM/JOYSOUND verification remains available for TK songs");
  await check((await page.locator("#searchResults .karaoke-coverage").first().textContent()).includes("収録未確認"),

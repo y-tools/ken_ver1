@@ -22,7 +22,7 @@ function logged(v){
  $("#loginPanel").hidden=v;$("#editorPanel").hidden=!v;$("#logout").hidden=!v;
  if(!v){
   $("#artistPanel").hidden=true;$("#songListPanel").hidden=true;$("#songPanel").hidden=true;$("#adminSecret").value="";
-  $("#totalArtists").textContent="—";$("#totalSongs").textContent="—";$("#statsNotice").textContent="ログイン後にデータベースから取得します";$("#researchSummary").textContent="ログイン後に調査状況を読み込みます";$("#researchCandidates").replaceChildren();
+  $("#totalArtists").textContent="—";$("#totalSongs").textContent="—";$("#statsNotice").textContent="ログイン後にデータベースから取得します";
  }
 }
 async function refreshStats(){
@@ -40,50 +40,9 @@ async function refreshStats(){
   throw e;
  }
 }
-async function refreshResearch(){
- const lane=$("#researchLane").value;
- const panel=$("#researchCandidates");panel.replaceChildren();
- $("#researchSummary").textContent="調査状況を読み込み中…";
- try{
-  const [overview,candidates]=await Promise.all([
-   call("/api/admin/research/overview"),
-   call("/api/admin/research/candidates?lane="+encodeURIComponent(lane))
-  ]);
-  const fmt=items=>["candidate","review","verified","registered","rejected"]
-   .map(k=>k+":"+(items?.[k]||0)).join(" / ");
-  $("#researchSummary").textContent="アーティスト "+fmt(overview.artists)
-   +"\n楽曲 "+fmt(overview.songs)
-   +"\n直近: "+(overview.recentRuns?.[0]?.status||"実行前");
-  const rows=Array.isArray(candidates.items)?candidates.items:[];
-  if(!rows.length){panel.textContent="候補はまだありません";return;}
-  for(const item of rows){
-   const row=document.createElement("div");row.className="research-entry";
-   const title=document.createElement("strong");title.textContent=item.title||"(名称未設定)";
-   const meta=document.createElement("small");meta.textContent=item.status+
-    (item.review_reason?" / "+item.review_reason:"");
-   row.append(title,meta);
-   if(typeof item.source_url==="string"){
-    try{
-     const url=new URL(item.source_url);
-     if(url.protocol==="https:"&&url.hostname==="musicbrainz.org"){
-      const a=document.createElement("a");a.href=url.href;a.textContent="出典";
-      a.rel="noopener noreferrer";a.target="_blank";row.append(a);
-     }
-    }catch{}
-   }
-   panel.append(row);
-  }
- }catch(err){
-  $("#researchSummary").textContent="調査状況を取得できませんでした";
-  throw err;
- }
-}
-$("#refreshResearch").addEventListener("click",()=>task(refreshResearch));
-$("#researchLane").addEventListener("change",()=>task(refreshResearch));
-
 $("#loginForm").addEventListener("submit",e=>{e.preventDefault();task(async()=>{
  const data=await call("/api/admin/login",{password:$("#adminSecret").value});
- token=data.token;logged(true);$("#adminSecret").value="";say("ログイン成功。アーティストを検索してください");$("#artistSearch").focus();await refreshStats();await refreshResearch().catch(e=>say("調査キューの読み込みに失敗: "+e.message,true));
+ token=data.token;logged(true);$("#adminSecret").value="";say("ログイン成功。アーティストを検索してください");$("#artistSearch").focus();await refreshStats();
 })});
 $("#logout").addEventListener("click",()=>task(async()=>{if(token)await call("/api/admin/logout",{}).catch(()=>{});token="";logged(false);say("ログアウトしました");}));
 $("#artistSearchForm").addEventListener("submit",e=>{e.preventDefault();task(searchArtists);});

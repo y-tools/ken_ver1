@@ -31,10 +31,10 @@ TK_MBID = "6114677c-fa8f-4d87-960a-3f1169aaef89"
 TK_ARTIST_ID = 643167
 NON_SONG = re.compile(r"(?:\binterview\b|\bdocumentary\b|\btrailer\b|\bmusic video\b|"
                       r"\bbehind the scenes\b|^mc(?:\s|$)|^_fragment|"
-                      r"ノンクレジット|(?:^|\s)talk(?:\s|$))", re.I)
+                      r"ノンクレジット|ってなに[?？]|(?:^|\s)talk(?:\s|$))", re.I)
 VERSION = re.compile(r"(?:\blive\b|\bremix\b|\binstrumental\b|\bacoustic\b|"
                      r"\btv size\b|\bversion\b|\bedit\b|"
-                     r"\bfirst take\b|\bbootleg\b|\breconstructed\b)", re.I)
+                     r"\bfirst take\b|\bbootleg\b|\breconstructed\b|ピアノver\.?|(?:^|[\s(])ver\.?(?:$|[\s)）]))", re.I)
 
 
 def key(text):
@@ -110,9 +110,11 @@ class Client:
         return self.get(WD + "/wiki/Special:EntityData/" + qid + ".json")
 
     def recordings(self, mbid, offset=0, limit=25):
+        # MusicBrainz browse omits artist-credit by default. Without inc,
+        # every recording was incorrectly marked artist_credit_mismatch.
         query = urllib.parse.urlencode({
-            "artist": mbid, "limit": limit, "offset": offset,
-            "fmt": "json"})
+            "artist": mbid, "inc": "artist-credits",
+            "limit": limit, "offset": offset, "fmt": "json"})
         return self.get(MB + "/ws/2/recording?" + query).get("recordings", [])
 
 
@@ -267,6 +269,7 @@ def song_lane(db, client, budget=25):
         clean=safe_title(title)
         reason = ("artist_credit_mismatch" if not credit_ok else
                   "collaboration_requires_review" if credited_artists != 1 else
+                  "video_recording_not_audio_catalog" if rec.get("video") is True else
                   "unverified_recording_length" if not isinstance(length,int) or length < 30000 else
                   "version_or_non_song_requires_review" if not clean else None)
         status="verified" if not reason else "review"
@@ -275,7 +278,13 @@ def song_lane(db, client, budget=25):
                  (recording_mbid,artist_mbid,title,source_url,first_release_date,
                   artist_credit_verified,status,review_reason)
                  VALUES(%s,%s,%s,%s,%s,%s,%s,%s)
-                 ON CONFLICT(recording_mbid) DO UPDATE SET last_checked_at=now()""",
+                 ON CONFLICT(recording_mbid) DO UPDATE SET
+                  last_checked_at=now(),
+                  artist_credit_verified=EXCLUDED.artist_credit_verified,
+                  review_reason=CASE WHEN ken_research_songs.status='registered'
+                      THEN ken_research_songs.review_reason ELSE EXCLUDED.review_reason END,
+                  status=CASE WHEN ken_research_songs.status='registered'
+                      THEN 'registered' ELSE EXCLUDED.status END""",
                  (rid,mbid,title,MB+"/recording/"+rid,
                   rec.get("first-release-date"),credit_ok,status,reason))
             staged+=1
@@ -313,7 +322,10 @@ def song_lane(db, client, budget=25):
                         record_event(db,"songs",rid,"registered",{
                             "song_id":row["id"],"artist_id":artist["master_artist_id"]})
                         promoted+=1
-        offset+=1
+    # The source cursor advances for *every page item*, even when an item
+    # is skipped for invalid metadata or an already-known recording. Otherwise
+    # we repeatedly fetch the same page and never reach later new songs.
+    offset += len(records)
     if len(records) < budget:
         offset = 0
     with db.transaction():

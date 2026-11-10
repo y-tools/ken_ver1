@@ -50,3 +50,6 @@ SHARED_V2_SETUP.mdの手順に従い、隔離SupabaseでSQL/Edge Functionを適�
 - GitHub Actionsの模擬ブラウザ試験で、管理者間のチャットと楽曲リストの同期、リスナーとのON AIR同期、ログインユーザーの同時接続/ログアウトの動作を確認。
 - **SupabaseプロジェクトのSQL・Edge Functionは適用済み。実認証/実Realtime/負荷試験/本番マージは未実施。** 実デプロイが可能になるまで現行mainのGitHub Pagesを変更しない。
 - 実行手順: `SUPABASE_PRODUCTION_RUNBOOK.md`。
+
+### 2026-11-11 Supabase確認
+東京プロジェクト`ken-denmoku-v2`（`kflsbmlpupvpbwsenfba`）にSQLマイグレーション8件を適用済み。テーブル15件はすべてRLS有効、Realtime publicationに`sync_version`と`online_sessions`、Edge Functions 2件はACTIVE。Authユーザー0件・初代owner未登録・Email Redirect URL未設定のため、公開mainには未反映。実メール・実ログイン・複数端末の本番試験は未完了。

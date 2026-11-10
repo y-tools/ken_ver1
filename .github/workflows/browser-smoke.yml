@@ -42,5 +42,7 @@ jobs:
         run: node tests/shared-guard.mjs
       - name: Verify shared UI (mock Supabase)
         run: node tests/shared-mock.mjs
+      - name: Verify email or login ID authentication UI
+        run: node tests/auth-id-mock.mjs
       - name: Run administrator editor browser test
         run: node tests/editor-smoke.mjs

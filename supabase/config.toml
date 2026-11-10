@@ -1,0 +1,4 @@
+# Public login endpoint: password verification and rate limiting are handled inside
+# the Edge Function. A user JWT does not exist before logging in.
+[functions.login-with-id]
+verify_jwt = false

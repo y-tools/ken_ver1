@@ -11,7 +11,8 @@ const server={
 const errs=[];
 async function serverCall(method,args,role){
  if(method==="denmoku_snapshot"){
-  return {data:structuredClone({...server,role,userId:role==="admin"?"admin-id":"listener-id"}),error:null};
+  return {data:structuredClone({...server,role,userId:role==="admin"?"admin-id":"listener-id",
+    chatNotes:role==="listener"?[]:server.chatNotes}),error:null};
  }
  if(method==="version")return {data:{version:server.version},error:null};
  if(method==="denmoku_action"){
@@ -28,6 +29,13 @@ async function serverCall(method,args,role){
    server.streamLive=false;
    server.activeSessionId=null;
    server.sessions[0].endedAt=Date.now();
+  }else if(action==="note_add"){
+   server.chatNotes.push({id:"note-"+Date.now(),kind:args.p_data.kind||"note",
+     text:args.p_data.text,at:Date.now()});
+  }else if(action==="song_upsert"){
+   const input=args.p_data;
+   server.songs.push({id:"song-"+Date.now(),title:input.title,artist:input.artist,
+     status:input.status,year:input.year||null,memo:input.memo||""});
   }else return {data:null,error:{message:"Unsupported mock action"}};
   server.version++;
   return {data:server.version,error:null};
@@ -95,6 +103,33 @@ try{
  assert.equal(await listener.page.locator("#openRequestDialog").isEnabled(),true);
  console.log("PASS remote listener turns ON AIR without reload, even while hidden");
 
+ // Chat history and managed song list also propagate between independent admins.
+ const secondAdmin=await openPage("admin");
+ await secondAdmin.page.locator("#adminTitle").dblclick();
+ await secondAdmin.page.locator("#adminView").waitFor({state:"visible"});
+ await admin.page.locator("#adminChatInput").fill("サーバー共有チャットの同期試験");
+ await admin.page.locator("#adminChatForm button[type=submit]").click();
+ await secondAdmin.page.waitForFunction(
+  ()=>document.querySelector("#adminChatHistory")?.textContent?.includes("サーバー共有チャットの同期試験"),
+  null,{timeout:12000}
+ );
+ assert.equal(
+  (await listener.page.locator("#adminChatHistory").textContent()).includes("サーバー共有チャットの同期試験"),
+  false,"private admin chat must not be returned to listeners"
+ );
+ console.log("PASS private admin chat updates in a second browser without reload");
+
+ await secondAdmin.page.locator(".admin-tools > summary").click();
+ await secondAdmin.page.locator("#songTitle").fill("unravel");
+ await secondAdmin.page.locator("#songArtist").fill("TK from 凛として時雨");
+ await secondAdmin.page.locator("#songStatus").selectOption("ready");
+ await secondAdmin.page.locator("#songSaveButton").click();
+ await admin.page.waitForFunction(
+  ()=>document.querySelector("#adminSongList")?.textContent?.includes("unravel"),
+  null,{timeout:12000}
+ );
+ console.log("PASS managed song list updates between independent admins");
+
  // Stop is also synchronized to the independent, background listener browser.
  await admin.page.locator("#endStream").click();
  await admin.page.waitForFunction(()=>document.querySelector("#adminOnAir")?.hidden===true);
@@ -106,6 +141,7 @@ try{
  assert.equal(await listener.page.locator("#openRequestDialog").isDisabled(),true);
  console.log("PASS remote listener turns OFF AIR without reload");
  assert.deepEqual(errs,[]);
+ await secondAdmin.ctx.close();
  await listener.ctx.close();
  await admin.ctx.close();
 }finally{

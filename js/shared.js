@@ -86,6 +86,20 @@
     if (error) throw error;
     await refresh(true);
   }
+  async function requestGuest(payload) {
+    if(!client || !configured)throw Error("共有サーバーが設定されていません");
+    // This public endpoint is never given a service-role token by the browser.
+    const r=await fetch(url+"/functions/v1/public-request",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","apikey":key},
+      body:JSON.stringify(payload),
+    });
+    let data;
+    try{data=await r.json();}catch{throw Error("リクエスト送信の応答が不正です");}
+    if(!r.ok || !data?.ok)throw Error(data?.error||"リクエストを送信できませんでした");
+    await refresh(true).catch(()=>{});
+    return data;
+  }
   function subscribe(callback) {
     onSnapshot = callback;
     if (channel) client.removeChannel(channel);
@@ -196,7 +210,7 @@
     location.replace("./login.html");
   }
   window.KEN_SHARED=Object.freeze({
-    client,configured,authenticate,enterSite,snapshot,action,subscribe,refresh,signOut,startPresence,
+    client,configured,authenticate,enterSite,snapshot,action,requestGuest,subscribe,refresh,signOut,startPresence,
     isAdmin:()=>role==="admin"||role==="owner",
     isOwner:()=>role==="owner",
     profile:()=>loggedIn?.profile || null,

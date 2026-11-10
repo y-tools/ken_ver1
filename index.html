@@ -275,13 +275,14 @@
   <form id="requestForm" class="request-form">
           <div id="chosenSong" class="selection" hidden></div>
           <div class="form-row">
-            <label class="field">曲名 <input id="reqTitle" name="title" required maxlength="120" placeholder="曲名を入力"></label>
+            <label class="field">曲名（TK専用カタログから選択） <input id="reqTitle" name="title" required maxlength="120" list="guestSongSuggestions" placeholder="曲名を入力・選択"></label><datalist id="guestSongSuggestions"></datalist>
             <label class="field">アーティスト <input id="reqArtist" name="artist" required maxlength="120" placeholder="アーティスト名を入力"></label>
           </div>
           <label class="field">リクエスト者のお名前 <input id="reqName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
           <label class="field">メッセージ（任意）<textarea id="reqMessage" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
           <div><button type="submit" class="button primary large" id="sendRequest">リクエストを送信</button></div>
-          <p class="helper">※ ゲスト閲覧はログイン不要です。ゲストからのリクエスト送信は現在準備中です。</p>
+          <div aria-hidden="true" style="position:absolute;left:-9999px"><label>入力しないでください<input type="text" id="requestCompany" name="company" tabindex="-1" autocomplete="off"></label></div>
+          <p class="helper">※ リスナーはログイン不要です。配信中のみTKの登録曲をリクエストできます。連続投稿にはサーバー側の制限があります。</p>
         </form>
 </dialog>
 

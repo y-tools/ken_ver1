@@ -14,7 +14,8 @@ const SOURCES=Object.freeze({
 });
 const all={};
 try{
- const stored=JSON.parse(localStorage.getItem(KEY)||"{}");
+ // Never show stale local verification rows while the shared server is active.
+ const stored=window.KEN_SHARED?.configured?{}:JSON.parse(localStorage.getItem(KEY)||"{}");
  if(stored&&typeof stored==="object"&&!Array.isArray(stored)){
   for(const [key,value] of Object.entries(stored)){
    if(value&&typeof value==="object"&&typeof value.title==="string"&&typeof value.artist==="string")

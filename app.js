@@ -422,6 +422,34 @@ function startSongEdit(id){
  $("#songForm").scrollIntoView({behavior:"smooth",block:"center"});
  $("#songMemo").focus();
 }
+function renderOnlineUsers(users,error){
+ const list=$("#onlineUsersList"),count=$("#onlineUserCount"),status=$("#onlineUsersStatus");
+ if(!list||!count||!status)return;
+ if(error){
+  count.textContent="取得失敗";
+  status.textContent="接続状況を再確認しています";
+  list.textContent="オンライン一覧を取得できません。ログイン・権限・ネットワークを確認してください。";
+  return;
+ }
+ const rows=Array.isArray(users)?users:[];
+ count.textContent=rows.length+"人";
+ status.textContent="共有サーバーと同期中";
+ if(!rows.length){list.textContent="現在オンラインのユーザーはいません";return;}
+ const labels={owner:"オーナー",admin:"管理者",listener:"リスナー"};
+ const elements=[];
+ for(const user of rows){
+  const pill=document.createElement("div");pill.className="online-user-pill";
+  const dot=document.createElement("span");dot.className="online-user-dot";dot.setAttribute("aria-hidden","true");
+  const name=document.createElement("strong");name.textContent=String(user.displayName||"ユーザー");
+  const info=document.createElement("small");
+  const username=user.loginId?" @"+String(user.loginId):"";
+  const connections=Number(user.connections)||1;
+  info.textContent=(labels[user.role]||"ユーザー")+username+
+   (connections>1?" · "+connections+"接続":"");
+  pill.append(dot,name,info);elements.push(pill);
+ }
+ list.replaceChildren(...elements);
+}
 function render(){
  $("#streamerName").textContent=state.name;
  if(shared && $("#newName"))$("#newName").value=state.name;
@@ -483,7 +511,7 @@ async function requestSubmit(event){
    if(ok){$("#reqMessage").value="";$("#reqTitle").value="";$("#reqArtist").value="";selected=null;
     $("#chosenSong").hidden=true;const dlg=$("#requestDialog");
     if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");
-    try{localStorage.setItem("ken-nickname",nickname)}catch(_){}toast("共有リクエストとして登録しました");}
+    toast("共有リクエストとして登録しました");}
   }finally{isSending=false;}
   return;
  }
@@ -638,6 +666,9 @@ async function attach(){
     if(!error&&!data?.error)$("#inviteAdminEmail").value="";
   });
   shared.subscribe(data=>{state={...initial,...data};window.KEN_KARAOKE?.applyShared?.(data.karaoke||[]);if(!shared.isAdmin())adminMode=false;render();});
+  // Authenticated server heartbeat is independent of stream/requests data.
+  // Only admins receive the aggregated identity list; listeners send heartbeats.
+  shared.startPresence(renderOnlineUsers);
  }catch(e){
   console.error("Denmoku shared bootstrap failed",e);
   document.querySelector("main").innerHTML='<section class="notice">共有データの取得に失敗しました。Supabaseの設定・権限・SQLを確認してください。</section>';return;
@@ -741,7 +772,8 @@ async function attach(){
   }
   persist();render();toast(count+"曲を端末内に読み込みました");e.target.value="";
  });
- try{const nick=localStorage.getItem("ken-nickname")||localStorage.getItem("utabox-nick");if(nick)$("#reqName").value=nick;}catch(_){}
+ if(shared){$("#reqName").value=shared.profile()?.display_name||"";}
+ else try{const nick=localStorage.getItem("ken-nickname")||localStorage.getItem("utabox-nick");if(nick)$("#reqName").value=nick;}catch(_){}
  $("#newName").value=state.name;
  if(!shared && state.streamLive&&!currentSession()){
   const session={id:makeId("session"),startedAt:Date.now(),endedAt:null,events:[],recovered:true};

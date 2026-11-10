@@ -130,6 +130,14 @@
         <button type="button" id="endStream" class="button warning">配信終了</button>
       </div>
     </div>
+    <section id="onlineUsersPanel" class="online-users-panel" aria-labelledby="onlineUsersHeading">
+      <div class="online-users-heading">
+        <h3 id="onlineUsersHeading">ログイン中のオンラインユーザー <span class="count" id="onlineUserCount" aria-live="polite">確認中</span></h3>
+        <span class="helper" id="onlineUsersStatus" role="status">サーバーに接続しています</span>
+      </div>
+      <p class="online-users-note">直近75秒以内に接続を確認できたユーザーを表示します。管理者のみ閲覧可能です。</p>
+      <div id="onlineUsersList" class="online-users-list" aria-live="polite">接続状況を確認しています…</div>
+    </section>
     <div class="admin-columns">
       <section class="admin-panel preview-panel" aria-label="リスナー画面のプレビュー">
         <div class="admin-panel-head"><h3>通常リスナー画面</h3><small>01 / 左端</small></div>

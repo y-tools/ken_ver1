@@ -465,3 +465,16 @@ body.embed-mode .song-search-fields{grid-template-columns:minmax(0,1fr);gap:8px}
 .music-source-credits{max-width:1200px;margin:24px auto;padding:12px 16px 20px;text-align:center;font-size:10px;line-height:1.65;color:var(--muted)}
 .music-source-credits a{color:var(--soft);text-decoration:underline}
 .music-source-credits span{display:block;margin-top:3px}
+
+/* Server-verified online users: visible only inside adminView. */
+.online-users-panel{margin:0 0 12px;padding:11px 14px;border:1px solid var(--edge);border-radius:13px;background:var(--surface)}
+.online-users-heading{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center}
+.online-users-heading h3{font-size:14px;font-weight:900;margin:0}
+.online-users-heading .helper{margin:0}
+.online-users-note{font-size:11px;color:var(--muted);margin:4px 0 9px}
+.online-users-list{display:flex;flex-wrap:wrap;gap:7px;min-height:22px;max-height:100px;overflow-y:auto;font-size:12px;color:var(--soft)}
+.online-user-pill{display:flex;align-items:center;gap:8px;padding:5px 9px;background:var(--bg2);border:1px solid var(--edge);border-radius:11px;max-width:100%}
+.online-user-pill strong{color:var(--text);overflow-wrap:anywhere}
+.online-user-pill small{color:var(--muted);overflow-wrap:anywhere}
+.online-user-dot{height:7px;width:7px;background:var(--green);border-radius:100%;flex:0 0 auto;box-shadow:0 0 8px rgba(88,219,181,.6)}
+@media(min-width:1200px){.admin-columns{height:calc(100dvh - 312px);min-height:420px}}

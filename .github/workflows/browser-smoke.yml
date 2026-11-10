@@ -44,5 +44,7 @@ jobs:
         run: node tests/shared-mock.mjs
       - name: Verify email or login ID authentication UI
         run: node tests/auth-id-mock.mjs
+      - name: Verify admin ON AIR sync across independent browser contexts
+        run: node tests/cross-browser-live.mjs
       - name: Run administrator editor browser test
         run: node tests/editor-smoke.mjs

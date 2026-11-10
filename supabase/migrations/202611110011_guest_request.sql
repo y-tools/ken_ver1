@@ -50,7 +50,7 @@ declare
   v_window_count int; v_day_count int; v_last timestamptz;
   v_global_window timestamptz; v_global_count int;
 begin
-  if pg_catalog.current_user <> 'postgres' and pg_catalog.current_user <> 'service_role' then
+  if pg_catalog.current_setting('request.jwt.claim.role',true) is distinct from 'service_role' then
     raise exception 'Server authentication required' using errcode='42501';
   end if;
   if p_fingerprint is null or p_fingerprint !~ '^[0-9a-f]{64}$' or p_nonce is null then

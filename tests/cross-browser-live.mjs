@@ -105,8 +105,8 @@ try{
   ()=>document.querySelector("#listenerStreamLabel")?.textContent==="ON AIR",
   null,{timeout:11500}
  );
- assert.equal(await listener.page.locator("#openRequestDialog").isDisabled(),true,
-   "Guest read access is enabled; anonymous writes remain disabled");
+ assert.equal(await listener.page.locator("#openRequestDialog").isEnabled(),true,
+   "Guest requests are now enabled through a separate server-limited endpoint");
  console.log("PASS remote listener turns ON AIR without reload, even while hidden");
 
  // Chat history and managed song list also propagate between independent admins.

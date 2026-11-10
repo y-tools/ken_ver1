@@ -13,6 +13,7 @@ const identity={
 async function rpc(name,args,role){
  const caller=identity[role];
  if(name==="denmoku_snapshot")return {data:{...server,userId:caller.userId,role},error:null};
+ if(name==="denmoku_public_snapshot")return {data:{...server,userId:null,role:"guest",sessions:[],chatNotes:[]},error:null};
  if(name==="version")return {data:{version:server.version},error:null};
  if(name==="presence_heartbeat"){
   online.set(caller.userId+"|"+args.p_tab_id,{...caller,tabId:args.p_tab_id,seen:Date.now()});
@@ -77,32 +78,31 @@ try{
  await admin.page.locator("#onlineUserCount").getByText("1人").waitFor({timeout:10000});
  assert.equal((await admin.page.locator("#onlineUsersList").textContent()).includes("配信管理者"),true);
  const listener=await open("listener");opened.push(listener);
- await admin.page.locator("#onlineUserCount").getByText("2人").waitFor({timeout:12000});
- const list=await admin.page.locator("#onlineUsersList").textContent();
- assert.ok(list.includes("配信管理者")&&list.includes("試聴リスナー"));
+ assert.equal(await listener.page.locator("#signedInUser").textContent(),"ゲスト閲覧中");
+ await admin.page.waitForFunction(
+  ()=>document.querySelector("#onlineUserCount")?.textContent==="1人",
+  null,{timeout:12000}
+ );
  assert.equal(await listener.page.locator("#onlineUsersPanel").isVisible(),false);
  const denied=await listener.page.evaluate(()=>window.KEN_SHARED.client.rpc("presence_admin_list"));
  assert.match(denied.error?.message||"",/Admin permission/);
- console.log("PASS admin sees live authenticated users, listener cannot inspect");
+ console.log("PASS guests do not appear in authenticated online list");
 
- // A second browser with the same user account increases connections, not people.
- const second=await open("listener");opened.push(second);
+ const second=await open("admin");opened.push(second);
  await admin.page.waitForFunction(
   ()=>document.querySelector("#onlineUsersList")?.textContent?.includes("2接続"),
   null,{timeout:12000}
  );
- assert.equal(await admin.page.locator("#onlineUserCount").textContent(),"2人");
- console.log("PASS two browser sessions count as one unique logged-in user");
+ assert.equal(await admin.page.locator("#onlineUserCount").textContent(),"1人");
+ console.log("PASS two admin tabs count as one unique authenticated user");
 
- await listener.page.locator("#logoutButton").click();
+ await second.page.locator("#logoutButton").click();
  await admin.page.waitForFunction(
   ()=>!document.querySelector("#onlineUsersList")?.textContent?.includes("2接続"),
   null,{timeout:12000}
  );
- assert.equal(await admin.page.locator("#onlineUserCount").textContent(),"2人");
- await second.page.locator("#logoutButton").click();
- await admin.page.locator("#onlineUserCount").getByText("1人").waitFor({timeout:12000});
- console.log("PASS logout removes online connection without page reload");
+ assert.equal(await admin.page.locator("#onlineUserCount").textContent(),"1人");
+ console.log("PASS admin logout removes online connection without affecting guest");
  assert.deepEqual(errors,[]);
 }finally{
  for(const item of opened)await item.ctx.close().catch(()=>{});

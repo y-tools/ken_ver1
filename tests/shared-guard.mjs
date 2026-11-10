@@ -9,6 +9,10 @@ try{
  await page.route("https://cdn.jsdelivr.net/**",route=>route.fulfill({
    status:200,contentType:"application/javascript",body:"window.supabase={createClient:()=>({})};"
  }));
+ await page.route("**/config.js*",route=>route.fulfill({
+   contentType:"application/javascript",
+   body:"window.KEN_CONFIG={supabaseUrl:'',supabasePublishableKey:'',apiBaseUrl:''}"
+ }));
  const errors=[];
  page.on("pageerror",e=>errors.push(e.message));
  await page.goto("http://127.0.0.1:8765/",{waitUntil:"domcontentloaded"});

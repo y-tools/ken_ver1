@@ -88,7 +88,7 @@ Deno.serve(async request=>{
        return json({error:"現在はリクエスト受付時間外です"},409);
      if(code==="22023")
        return json({error:"TKの楽曲カタログから曲を選択してください"},400);
-     console.error("Guest request DB failure",r.status,code);
+     console.error("Guest request DB failure",r.status,code,detail.slice(0,180));
      return json({error:"サーバーへ保存できませんでした"},502);
    }
    const id:unknown=await r.json();

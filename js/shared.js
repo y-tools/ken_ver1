@@ -71,17 +71,32 @@
   function subscribe(callback) {
     onSnapshot = callback;
     if (channel) client.removeChannel(channel);
+    const check=()=>{void refresh().catch(()=>{});};
     channel=client.channel("denmoku-shared-v2")
       .on("postgres_changes",{
         event:"UPDATE",schema:"public",table:"sync_version",filter:"id=eq.true"
-      },()=>{void refresh().catch(()=>{});})
-      .subscribe(status=>{ if(status==="SUBSCRIBED") void refresh().catch(()=>{}); });
-    // Reconnect, tab suspension and publication misconfiguration recovery.
-    if (polling) clearInterval(polling);
-    polling=setInterval(()=>{if(!document.hidden)void refresh().catch(()=>{});},12000);
-    window.addEventListener("focus",()=>void refresh().catch(()=>{}));
-    document.addEventListener("visibilitychange",()=>{if(!document.hidden)void refresh().catch(()=>{});});
-    return ()=>{if(channel)client.removeChannel(channel);clearInterval(polling);};
+      },check)
+      .subscribe(status=>{
+        // Immediately verify the server state after connecting/reconnecting.
+        if(status==="SUBSCRIBED")check();
+        if(status==="CHANNEL_ERROR"||status==="TIMED_OUT"||status==="CLOSED")check();
+      });
+    // The ON AIR state is authoritative in Supabase, never a browser-local flag.
+    // Keep checking even in a background tab/embedded viewer: a missed Realtime
+    // notification must not leave a listener indefinitely showing OFF AIR.
+    if(polling)clearInterval(polling);
+    polling=setInterval(check,4000);
+    const onVisible=()=>{if(!document.hidden)check();};
+    window.addEventListener("focus",check);
+    window.addEventListener("online",check);
+    document.addEventListener("visibilitychange",onVisible);
+    return ()=>{
+      if(channel)client.removeChannel(channel);
+      clearInterval(polling);polling=null;
+      window.removeEventListener("focus",check);
+      window.removeEventListener("online",check);
+      document.removeEventListener("visibilitychange",onVisible);
+    };
   }
   async function signOut() {
     if (client) await client.auth.signOut();

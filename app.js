@@ -806,7 +806,12 @@ async function attach(){
   }
   persist();render();toast(count+"曲を端末内に読み込みました");e.target.value="";
  });
- if(shared){$("#reqName").value=shared.profile()?.display_name||"";}
+ if(shared) {
+  $("#reqName").value=shared.profile()?.display_name||"";
+  if(!shared.isAdmin()){
+   try{$("#reqName").value=localStorage.getItem("ken-nickname")||"";}catch(_){}
+  }
+ }
  else try{const nick=localStorage.getItem("ken-nickname")||localStorage.getItem("utabox-nick");if(nick)$("#reqName").value=nick;}catch(_){}
  $("#newName").value=state.name;
  if(!shared && state.streamLive&&!currentSession()){

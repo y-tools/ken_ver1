@@ -15,6 +15,11 @@ function mockSupabase(){
     {id:data.userId,display_name:"テスト利用者",role:data.role}:{version:data.version},error:null})})})}),
   rpc:async(name,params)=>{
    if(name==="denmoku_snapshot")return {data:JSON.parse(JSON.stringify(data)),error:null};
+   if(name==="denmoku_public_snapshot")return {data:{
+     ...JSON.parse(JSON.stringify(data)),role:"guest",sessions:[],chatNotes:[],
+     requests:data.requests.filter(r=>["waiting","singing","done"].includes(r.status))
+       .map(r=>({...r,message:"",userId:null}))
+   },error:null};
    if(name==="denmoku_action"){
     if(data.role==="listener"&&params.p_action!=="request_add")
       return {data:null,error:{message:"Permission denied"}};
@@ -94,6 +99,9 @@ try{
  console.log("PASS admin stream start and shared request UI");
 
  const listener=await fixture("listener");
+ assert.equal(await listener.locator("#signedInUser").textContent(),"ゲスト閲覧中");
+ assert.equal(await listener.locator("#loginNav").isVisible(),true);
+ assert.equal(await listener.locator("#accountNav").isVisible(),false);
  await listener.locator("#adminTitle").dblclick();
  assert.equal(await listener.locator("#adminView").isVisible(),false);
  await listener.close();

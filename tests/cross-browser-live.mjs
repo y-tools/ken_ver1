@@ -80,7 +80,7 @@ try{
  const denied=await listener.page.evaluate(()=>window.KEN_SHARED.client.rpc(
   "denmoku_action",{p_action:"stream_start",p_data:{}}
  ));
- assert.match(denied.error?.message||"","Admin permission");
+ assert.match(denied.error?.message||"",/Admin permission/);
 
  // The admin's tab writes server state. Listener is in an independent context.
  await admin.page.locator("#adminTitle").dblclick();

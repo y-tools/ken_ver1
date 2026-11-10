@@ -30,6 +30,7 @@ let editingId=null;
 let selected=null;
 
 let isSending=false;
+let guestPendingNonce=null;
 function persist(){
  if(shared)throw Error("Use RPC for shared mutations");
  try{localStorage.setItem(storageKey,JSON.stringify(state));return true;}
@@ -108,11 +109,10 @@ function displayRow(s,actions="",status=""){
  formatSongReadings(s)+(window.KEN_KARAOKE?.render(s)||"")+'</div>'+ (actions?'<div class="song-actions">'+actions+'</div>':"")+'</div>';
 }
 function openRequestDialog(song){
- if(shared&&!shared.isAdmin()){toast("ゲストからのリクエスト送信は準備中です");return;}
  if(!state.streamLive){toast("現在は配信終了中です。リクエストを送信できません");return;}
  selected=song||null;
  $("#reqTitle").value=song?.title||"";
- $("#reqArtist").value=song?.artist||"";
+ $("#reqArtist").value=song?.artist||(shared&&!shared.isAdmin()?TK_ONLY_ARTIST:"");
  $("#chosenSong").hidden=!song;
  $("#chosenSong").textContent=song?"選択中："+song.title+" / "+song.artist:"";
  const dlg=$("#requestDialog");
@@ -334,7 +334,7 @@ function classifyRequest(id,flags){
 function renderStreamStatus(){
  const live=state.streamLive===true;
  $("#listenerStreamLabel").textContent=live?"ON AIR":"OFF AIR";
- $("#listenerStreamDetail").textContent=live?(shared&&!shared.isAdmin()?"ただいま配信中！ ゲストからのリクエスト投稿は準備中です。":"ただいま配信中！ 楽曲リクエストを受け付けています。"):"現在は配信していません。楽曲リクエストは受付停止中です。";
+ $("#listenerStreamDetail").textContent=live?"ただいま配信中！ 楽曲リクエストを受け付けています。":"現在は配信していません。楽曲リクエストは受付停止中です。";
  $("#streamStatus").classList.toggle("is-live",live);
  $("#streamStatus").classList.toggle("is-offline",!live);
  $("#requestAvailability").textContent=live?"配信中・リクエスト受付中":"配信終了中・リクエスト受付停止";
@@ -343,9 +343,8 @@ function renderStreamStatus(){
  $("#adminOnAir").hidden=!live;
  $("#startStream").disabled=live;
  $("#endStream").disabled=!live;
- const guest=Boolean(shared&&!shared.isAdmin());
- $("#openRequestDialog").disabled=!live||guest;
- $("#sendRequest").disabled=!live||guest;
+ $("#openRequestDialog").disabled=!live;
+ $("#sendRequest").disabled=!live;
 }
 function setStreamLive(live){
  if(shared){if(!adminMode||preview)return;void sharedAction(live?"stream_start":"stream_end");return;}
@@ -501,20 +500,38 @@ function reorder(id,dir){
 }
 async function requestSubmit(event){
  event.preventDefault();if(isSending)return;
- if(shared&&!shared.isAdmin()){toast("ゲストからのリクエスト送信は準備中です");return;}
  if(!state.streamLive){toast("配信終了中のため、リクエストを受け付けていません");return;}
  const title=$("#reqTitle").value.trim(),artist=$("#reqArtist").value.trim(),nickname=$("#reqName").value.trim();
  if(!title||!artist||!nickname){toast("曲名・アーティスト・お名前を入力してください");return;}
  if(title.length>120||artist.length>120||nickname.length>40){toast("入力文字数を確認してください");return;}
+ if(shared&&!shared.isAdmin()&&!isTKArtist(artist)){toast("TK from 凛として時雨の楽曲を選んでください");return;}
  isSending=true;
  if(shared){
   try{
-   const ok=await sharedAction("request_add",{title,artist,nickname,
-    message:$("#reqMessage").value.trim().slice(0,200),nonce:crypto.randomUUID()});
-   if(ok){$("#reqMessage").value="";$("#reqTitle").value="";$("#reqArtist").value="";selected=null;
+   let ok=false;
+   const message=$("#reqMessage").value.trim().slice(0,200);
+   if(shared.isAdmin()){
+    ok=await sharedAction("request_add",{title,artist,nickname,
+      message,nonce:crypto.randomUUID()});
+   }else{
+    try{
+     if(!guestPendingNonce)guestPendingNonce=crypto.randomUUID();
+     await shared.requestGuest({title,artist,nickname,message,
+       nonce:guestPendingNonce,company:$("#requestCompany")?.value||""});
+     guestPendingNonce=null;
+     ok=true;
+    }catch(e){
+     toast(String(e?.message||"リクエストを送信できませんでした").slice(0,100));
+     return;
+    }
+   }
+   if(ok){
+    $("#reqMessage").value="";$("#reqTitle").value="";$("#reqArtist").value=shared.isAdmin()?"":TK_ONLY_ARTIST;selected=null;
     $("#chosenSong").hidden=true;const dlg=$("#requestDialog");
     if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");
-    toast("共有リクエストとして登録しました");}
+    try{localStorage.setItem("ken-nickname",nickname)}catch(_){}
+    toast("リクエストを受け付けました");
+   }
   }finally{isSending=false;}
   return;
  }
@@ -616,6 +633,14 @@ async function loadCatalog(){
   // Enforce TK-only even if an outdated catalog is cached.
   catalog.rows=rows.filter(r=>Array.isArray(r)&&r.length>=2&&isTKArtist(r[1]));
   catalog.idx=catalog.rows.map(r=>[norm(r[0]),norm(r[1])]);
+  const suggestions=$("#guestSongSuggestions");
+  if(suggestions){
+   suggestions.replaceChildren();
+   for(const [title] of catalog.rows){
+    const option=document.createElement("option");option.value=title;
+    suggestions.appendChild(option);
+   }
+  }
   catalog.ready=true;
  }catch(e){catalog.error=true;console.warn("Catalog unavailable",e);}
  render();

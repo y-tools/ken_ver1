@@ -71,6 +71,22 @@ async function openPage(role,{hidden=false}={}){
  await ctx.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/**",r=>r.fulfill({
   contentType:"application/javascript",body:mockSdk(role)
  }));
+ await ctx.route("https://example.supabase.co/functions/v1/public-request",async route=>{
+  const payload=route.request().postDataJSON();
+  const valid=server.streamLive &&
+    payload.artist==="TK from 凛として時雨" &&
+    payload.title==="unravel" &&
+    payload.nickname==="ゲスト試験";
+  if(!valid){
+   await route.fulfill({status:400,contentType:"application/json",
+     headers:{"Access-Control-Allow-Origin":"*"},body:JSON.stringify({error:"Invalid guest request"})});return;
+  }
+  server.requests.push({id:"guest-"+Date.now(),title:payload.title,artist:payload.artist,
+   nickname:payload.nickname,status:"new",createdAt:Date.now(),message:"",userId:null});
+  server.version++;
+  await route.fulfill({status:201,contentType:"application/json",
+    headers:{"Access-Control-Allow-Origin":"*"},body:JSON.stringify({ok:true,id:crypto.randomUUID()})});
+ });
  const page=await ctx.newPage();
  page.on("pageerror",err=>errs.push(role+": "+err.message));
  if(hidden){
@@ -108,6 +124,18 @@ try{
  assert.equal(await listener.page.locator("#openRequestDialog").isEnabled(),true,
    "Guest requests are now enabled through a separate server-limited endpoint");
  console.log("PASS remote listener turns ON AIR without reload, even while hidden");
+ await listener.page.locator("#openRequestDialog").click();
+ await listener.page.locator("#reqTitle").fill("unravel");
+ await listener.page.locator("#reqArtist").fill("TK from 凛として時雨");
+ await listener.page.locator("#reqName").fill("ゲスト試験");
+ await listener.page.locator("#sendRequest").click();
+ await admin.page.waitForFunction(
+  ()=>document.querySelector("#adminRequests")?.textContent?.includes("ゲスト試験"),
+  null,{timeout:12000}
+ );
+ assert.equal(server.requests.length,1);
+ assert.equal(server.requests[0].userId,null);
+ console.log("PASS no-login guest request propagates to admin browser");
 
  // Chat history and managed song list also propagate between independent admins.
  const secondAdmin=await openPage("admin");

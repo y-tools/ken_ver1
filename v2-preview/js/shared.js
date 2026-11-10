@@ -13,7 +13,7 @@
   const client = configured ? SDK.createClient(url, key, {
     auth: {persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
   }) : null;
-  let role = "listener";
+  let role = "guest";
   let loggedIn = null;
   let channel = null;
   let currentVersion = -1;
@@ -37,8 +37,25 @@
     loggedIn = {user,profile};
     return loggedIn;
   }
+  async function enterSite() {
+    if (!client) throw Error("Supabaseの設定がありません");
+    // The public listener page is available without a login or account.
+    const {data:{user},error}=await client.auth.getUser();
+    if (!error && user) {
+      const {data:profile, error:profileError}=await client.from("profiles")
+        .select("id,display_name,role,login_id").eq("id",user.id).single();
+      if (!profileError && profile && (profile.role==="owner"||profile.role==="admin")) {
+        role=profile.role;
+        loggedIn={user,profile};
+        return loggedIn;
+      }
+    }
+    role="guest";
+    loggedIn=null;
+    return null;
+  }
   async function snapshot() {
-    const {data,error} = await client.rpc("denmoku_snapshot");
+    const {data,error} = await client.rpc(loggedIn ? "denmoku_snapshot" : "denmoku_public_snapshot");
     if (error) throw error;
     if (!data || !Array.isArray(data.requests)) throw Error("共有データの形式が正しくありません");
     currentVersion = Math.max(currentVersion,Number(data.version || 0));
@@ -47,7 +64,7 @@
   async function refresh(force=false) {
     if (refreshing) return refreshing;
     refreshing=(async()=>{
-      if (!client || !loggedIn) return;
+      if (!client) return;
       if (!force) {
         const {data,error} = await client.from("sync_version").select("version").eq("id",true).single();
         if (error) throw error;
@@ -64,7 +81,7 @@
     return refreshing;
   }
   async function action(name,payload={}) {
-    if (!loggedIn) throw Error("ログインが必要です");
+    if (!loggedIn || !(role==="owner"||role==="admin")) throw Error("管理者ログインが必要です");
     const {error} = await client.rpc("denmoku_action",{p_action:name,p_data:payload});
     if (error) throw error;
     await refresh(true);
@@ -179,7 +196,7 @@
     location.replace("./login.html");
   }
   window.KEN_SHARED=Object.freeze({
-    client,configured,authenticate,snapshot,action,subscribe,refresh,signOut,startPresence,
+    client,configured,authenticate,enterSite,snapshot,action,subscribe,refresh,signOut,startPresence,
     isAdmin:()=>role==="admin"||role==="owner",
     isOwner:()=>role==="owner",
     profile:()=>loggedIn?.profile || null,

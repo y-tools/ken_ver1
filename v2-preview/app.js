@@ -108,6 +108,7 @@ function displayRow(s,actions="",status=""){
  formatSongReadings(s)+(window.KEN_KARAOKE?.render(s)||"")+'</div>'+ (actions?'<div class="song-actions">'+actions+'</div>':"")+'</div>';
 }
 function openRequestDialog(song){
+ if(shared&&!shared.isAdmin()){toast("ゲストからのリクエスト送信は準備中です");return;}
  if(!state.streamLive){toast("現在は配信終了中です。リクエストを送信できません");return;}
  selected=song||null;
  $("#reqTitle").value=song?.title||"";
@@ -342,8 +343,9 @@ function renderStreamStatus(){
  $("#adminOnAir").hidden=!live;
  $("#startStream").disabled=live;
  $("#endStream").disabled=!live;
- $("#openRequestDialog").disabled=!live;
- $("#sendRequest").disabled=!live;
+ const guest=Boolean(shared&&!shared.isAdmin());
+ $("#openRequestDialog").disabled=!live||guest;
+ $("#sendRequest").disabled=!live||guest;
 }
 function setStreamLive(live){
  if(shared){if(!adminMode||preview)return;void sharedAction(live?"stream_start":"stream_end");return;}
@@ -499,6 +501,7 @@ function reorder(id,dir){
 }
 async function requestSubmit(event){
  event.preventDefault();if(isSending)return;
+ if(shared&&!shared.isAdmin()){toast("ゲストからのリクエスト送信は準備中です");return;}
  if(!state.streamLive){toast("配信終了中のため、リクエストを受け付けていません");return;}
  const title=$("#reqTitle").value.trim(),artist=$("#reqArtist").value.trim(),nickname=$("#reqName").value.trim();
  if(!title||!artist||!nickname){toast("曲名・アーティスト・お名前を入力してください");return;}
@@ -639,7 +642,7 @@ async function attach(){
   document.querySelector("main").innerHTML='<section class="notice">共有DB未設定です。Supabaseの接続設定を完了するまで利用できません。</section>';return;
  }
  try{
-  const auth=await shared.authenticate();if(!auth)return;
+  const auth=await shared.enterSite();
   const firstSnapshot=await shared.snapshot();
   state={...initial,...firstSnapshot};window.KEN_KARAOKE?.applyShared?.(firstSnapshot.karaoke||[]);
   // Explicit 2026-11-11 decision: old browser records need no migration.
@@ -650,8 +653,14 @@ async function attach(){
   } catch(error) {
    console.warn("Could not clear legacy Ken browser data",error);
   }
-  if($("#signedInUser"))$("#signedInUser").textContent=auth.profile.display_name+" ("+auth.profile.role+")";
-  if($("#logoutButton"))$("#logoutButton").addEventListener("click",()=>void shared.signOut());
+  if($("#signedInUser"))$("#signedInUser").textContent=auth?.profile
+    ? auth.profile.display_name+" ("+auth.profile.role+")" : "ゲスト閲覧中";
+  if($("#accountNav"))$("#accountNav").hidden=!shared.isAdmin();
+  if($("#loginNav"))$("#loginNav").hidden=shared.isAdmin();
+  if($("#logoutButton")){
+    $("#logoutButton").hidden=!shared.isAdmin();
+    $("#logoutButton").addEventListener("click",()=>void shared.signOut());
+  }
   adminMode=params.get("admin")==="1"&&shared.isAdmin();
   if($("#ownerInvite"))$("#ownerInvite").hidden=!shared.isOwner();
   if($("#inviteAdminForm"))$("#inviteAdminForm").addEventListener("submit",async event=>{
@@ -668,7 +677,7 @@ async function attach(){
   shared.subscribe(data=>{state={...initial,...data};window.KEN_KARAOKE?.applyShared?.(data.karaoke||[]);if(!shared.isAdmin())adminMode=false;render();});
   // Authenticated server heartbeat is independent of stream/requests data.
   // Only admins receive the aggregated identity list; listeners send heartbeats.
-  shared.startPresence(renderOnlineUsers);
+  if(shared.isAdmin())shared.startPresence(renderOnlineUsers);
  }catch(e){
   console.error("Denmoku shared bootstrap failed",e);
   document.querySelector("main").innerHTML='<section class="notice">共有データの取得に失敗しました。Supabaseの設定・権限・SQLを確認してください。</section>';return;

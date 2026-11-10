@@ -30,6 +30,7 @@
       <button type="button" class="back-to-listener button" id="toListener" hidden>リスナー画面へ戻る</button>
       <span class="helper" id="signedInUser"></span>
       <a class="button subtle" href="./account.html" id="accountNav">アカウント</a>
+      <a class="button subtle" href="./login.html" id="loginNav">管理者ログイン</a>
       <a id="adminNav" class="button subtle" href="./admin.html" hidden>管理者メニュー</a>
       <button id="logoutButton" type="button" class="button subtle">ログアウト</button>
       <div class="connection-status" id="catalogStatus" aria-live="polite">曲カタログ読込中</div>
@@ -280,7 +281,7 @@
           <label class="field">リクエスト者のお名前 <input id="reqName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
           <label class="field">メッセージ（任意）<textarea id="reqMessage" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
           <div><button type="submit" class="button primary large" id="sendRequest">リクエストを送信</button></div>
-          <p class="helper">※ リクエストはログイン中のアカウントから送信し、全端末に共有されます。</p>
+          <p class="helper">※ ゲスト閲覧はログイン不要です。ゲストからのリクエスト送信は現在準備中です。</p>
         </form>
 </dialog>
 

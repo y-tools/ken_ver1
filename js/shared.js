@@ -30,7 +30,7 @@
       return null;
     }
     const {data:profile,error:profileError} = await client.from("profiles")
-      .select("id,display_name,role").eq("id",user.id).single();
+      .select("id,display_name,role,login_id").eq("id",user.id).single();
     if (profileError || !profile) throw Error("ユーザー情報を取得できませんでした");
     role = profile.role;
     loggedIn = {user,profile};

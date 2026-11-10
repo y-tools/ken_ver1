@@ -1,0 +1,15 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kenのデンモク | アカウント設定</title>
+<link rel="stylesheet" href="./js/auth-pages.css">
+<script src="./config.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+<script src="./js/shared.js" defer></script><script src="./js/auth-pages.js" defer></script>
+</head><body data-auth-page="account"><main class="auth-card">
+<div class="eyebrow">KEN'S DENMOKU / VER.2</div><h1>ログインIDの設定</h1>
+<p>メールアドレスで登録した既存ユーザーや招待された管理者も、ログイン後にIDを設定できます。</p>
+<p>現在のログインID：<strong id="currentLoginId">確認中</strong></p>
+<form id="accountIdForm">
+<label>新しいログインID（4〜24文字、先頭英字）<input id="newLoginId" minlength="4" maxlength="24" pattern="[A-Za-z][A-Za-z0-9._-]{3,23}" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>
+<button type="submit">ログインIDを保存する</button>
+</form><p class="auth-note">英字の大文字と小文字は同じIDとして扱います。IDの変更後もメールアドレスでログインできます。パスワードを忘れた場合はメールアドレスから再設定してください。</p>
+<p><a href="./index.html">デンモクへ戻る</a> · <a href="./reset-password.html">パスワード再設定</a></p>
+<p id="feedback" role="status" aria-live="polite"></p></main></body></html>

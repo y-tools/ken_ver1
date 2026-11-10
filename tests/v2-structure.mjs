@@ -27,3 +27,15 @@ assert.match(config,/supabasePublishableKey:\s*""/);
 assert.ok(read("supabase/migrations/202611070001_auth.sql").includes("enable row level security"));
 assert.ok(read("supabase/migrations/202611070003_actions.sql").includes("Admin permission required"));
 console.log("PASS Ver.2 TK-only source, fail-closed settings and security scaffolding");
+
+const login=read("login.html"),reg=read("register.html"),auth=read("js/auth-pages.js");
+assert.match(login,/id="loginIdentifier"/);
+assert.match(reg,/id="loginId"/);
+assert.match(read("account.html"),/id="accountIdForm"/);
+assert.match(auth,/functions\.invoke\("login-with-id"/);
+assert.match(auth,/auth\.setSession/);
+assert.match(auth,/rpc\("set_login_id"/);
+assert.match(read("supabase/migrations/202611110005_login_id.sql"),/profiles_login_id_unique/);
+assert.match(read("supabase/functions/login-with-id/index.ts"),/signInWithPassword/);
+assert.match(read("supabase/config.toml"),/verify_jwt = false/);
+console.log("PASS both email and ID login scaffolding");

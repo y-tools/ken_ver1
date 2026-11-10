@@ -12,3 +12,5 @@ p{font-size:13px;line-height:1.8;color:#c4d7ed}
 a{color:#7bd2ff}a:hover{text-decoration:none}
 #feedback:not(:empty){border:1px solid #406388;padding:12px;border-radius:10px;background:#182f4b;color:#e9f6ff}
 [hidden]{display:none!important}
+
+.auth-note{color:#c0d2eb;font-size:12px;line-height:1.8}

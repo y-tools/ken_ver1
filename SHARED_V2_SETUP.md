@@ -22,7 +22,7 @@
 2. Supabase AuthでEmailのConfirm emailを有効化。Site URLを https://y-tools.github.io/ken_ver1/ にし、以下をRedirect URLに登録：
    - https://y-tools.github.io/ken_ver1/auth-callback.html
    - https://y-tools.github.io/ken_ver1/reset-password.html
-3. supabase/migrations/202611070001_auth.sql → 002_live_data.sql → 003_actions.sql → 004_karaoke.sql → **202611110005_login_id.sql** → **202611110006_online_presence.sql** → **202611110007_revoke_signup_trigger_execution.sql** の順でSQLを適用。
+3. supabase/migrations/202611070001_auth.sql → 002_live_data.sql → 003_actions.sql → 004_karaoke.sql → **202611110005_login_id.sql** → **202611110006_online_presence.sql** → **202611110007_revoke_signup_trigger_execution.sql** → **202611110008_rls_and_foreign_key_indexes.sql** の順でSQLを適用。
 4. 初代ownerはメール確認済みの自分のアカウントを作成し、SQL Editorからprofiles.roleをownerに変更。公開ブラウザに昇格APIを作らない。
 5. Supabase CLIでinvite-adminおよび **login-with-id**（supabase/config.toml により verify_jwt=false、独自のID/パスワード照合あり）のEdge Functionをデプロイ。Service Role Keyはサーバー上の秘密情報だけに保存し、GitHubやブラウザには掲載しない。
 6. config.jsのsupabaseUrlとsupabasePublishableKeyに**公開可能な**Project URLとpublishable/anon keyのみ設定。VPS検索のapiBaseUrlは従来通り。
@@ -66,3 +66,6 @@
 - Realtimeは`supabase_realtime` PublicationとRLS両方が必要。接続断時の4秒間隔再取得で取り逃した更新を回復します（ブラウザの非表示タブのタイマー制限は別途影響します）。
 - TK限定98曲の検索カタログは従来どおりGitHub Pages/VPS上の共有資産です。リクエスト・配信管理・チャットなどの操作データはSupabaseに置きます。ローカル保存を正本にしません。
 - 公開版mainは未移行ですが、新規SupabaseプロジェクトへのSQL7件・Edge Function2件適用は**完了**。詳細は`SUPABASE_PRODUCTION_RUNBOOK.md`を参照。
+
+### 2026-11-11 Supabase確認
+東京プロジェクト`ken-denmoku-v2`（`kflsbmlpupvpbwsenfba`）にSQLマイグレーション8件を適用済み。テーブル15件はすべてRLS有効、Realtime publicationに`sync_version`と`online_sessions`、Edge Functions 2件はACTIVE。Authユーザー0件・初代owner未登録・Email Redirect URL未設定のため、公開mainには未反映。実メール・実ログイン・複数端末の本番試験は未完了。

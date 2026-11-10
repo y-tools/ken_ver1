@@ -1,0 +1,31 @@
+# Kenのデンモク Ver.2 — TK限定ベースの統合状況
+
+基準: 2026-11-11 / branch: feature/denmoku-v2-tk-safe-20261111
+
+## 設計資料への対応
+- 旧PR #1のSupabase Auth登録、メール確認、ログイン、パスワード再設定、listener/admin/owner RLS、管理者招待Edge Function、共有状態RPC、Realtime再取得を移植
+- 現行mainのTK限定98曲、曲名＋アーティスト2入力AND検索、VPS楽曲編集は保全
+- 本番mainは未変更。Supabase接続設定・SQL適用・Edge Functionデプロイ・本番データ移行は未実施
+
+## フェーズ別判定
+| Phase | 現状 | 本番前に必要な確認 |
+|---|---|---|
+| 0 現行デバッグ | mainの既存テストあり | D-01〜D-15手動実機確認 |
+| 1 Supabase+RLS | SQLコード追加 | 実Supabaseで適用・RLS拒否試験 |
+| 2 認証招待 | 画面・コード追加 | メール/既存アカウント/期限切れのテスト |
+| 3 ブランチ | 未実装 | 複数ブランチ/branch_members/分離 |
+| 4 Stripe | 未実装 | 契約/Webhook/失敗復旧 |
+| 5 楽曲収集 | 以前の自動収集は撤去済み | 再開はユーザーからの明示指示が必要 |
+| 6 Realtime | コードとブラウザモック追加 | 別端末/競合/切断復帰/負荷 |
+| 7 本番移行 | 未実施 | 旧端末のバックアップ、データ突合、ロールバック |
+
+## 必須の安全条件
+1. 本番(main)にマージしないまま、専用Supabaseの検証環境で試験する。
+2. SERVICE_ROLE_KEYをGitHub Pagesやブラウザに配置しない。公開可能なURLとキーだけをconfig.jsに設定する。
+3. VPSのken_songsは別DBであり、Supabase側のsongsは歌える曲・練習曲の選択データ。静的98曲を増やさない。
+4. ブラウザ内のリクエスト/履歴/メモは自動移行しない。各端末で手動バックアップしてから移行方針を決定する。
+5. ブランチ/Stripe/決済/プラン上限は、このPRでは未完成。既存ユーザーへの管理者招待と実負荷試験も未検証。
+6. 現行ローカル版のtests/smoke.mjsは旧認証で動くため新共有環境のCIでは代わりにshared-guardとshared-mockを使う。これは実SupabaseでのE2E受入の代替ではない。
+
+## 次の作業
+SHARED_V2_SETUP.mdの手順に従い、隔離SupabaseでSQL/Edge Functionを適用し、D-01〜D-15とロール間/同時編集/50人負荷を計測する。完了までDraft PRを維持する。

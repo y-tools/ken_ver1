@@ -1,0 +1,9 @@
+# Public login endpoint: password verification and rate limiting are handled inside
+# the Edge Function. A user JWT does not exist before logging in.
+[functions.login-with-id]
+verify_jwt = false
+
+# Anonymous listeners use a server-validated endpoint. Never expose service role keys.
+# The function enforces origin, IP-derived quotas and only calls a service-role-only RPC.
+[functions.public-request]
+verify_jwt = false

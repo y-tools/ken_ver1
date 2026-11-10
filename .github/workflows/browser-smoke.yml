@@ -1,12 +1,18 @@
 name: Browser smoke test
 on:
   workflow_dispatch:
+  pull_request:
   push:
     paths:
       - "index.html"
       - "app.js"
       - "styles.css"
       - "tests/**"
+      - "js/**"
+      - "supabase/**"
+      - "catalog.json"
+      - "config.js"
+      - "data/karaoke-coverage.js"
       - "database-editor.html"
       - "database-editor.css"
       - "database-editor.js"
@@ -30,7 +36,17 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/ken-server.log 2>&1 &
           sleep 3
-      - name: Run UI smoke test
-        run: node tests/smoke.mjs
+      - name: Verify Ver.2 TK-only structure
+        run: node tests/v2-structure.mjs
+      - name: Verify unconfigured authentication is fail-closed
+        run: node tests/shared-guard.mjs
+      - name: Verify shared UI (mock Supabase)
+        run: node tests/shared-mock.mjs
+      - name: Verify email or login ID authentication UI
+        run: node tests/auth-id-mock.mjs
+      - name: Verify admin ON AIR sync across independent browser contexts
+        run: node tests/cross-browser-live.mjs
+      - name: Verify live online user list and session logout
+        run: node tests/online-presence-mock.mjs
       - name: Run administrator editor browser test
         run: node tests/editor-smoke.mjs

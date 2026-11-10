@@ -30,7 +30,7 @@ console.log("PASS Ver.2 TK-only source, fail-closed settings and security scaffo
 
 const login=read("login.html"),reg=read("register.html"),auth=read("js/auth-pages.js");
 assert.match(login,/id="loginIdentifier"/);
-assert.match(reg,/id="loginId"/);
+assert.match(reg,/管理者アカウントは招待制です/);
 assert.match(read("account.html"),/id="accountIdForm"/);
 assert.match(auth,/functions\.invoke\("login-with-id"/);
 assert.match(auth,/auth\.setSession/);

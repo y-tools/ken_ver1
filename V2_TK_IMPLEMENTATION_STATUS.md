@@ -42,3 +42,11 @@ SHARED_V2_SETUP.mdの手順に従い、隔離SupabaseでSQL/Edge Functionを適�
 - ログインIDは新規登録で設定し、招待済み/既存アカウントはaccount.htmlで追加・更新可能。
 - サーバー側に一意制約・本人のみ変更RPC・ID→メール非公開の認証Edge Function・IP/IDベースのレート制限を追加。
 - まだSupabase未設定につきユーザー実在・実メール送信・実ID認証は未検証。本番main・VPS楽曲DB変更なし。
+
+## 2026-11-11 共有サーバー・オンライン表示の追加
+- `202611110006_online_presence.sql`：認証済みユーザーのオンライン接続記録、管理者専用一覧、75秒での在線判定、明示ログアウト時の解除、RLSとRealtime Publicationを実装。
+- 管理画面に「ログイン中のオンラインユーザー」欄（表示名・ID・権限・接続数）を追加。異なる端末の同一アカウントは1人に集約。
+- `sync_version`更新による配信、リクエスト、歌唱、管理チャット、曲リスト、カラオケ情報の再取得を継続。リスナーから管理チャットは取得不可。
+- GitHub Actionsの模擬ブラウザ試験で、管理者間のチャットと楽曲リストの同期、リスナーとのON AIR同期、ログインユーザーの同時接続/ログアウトの動作を確認。
+- **Supabaseプロジェクト未接続につき本番SQL適用・Edge Functionデプロイ・実認証/実Realtime/負荷試験/本番マージは未実施。** 実デプロイが可能になるまで現行mainのGitHub Pagesを変更しない。
+- 実行手順: `SUPABASE_PRODUCTION_RUNBOOK.md`。

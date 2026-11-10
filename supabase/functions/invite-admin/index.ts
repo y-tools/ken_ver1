@@ -46,7 +46,7 @@ Deno.serve(async request=>{
    .insert({email,invited_by:user.id,status:"pending"}).select("id").single();
  if(recordError||!record)return respond({error:"Could not reserve invitation"},409);
  const {data:invitation,error:inviteError}=await admin.auth.admin.inviteUserByEmail(email,{
-   redirectTo:"https://y-tools.github.io/ken_ver1/v2-preview/auth-callback.html"
+   redirectTo:"https://y-tools.github.io/ken_ver1/auth-callback.html"
  });
  if(inviteError||!invitation?.user){
    await admin.from("admin_invites").update({status:"revoked"}).eq("id",record.id);

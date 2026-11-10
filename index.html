@@ -14,24 +14,29 @@
 
 <script src="./data/karaoke-coverage.js?v=20261106-karaoke-v2" defer></script>
 <script src="./data/vps-search.js?v=20261106-vps-phase0-v1" defer></script>
-<script src="./app.js?v=20261109-tk-only-v1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+<script src="./js/shared.js?v=20261111-v2-tk" defer></script>
+<script src="./app.js?v=20261111-v2-tk" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
   <div class="site-header-inner">
     <div>
       <div class="brand-small">REALITY / MUSIC REQUEST SYSTEM</div>
-      <h1 class="site-title"><button type="button" class="title-hold-trigger" id="adminTitle" aria-label="長押しで管理画面のパスワード入力を開く"><span id="streamerName">Ken</span>のデンモク</button></h1>
+      <h1 class="site-title"><button type="button" class="title-hold-trigger" id="adminTitle" aria-label="管理者は長押しで管理画面を表示"><span id="streamerName">Ken</span>のデンモク</button></h1>
       <div class="site-subtitle">楽曲検索・リクエスト・現在の待機曲</div>
     </div>
     <div class="header-actions">
       <button type="button" class="back-to-listener button" id="toListener" hidden>リスナー画面へ戻る</button>
+      <span class="helper" id="signedInUser"></span>
+      <a id="adminNav" class="button subtle" href="./admin.html" hidden>管理者メニュー</a>
+      <button id="logoutButton" type="button" class="button subtle">ログアウト</button>
       <div class="connection-status" id="catalogStatus" aria-live="polite">曲カタログ読込中</div>
     </div>
   </div>
 </header>
 <main>
-  <div class="notice" id="storageNotice" hidden>現在は端末内プレビューです。リクエスト・待機曲・歌える曲リストは、このブラウザ内だけに保存されます。ほかの人と共有するにはデータベース接続と管理者認証が必要です。</div>
+  <div class="notice" id="storageNotice" hidden>共有データを同期しています。同期できない場合はネットワークやログイン状態を確認してください。</div>
   <div id="listenerView">
     <div class="home-lead" style="margin-top:18px">
       <div><h2>ホーム</h2><p>曲を探して、リクエストを送ろう。</p></div>
@@ -106,6 +111,15 @@
     </div>
   </div>
   <div id="adminView" hidden>
+    <section id="ownerInvite" class="home-card" hidden>
+      <h3>オーナー専用：管理者招待</h3>
+      <p>メールアドレスで管理者を招待します。招待権限はサーバー側でも確認されます。</p>
+      <form id="inviteAdminForm" class="form-row">
+        <label class="field">招待するメールアドレス<input id="inviteAdminEmail" type="email" autocomplete="off" required maxlength="254"></label>
+        <button class="button primary" type="submit">管理者として招待</button>
+      </form>
+      <p class="helper" id="inviteAdminFeedback" role="status"></p>
+    </section>
     <div class="admin-heading" style="margin-top:17px">
       <div><div class="admin-title-line"><h2>管理画面</h2><span id="adminOnAir" class="onair-indicator" hidden><span class="onair-dot"></span>ON AIR</span></div><p>左からリスナー・歌唱待機楽曲・リクエスト・空き枠の4列です。</p></div>
       <div class="stream-controls">
@@ -161,8 +175,13 @@
       </section>
     </div>
     <details class="admin-tools">
-      <summary>端末内プレビュー設定・楽曲リストの登録</summary>
-      <p class="helper">この画面の編集機能は開発用です。一般公開版での管理者認証は未設定です。</p>
+      <summary>共有配信設定・楽曲リストの登録</summary>
+      <div class="notice">
+        <p>旧ブラウザのデータは自動で共有DBに上書きされません。移行前にそれぞれのブラウザでバックアップしてください。</p>
+        <button type="button" class="button" id="backupLegacy">このブラウザの旧データをバックアップ</button>
+      </div>
+
+      <p class="helper">管理機能は招待制の権限で保護し、共有データベースに保存します。</p>
       <form id="nameForm">
         <label class="field">配信者の表示名<input id="newName" maxlength="30" placeholder="Ken"></label>
         <div><button type="submit" class="button">名前を保存</button></div>
@@ -181,7 +200,7 @@
       </form>
       <section class="karaoke-management" aria-labelledby="karaokeManagementHeading">
         <h3 id="karaokeManagementHeading">DAM / JOYSOUND 配信情報の照合</h3>
-        <p class="helper">公式サイトで曲名・歌手名・対応機種を確認してから登録してください。カタログ収録だけでは配信済みを意味しません。確認情報はこの端末にのみ保存されます。</p>
+        <p class="helper">公式サイトで曲名・歌手名・対応機種を確認してから登録してください。カタログ収録だけでは配信済みを意味しません。確認情報は共有データベースに保存されます。</p>
         <form id="karaokeCheckForm">
           <div class="form-row">
             <label class="field">曲名 <input id="karaokeTitle" required maxlength="190" placeholder="照合する曲名"></label>
@@ -256,22 +275,10 @@
           <label class="field">リクエスト者のお名前 <input id="reqName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
           <label class="field">メッセージ（任意）<textarea id="reqMessage" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
           <div><button type="submit" class="button primary large" id="sendRequest">リクエストを送信</button></div>
-          <p class="helper">※ 共有サーバー未接続のため、現在はこの端末にのみ登録されます。</p>
+          <p class="helper">※ リクエストはログイン中のアカウントから送信し、全端末に共有されます。</p>
         </form>
 </dialog>
-<dialog id="adminPasswordDialog" class="admin-password-dialog" aria-labelledby="adminPasswordTitle" aria-describedby="adminPasswordDescription">
-  <form id="adminPasswordForm" class="admin-password-form">
-    <h2 id="adminPasswordTitle">管理画面へ移動</h2>
-    <p id="adminPasswordDescription">パスワードを入力してください。</p>
-    <label class="field" for="adminPasswordInput">パスワード</label>
-    <input type="password" id="adminPasswordInput" required maxlength="40" autocomplete="off" placeholder="パスワード" spellcheck="false">
-    <p id="adminPasswordError" class="password-error" role="alert" hidden>パスワードが違います。</p>
-    <div class="password-actions">
-      <button type="button" class="button subtle" id="adminPasswordCancel">キャンセル</button>
-      <button type="submit" class="button primary">管理画面を開く</button>
-    </div>
-  </form>
-</dialog>
+
 <footer class="music-source-credits">
   楽曲メタデータ出典：
   <a href="https://musicbrainz.org/" target="_blank" rel="noopener noreferrer">MusicBrainz（CC0）</a> /

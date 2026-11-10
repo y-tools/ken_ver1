@@ -8,8 +8,18 @@ const preview = params.get("embed")==="1";
 if(preview) document.body.classList.add("embed-mode");
 const config = window.KEN_CONFIG || {};
 const storageKey = "ken-denmoku-v2";
-const TK_ONLY_ARTIST = "TK from 凛として時雨";
-const isTKArtist = artist => norm(artist)===norm(TK_ONLY_ARTIST);
+const TK_ONLY_ARTIST="TK from 凛として時雨";
+const isTKArtist=artist=>norm(artist)===norm(TK_ONLY_ARTIST);
+const shared = window.KEN_SHARED;
+let sharedBusy=false;
+async function sharedAction(name,payload={}){
+ if(sharedBusy){toast("前の操作を反映中です");return false;}
+ sharedBusy=true;
+ try{await shared.action(name,payload);return true;}
+ catch(e){toast("共有保存に失敗: "+String(e.message||e).slice(0,110));console.error(e);
+  await shared.refresh(true).catch(()=>{});return false;}
+ finally{sharedBusy=false;}
+}
 const initial = {songs:[],requests:[],name:"Ken",streamLive:false,sessions:[],activeSessionId:null,chatNotes:[]};
 let state = initial;
 try {
@@ -26,6 +36,7 @@ let selected=null;
 
 let isSending=false;
 function persist(){
+ if(shared)throw Error("Use RPC for shared mutations");
  try{localStorage.setItem(storageKey,JSON.stringify(state));return true;}
  catch(_){ toast("端末の保存容量が不足しています");return false;}
 }
@@ -308,6 +319,7 @@ function renderAdminRequests(){
  }).join(""):'<div class="empty">未分類のリクエストはありません。</div>';
 }
 function classifyRequest(id,flags){
+ if(shared){void sharedAction("request_classify",{id,waiting:flags.includes("waiting"),practice:flags.includes("practice"),ready:flags.includes("ready")});return;}
  const r=state.requests.find(x=>x.id===id&&x.status==="new");if(!r)return;
  const waiting=flags.includes("waiting"),practice=flags.includes("practice"),ready=flags.includes("ready");
  if(!waiting&&!practice&&!ready){toast("振り分け先を1つ以上選んでください");return;}
@@ -339,6 +351,7 @@ function renderStreamStatus(){
  $("#sendRequest").disabled=!live;
 }
 function setStreamLive(live){
+ if(shared){if(!adminMode||preview)return;void sharedAction(live?"stream_start":"stream_end");return;}
  if(!adminMode||preview||state.streamLive===live)return;
  const now=Date.now();
  if(live){
@@ -416,14 +429,17 @@ function startSongEdit(id){
 }
 function render(){
  $("#streamerName").textContent=state.name;
+ if(shared && $("#newName"))$("#newName").value=state.name;
  document.title=state.name+"のデンモク";
  renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
- $("#catalogStatus").textContent=catalog.ready?"TK専用カタログ":catalog.error?"カタログ読込失敗":"TKカタログ読込中";
+ $("#catalogStatus").textContent=catalog.ready?"TK専用カタログ":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  $("#toListener").hidden=!adminMode || preview;
+ if($("#adminNav"))$("#adminNav").hidden=preview||!shared?.isAdmin();
  document.body.classList.toggle("admin-active",adminMode&&!preview);
 }
 function changeRequestStatus(id,status){
+ if(shared){void sharedAction("request_status",{id,status});return;}
  const r=state.requests.find(x=>x.id===id);if(!r)return;
  if(status==="singing"){
   const current=singingRequest();
@@ -447,6 +463,10 @@ function changeRequestStatus(id,status){
  persist();render();
 }
 function reorder(id,dir){
+ if(shared){const list=waitingRequests(),a=list.findIndex(r=>r.id===id),b=a+dir;
+  if(a<0||b<0||b>=list.length)return;
+  const ids=list.map(r=>r.id);[ids[a],ids[b]]=[ids[b],ids[a]];
+  void sharedAction("request_reorder",{ids});return;}
  const list=waitingRequests();const a=list.findIndex(x=>x.id===id),b=a+dir;
  if(a<0||b<0||b>=list.length)return;
  const start=Date.now();
@@ -454,13 +474,24 @@ function reorder(id,dir){
  const tmp=list[a].waitOrder;list[a].waitOrder=list[b].waitOrder;list[b].waitOrder=tmp;
  persist();render();
 }
-function requestSubmit(event){
+async function requestSubmit(event){
  event.preventDefault();if(isSending)return;
  if(!state.streamLive){toast("配信終了中のため、リクエストを受け付けていません");return;}
  const title=$("#reqTitle").value.trim(),artist=$("#reqArtist").value.trim(),nickname=$("#reqName").value.trim();
  if(!title||!artist||!nickname){toast("曲名・アーティスト・お名前を入力してください");return;}
  if(title.length>120||artist.length>120||nickname.length>40){toast("入力文字数を確認してください");return;}
  isSending=true;
+ if(shared){
+  try{
+   const ok=await sharedAction("request_add",{title,artist,nickname,
+    message:$("#reqMessage").value.trim().slice(0,200),nonce:crypto.randomUUID()});
+   if(ok){$("#reqMessage").value="";$("#reqTitle").value="";$("#reqArtist").value="";selected=null;
+    $("#chosenSong").hidden=true;const dlg=$("#requestDialog");
+    if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");
+    try{localStorage.setItem("ken-nickname",nickname)}catch(_){}toast("共有リクエストとして登録しました");}
+  }finally{isSending=false;}
+  return;
+ }
  try{
   const r={id:"r-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),title,artist,nickname,
    message:$("#reqMessage").value.trim().slice(0,200),status:"new",createdAt:Date.now(),songId:null};
@@ -499,6 +530,11 @@ function renderChatNotes(){
   :'<div class="empty">まだメモはありません。</div>';
 }
 function researchSong(id){
+ if(shared){const song=state.requests.find(r=>r.id===id);if(!song)return;
+  $("#gptResearchPrompt").value=makeResearchPrompt(song);
+  $("#lyricsSearch").href=lyricsSearchUrl(song);
+  void sharedAction("note_add",{kind:"research",text:song.title+" / "+song.artist});
+  toast("調査指示を準備しました");return;}
  const song=state.requests.find(r=>r.id===id);
  if(!song){toast("対象の楽曲が見つかりません");return;}
  const prompt=makeResearchPrompt(song);
@@ -515,6 +551,7 @@ function cancelRequest(id){
  const song=state.requests.find(r=>r.id===id);
  if(!song||!["new","waiting","singing"].includes(song.status))return;
  if(!confirm("「"+song.title+"」の選択を取り消しますか？"))return;
+ if(shared){void sharedAction("request_cancel",{id});return;}
  const now=Date.now();
  if(song.status==="singing"){
   logEvent("singing_end",{...songSnapshot(song),startedAt:song.singingStartedAt||null,reason:"cancelled"},now);
@@ -526,6 +563,7 @@ function cancelRequest(id){
  toast("選択を取り消しました");
 }
 function adminAction(event){
+ if(!adminMode || (shared&&!shared.isAdmin()))return;
  const b=event.target.closest("[data-do]");
  if(!b)return;
  const id=b.dataset.id,act=b.dataset.do;
@@ -540,6 +578,7 @@ function adminAction(event){
  if(act==="up"||act==="down"){reorder(id,act==="up"?-1:1);return;}
  if(act==="delete"){
   if(!confirm("このリクエストを削除しますか？"))return;
+  if(shared){void sharedAction("request_delete",{id});return;}
   state.requests=state.requests.filter(r=>r.id!==id);persist();render();
  }
 }
@@ -548,7 +587,7 @@ async function loadCatalog(){
   const res=await fetch("./catalog.json",{cache:"force-cache"});
   if(!res.ok)throw Error("HTTP "+res.status);
   const rows=await res.json();if(!Array.isArray(rows))throw Error("Invalid catalog");
-  // Force TK-only even when a browser cache still has older catalog.json.
+  // Enforce TK-only even if an outdated catalog is cached.
   catalog.rows=rows.filter(r=>Array.isArray(r)&&r.length>=2&&isTKArtist(r[1]));
   catalog.idx=catalog.rows.map(r=>[norm(r[0]),norm(r[1])]);
   catalog.ready=true;
@@ -556,108 +595,50 @@ async function loadCatalog(){
  render();
 }
 
-/* Hidden manager entrance: press the app title for at least 900ms.
-   This is a client-side UI gate only; do not use it for sensitive data. */
-const UI_ADMIN_PASSWORD = "kny";
+/* Menu visibility is convenience; server RPCs enforce all permissions. */
 function setupAdminUnlock(){
  const trigger=$("#adminTitle");
- const dialog=$("#adminPasswordDialog");
- const password=$("#adminPasswordInput");
- const error=$("#adminPasswordError");
- const HOLD_MS=750;
+ const show=()=>{
+  if(preview)return;
+  if(!shared?.isAdmin()){toast("管理画面は招待された管理者のみ利用できます");return;}
+  adminMode=true;render();
+ };
  let timer=null;
- let heldAt=0;
- let startX=0,startY=0;
- let pointerId=null;
- let alreadyOpened=false;
- const cancelHold=()=>{
-  if(timer!==null){clearTimeout(timer);timer=null;}
-  heldAt=0;
- };
- const openPassword=()=>{
-  cancelHold();
-  if(preview||adminMode||dialog.open)return;
-  alreadyOpened=true;
-  password.value="";
-  error.hidden=true;
-  if(typeof dialog.showModal==="function")dialog.showModal();
-  else dialog.setAttribute("open","");
-  password.focus();
- };
- const beginHold=(x,y,id)=>{
-  if(preview||adminMode||dialog.open)return;
-  cancelHold();
-  alreadyOpened=false;
-  startX=x;startY=y;pointerId=id;
-  heldAt=Date.now();
-  timer=window.setTimeout(()=>openPassword(),HOLD_MS);
- };
- trigger.addEventListener("pointerdown",e=>{
-  if(e.button!==0||e.isPrimary===false)return;
-  beginHold(e.clientX,e.clientY,e.pointerId);
-  // Capture mouse events even if the cursor drifts away from the title.
-  if(e.pointerType==="mouse" && typeof trigger.setPointerCapture==="function"){
-   try{trigger.setPointerCapture(e.pointerId);}catch(_){}
-  }
- });
- trigger.addEventListener("pointermove",e=>{
-  if(heldAt && e.pointerId===pointerId && Math.hypot(e.clientX-startX,e.clientY-startY)>55)cancelHold();
- });
- trigger.addEventListener("pointerup",e=>{
-  if(pointerId!==e.pointerId)return;
-  if(heldAt && !alreadyOpened && Date.now()-heldAt>=HOLD_MS)openPassword();
-  cancelHold();
-  pointerId=null;
- });
- trigger.addEventListener("pointercancel",cancelHold);
- // PC alternative: double-click title to access the same password gate.
- trigger.addEventListener("dblclick",e=>{e.preventDefault();openPassword();});
- trigger.addEventListener("click",e=>e.preventDefault());
- trigger.addEventListener("contextmenu",e=>{if(heldAt)e.preventDefault();});
- let keyboardStart=0;
- trigger.addEventListener("keydown",e=>{
-  if((e.key==="Enter"||e.key===" ")&&!e.repeat){
-   e.preventDefault();
-   if(!keyboardStart){
-    keyboardStart=Date.now();
-    beginHold(0,0,"keyboard");
-   }
-  }
- });
- trigger.addEventListener("keyup",e=>{
-  if(e.key==="Enter"||e.key===" "){
-   e.preventDefault();
-   if(keyboardStart && Date.now()-keyboardStart>=HOLD_MS && !alreadyOpened)openPassword();
-   keyboardStart=0;
-   cancelHold();
-  }
- });
- window.addEventListener("blur",cancelHold);
- document.addEventListener("visibilitychange",()=>{if(document.hidden)cancelHold();});
- $("#adminPasswordCancel").addEventListener("click",()=>{
-  if(typeof dialog.close==="function")dialog.close();else dialog.removeAttribute("open");
- });
- $("#adminPasswordForm").addEventListener("submit",e=>{
-  e.preventDefault();
-  if(password.value!==UI_ADMIN_PASSWORD){
-   error.hidden=false;
-   password.value="";
-   password.focus();
-   return;
-  }
-  if(typeof dialog.close==="function")dialog.close();else dialog.removeAttribute("open");
-  adminMode=true;
-  render();
-  $("#toListener").focus();
- });
- dialog.addEventListener("close",()=>{
-  password.value="";
-  error.hidden=true;
-  alreadyOpened=false;
-  cancelHold();
- });
+ trigger.addEventListener("pointerdown",e=>{if(e.button!==0)return;timer=setTimeout(show,750);});
+ for(const t of ["pointerup","pointerleave","pointercancel"]){
+  trigger.addEventListener(t,()=>{clearTimeout(timer);timer=null;});
+ }
+ trigger.addEventListener("dblclick",e=>{e.preventDefault();show();});
+ trigger.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();show();}});
 }
-function attach(){
+async function attach(){
+ if(!shared?.configured){
+  document.querySelector("main").innerHTML='<section class="notice">共有DB未設定です。Supabaseの接続設定を完了するまで利用できません。</section>';return;
+ }
+ try{
+  const auth=await shared.authenticate();if(!auth)return;
+  const firstSnapshot=await shared.snapshot();
+  state={...initial,...firstSnapshot};window.KEN_KARAOKE?.applyShared?.(firstSnapshot.karaoke||[]);
+  if($("#signedInUser"))$("#signedInUser").textContent=auth.profile.display_name+" ("+auth.profile.role+")";
+  if($("#logoutButton"))$("#logoutButton").addEventListener("click",()=>void shared.signOut());
+  adminMode=params.get("admin")==="1"&&shared.isAdmin();
+  if($("#ownerInvite"))$("#ownerInvite").hidden=!shared.isOwner();
+  if($("#inviteAdminForm"))$("#inviteAdminForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    if(!shared.isOwner())return;
+    const email=$("#inviteAdminEmail").value.trim();
+    const feedback=$("#inviteAdminFeedback");
+    feedback.textContent="招待を送信しています…";
+    const {data,error}=await shared.client.functions.invoke("invite-admin",{body:{email}});
+    feedback.textContent=error?"招待に失敗しました: "+error.message:
+      (data?.error?"招待に失敗しました: "+data.error:"管理者招待メールを送信しました");
+    if(!error&&!data?.error)$("#inviteAdminEmail").value="";
+  });
+  shared.subscribe(data=>{state={...initial,...data};window.KEN_KARAOKE?.applyShared?.(data.karaoke||[]);if(!shared.isAdmin())adminMode=false;render();});
+ }catch(e){
+  console.error("Denmoku shared bootstrap failed",e);
+  document.querySelector("main").innerHTML='<section class="notice">共有データの取得に失敗しました。Supabaseの設定・権限・SQLを確認してください。</section>';return;
+ }
  let searchTimer=null;
  const onSearchInput=()=>{
   clearTimeout(searchTimer);
@@ -682,6 +663,7 @@ function attach(){
   e.preventDefault();
   const input=$("#adminChatInput");const text=input.value.trim();
   if(!text)return;
+  if(shared){void sharedAction("note_add",{kind:"note",text});input.value="";return;}
   state.chatNotes.push({id:makeId("note"),kind:"note",text,at:Date.now()});
   state.chatNotes=state.chatNotes.slice(-80);
   persist();renderChatNotes();input.value="";
@@ -697,19 +679,36 @@ function attach(){
  document.addEventListener("ken:karaoke-updated",()=>{
   renderSearch();renderSinging();renderQueue();renderAdminRequests();renderAdminSongList();
  });
+ $("#backupLegacy")?.addEventListener("click",()=>{
+  if(!shared?.isAdmin())return;
+  const parse=key=>{try{return JSON.parse(localStorage.getItem(key)||"null");}catch{return null;}};
+  const backup={
+   format:"ken-denmoku-local-backup-v1",exportedAt:new Date().toISOString(),
+   origin:location.origin,denmoku:parse("ken-denmoku-v2"),
+   karaoke:parse("ken-denmoku-karaoke-v1")
+  };
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
+  const href=URL.createObjectURL(blob),link=document.createElement("a");
+  link.href=href;link.download="ken-denmoku-local-backup-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.append(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(href),10000);
+  toast("このブラウザの旧データをバックアップしました。別端末も個別に保存してください");
+ });
  $("#adminSongSearch").addEventListener("input",renderAdminSongList);
  $("#adminSongList").addEventListener("click",e=>{
   const button=e.target.closest("[data-song-edit]");if(button)startSongEdit(button.dataset.songEdit);
  });
  $("#songEditCancel").addEventListener("click",resetSongEditor);
  $("#nameForm").addEventListener("submit",e=>{
-  e.preventDefault();state.name=$("#newName").value.trim().slice(0,30)||"Ken";persist();render();toast("この端末の表示名を変更しました");
+  e.preventDefault();if(shared){void sharedAction("name_update",{name:$("#newName").value.trim()});return;}
+  state.name=$("#newName").value.trim().slice(0,30)||"Ken";persist();render();toast("この端末の表示名を変更しました");
  });
  $("#songForm").addEventListener("submit",e=>{
   e.preventDefault();
   const title=$("#songTitle").value.trim(),artist=$("#songArtist").value.trim();
   if(!title||!artist)return;
   const status=$("#songStatus").value,year=$("#songYear").value||null,memo=$("#songMemo").value.trim();
+  if(shared){void sharedAction("song_upsert",{id:editingId||null,title,artist,status,year,memo}).then(ok=>{if(ok)resetSongEditor();});return;}
   const clash=state.songs.find(s=>readyKey(s.title,s.artist)===readyKey(title,artist)&&s.id!==editingId);
   if(clash){toast("同名曲が登録済みです。既存曲を編集してください");return;}
   if(editingId){
@@ -727,6 +726,20 @@ function attach(){
  $("#songImport").addEventListener("change",async e=>{
   const f=e.target.files[0];if(!f)return;
   const content=await f.text(),lines=content.replace(/^\uFEFF/,"").split(/\r?\n/);
+  if(shared){
+   const items=[];
+   for(const line of lines.slice(0,20000)){
+    const [title,artist,,,status,year]=line.split(",").map(x=>x.trim().replace(/^"|"$/g,""));
+    if(!title||!artist||/^(曲|title)/i.test(title))continue;
+    items.push({title,artist,status:/練習/.test(status)?"practice":"ready",year:year||null});
+   }
+   let count=0;
+   for(let i=0;i<items.length;i+=500){
+    if(!await sharedAction("song_import",{items:items.slice(i,i+500)}))break;
+    count+=Math.min(500,items.length-i);
+   }
+   toast(count+"曲のインポートを処理しました");e.target.value="";return;
+  }
   let count=0;
   for(const line of lines.slice(0,20000)){
    const [title,artist,, ,status,year]=line.split(",").map(x=>x.trim().replace(/^"|"$/g,""));
@@ -742,11 +755,12 @@ function attach(){
  });
  try{const nick=localStorage.getItem("ken-nickname")||localStorage.getItem("utabox-nick");if(nick)$("#reqName").value=nick;}catch(_){}
  $("#newName").value=state.name;
- if(state.streamLive&&!currentSession()){
+ if(!shared && state.streamLive&&!currentSession()){
   const session={id:makeId("session"),startedAt:Date.now(),endedAt:null,events:[],recovered:true};
   state.sessions.push(session);state.activeSessionId=session.id;persist();
  }
  window.addEventListener("storage",event=>{
+  if(shared)return;
   if(event.key!==storageKey || !event.newValue)return;
   try{
    const updated=JSON.parse(event.newValue);

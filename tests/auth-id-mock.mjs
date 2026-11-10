@@ -8,7 +8,11 @@ async function mockPage(path){
  await page.route("**/config.js*",r=>r.fulfill({contentType:"application/javascript",
    body:"window.KEN_CONFIG={supabaseUrl:'https://example.supabase.co',supabasePublishableKey:'sb_publishable_test_12345678901234567890',apiBaseUrl:''}"}));
  await page.route("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/**",r=>r.fulfill({
-   contentType:"application/javascript",body:MOCK_SDK
+   contentType:"application/javascript",body:path==="login.html"
+     ?MOCK_SDK.replace(
+       "getUser:async()=>({data:{user:{id:'1',email:'test@example.com'}},error:null}),",
+       "getUser:async()=>new Promise(()=>{}),")
+     :MOCK_SDK
  }));
  await page.goto("http://127.0.0.1:8765/"+path,{waitUntil:"domcontentloaded",timeout:60000});
  return page;

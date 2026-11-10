@@ -46,5 +46,7 @@ jobs:
         run: node tests/auth-id-mock.mjs
       - name: Verify admin ON AIR sync across independent browser contexts
         run: node tests/cross-browser-live.mjs
+      - name: Verify live online user list and session logout
+        run: node tests/online-presence-mock.mjs
       - name: Run administrator editor browser test
         run: node tests/editor-smoke.mjs

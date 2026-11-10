@@ -21,13 +21,8 @@ async function sharedAction(name,payload={}){
  finally{sharedBusy=false;}
 }
 const initial = {songs:[],requests:[],name:"Ken",streamLive:false,sessions:[],activeSessionId:null,chatNotes:[]};
+// Ver.2 starts from server truth; do not load old browser-local requests or songs.
 let state = initial;
-try {
- const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
- if(saved && typeof saved==="object") {
-  state = {...initial, songs:Array.isArray(saved.songs)?saved.songs:[], requests:Array.isArray(saved.requests)?saved.requests:[], name:typeof saved.name==="string"?saved.name:"Ken",streamLive:saved.streamLive===true,sessions:Array.isArray(saved.sessions)?saved.sessions:[],activeSessionId:typeof saved.activeSessionId==="string"?saved.activeSessionId:null,chatNotes:Array.isArray(saved.chatNotes)?saved.chatNotes.slice(-80):[]};
- }
-} catch(_) {}
 const catalog = {rows:[],idx:[],ready:false,error:false};
 
 let adminMode=false;
@@ -619,6 +614,14 @@ async function attach(){
   const auth=await shared.authenticate();if(!auth)return;
   const firstSnapshot=await shared.snapshot();
   state={...initial,...firstSnapshot};window.KEN_KARAOKE?.applyShared?.(firstSnapshot.karaoke||[]);
+  // Explicit 2026-11-11 decision: old browser records need no migration.
+  // Remove ONLY Ken's legacy local data after authenticated shared data loads.
+  try {
+   localStorage.removeItem(storageKey);
+   localStorage.removeItem("ken-denmoku-karaoke-v1");
+  } catch(error) {
+   console.warn("Could not clear legacy Ken browser data",error);
+  }
   if($("#signedInUser"))$("#signedInUser").textContent=auth.profile.display_name+" ("+auth.profile.role+")";
   if($("#logoutButton"))$("#logoutButton").addEventListener("click",()=>void shared.signOut());
   adminMode=params.get("admin")==="1"&&shared.isAdmin();
@@ -678,21 +681,6 @@ async function attach(){
  setupAdminUnlock();
  document.addEventListener("ken:karaoke-updated",()=>{
   renderSearch();renderSinging();renderQueue();renderAdminRequests();renderAdminSongList();
- });
- $("#backupLegacy")?.addEventListener("click",()=>{
-  if(!shared?.isAdmin())return;
-  const parse=key=>{try{return JSON.parse(localStorage.getItem(key)||"null");}catch{return null;}};
-  const backup={
-   format:"ken-denmoku-local-backup-v1",exportedAt:new Date().toISOString(),
-   origin:location.origin,denmoku:parse("ken-denmoku-v2"),
-   karaoke:parse("ken-denmoku-karaoke-v1")
-  };
-  const blob=new Blob([JSON.stringify(backup,null,2)],{type:"application/json"});
-  const href=URL.createObjectURL(blob),link=document.createElement("a");
-  link.href=href;link.download="ken-denmoku-local-backup-"+new Date().toISOString().slice(0,10)+".json";
-  document.body.append(link);link.click();link.remove();
-  setTimeout(()=>URL.revokeObjectURL(href),10000);
-  toast("このブラウザの旧データをバックアップしました。別端末も個別に保存してください");
  });
  $("#adminSongSearch").addEventListener("input",renderAdminSongList);
  $("#adminSongList").addEventListener("click",e=>{

@@ -9,13 +9,14 @@
 - 旧ブラウザ保存分の移行、決済・Stripe、旧200万曲自動登録は要件外。TK限定98曲、既存VPS楽曲DBを保全する。
 
 ## 1. ステージングでのDB準備
-次の6件の`supabase/migrations/`のファイルを**番号順**に適用・検証する。
+次の7件の`supabase/migrations/`のファイルを**番号順**に適用・検証する。
 1. `202611070001_auth.sql` — profiles、listener/admin/owner、管理者招待
 2. `202611070002_live_data.sql` — 配信・曲・チャット・リクエスト・履歴・共有更新番号
 3. `202611070003_actions.sql` — 権限付き操作RPC・表示用スナップショット
 4. `202611070004_karaoke.sql` — DAM/JOYSOUND確認
 5. `202611110005_login_id.sql` — ログインID＋パスワード、重複防止・試行制限
 6. `202611110006_online_presence.sql` — 認証済み接続更新、管理者一覧、RLS、Realtime
+7. `202611110007_revoke_signup_trigger_execution.sql` — 登録トリガー関数の不要な公開RPC権限を撤回
 
 既存テーブル、関数、Publication/RLSと衝突しないかデプロイ前にレビューする。Supabase CLIを使用する場合、公式ドキュメントに従って接続後に`supabase db push --remote`で適用する。権限ある環境への適用は慎重に行い、SQL実行ログを残す。
 
@@ -46,8 +47,9 @@
 - [ ] 管理者2名＋別PC/スマホのリスナーでON AIR/OFF AIR、チャット・待機・曲リストの更新確認
 - [ ] 同じユーザーの複数タブは1人に集約、ログアウトと切断時の一覧変化を確認
 - [ ] 50人リスナー＋管理者3〜5人の負荷・接続断/復旧・同時編集試験
-- [ ] 本番SupabaseにSQL/Functionsを適用して受入試験
-- [ ] `config.js`へ**公開用の**URLとkeyを設定、Draft PR #15をレビューしてmainへマージ
+- [x] 新規SupabaseにSQL7件・Functions2件を適用（実ユーザーと受入試験は別途）
+- [ ] 本番SupabaseのAuthメール・リダイレクト・owner設定と実端末受入試験
+- [ ] `config.js`に公開用URL/keyを設定済みのDraft PR #15を実認証テスト後にレビューしてmainへマージ
 - [ ] GitHub Pagesの本番URLで確認、失敗時のrollbackに成功
 
 **接続未設定のままPRをmainへマージすると、認証必須のVer.2が開けなくなります。本番テストが通るまでマージしない。**

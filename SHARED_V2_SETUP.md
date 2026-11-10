@@ -22,7 +22,7 @@
 2. Supabase AuthでEmailのConfirm emailを有効化。Site URLを https://y-tools.github.io/ken_ver1/ にし、以下をRedirect URLに登録：
    - https://y-tools.github.io/ken_ver1/auth-callback.html
    - https://y-tools.github.io/ken_ver1/reset-password.html
-3. supabase/migrations/202611070001_auth.sql → 002_live_data.sql → 003_actions.sql → 004_karaoke.sql → **202611110005_login_id.sql** の順でSQLを適用。
+3. supabase/migrations/202611070001_auth.sql → 002_live_data.sql → 003_actions.sql → 004_karaoke.sql → **202611110005_login_id.sql** → **202611110006_online_presence.sql** の順でSQLを適用。
 4. 初代ownerはメール確認済みの自分のアカウントを作成し、SQL Editorからprofiles.roleをownerに変更。公開ブラウザに昇格APIを作らない。
 5. Supabase CLIでinvite-adminおよび **login-with-id**（supabase/config.toml により verify_jwt=false、独自のID/パスワード照合あり）のEdge Functionをデプロイ。Service Role Keyはサーバー上の秘密情報だけに保存し、GitHubやブラウザには掲載しない。
 6. config.jsのsupabaseUrlとsupabasePublishableKeyに**公開可能な**Project URLとpublishable/anon keyのみ設定。VPS検索のapiBaseUrlは従来通り。
@@ -58,3 +58,11 @@
 - 匿名APIによるID存在検索は設けません。エラー文言は汎用化し、IP+IDの組み合わせとIP全体で15分固定窓の試行回数を制限。Supabase Auth側の制限も併用します。前段のネットワーク側制限と監査、実IP取得は本番環境で検証してください。
 - ロールは既存のlistener/admin/ownerのままであり、ログイン方式を変えても権限は変わりません。
 - Supabase URLと公開可能キーが空欄のため、このブランチは依然未本番です。**実メール・実IDログインの疎通確認は未実施**。
+
+## 全端末共有・リアルタイムオンライン一覧（2026-11-11）
+- `stream_status`, `stream_sessions`, `requests`, `queue`, `singing_history`, `session_events`, `songs`, `admin_notes`（管理チャット）、`karaoke_records`を共有DBで管理。書込みのたび`sync_version`を更新し、各端末が最新スナップショットを取得します。
+- `online_sessions`はログイン済みユーザーをサーバー認証で追跡。管理者/ownerだけが`presence_admin_list()`で表示名・ログインID・権限・接続数を閲覧可能。
+- オンライン判定は最終接続から75秒以内。15秒ごとに認証付きハートビート、Realtime通知および5秒ごとの管理者一覧更新。ログアウト時に接続記録を解除します。
+- Realtimeは`supabase_realtime` PublicationとRLS両方が必要。接続断時の4秒間隔再取得で取り逃した更新を回復します（ブラウザの非表示タブのタイマー制限は別途影響します）。
+- TK限定98曲の検索カタログは従来どおりGitHub Pages/VPS上の共有資産です。リクエスト・配信管理・チャットなどの操作データはSupabaseに置きます。ローカル保存を正本にしません。
+- 公開版mainは未移行、Supabase実環境へのSQL・Edge Function適用は**未実施**。詳細は`SUPABASE_PRODUCTION_RUNBOOK.md`を参照。

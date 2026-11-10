@@ -56,15 +56,10 @@ try{
  console.log("PASS ID login with setSession");
 
  const reg=await mockPage("register.html");
- await reg.locator("#displayName").fill("テスト");
- await reg.locator("#loginId").fill("New_Id");
- await reg.locator("#email").fill("new@example.com");
- await reg.locator("#password").fill("password1234");
- await reg.locator("#authForm button[type=submit]").click();
- await reg.waitForFunction(()=>window.__testCalls.some(x=>x.name==="signup"));
- assert.equal(await reg.evaluate(()=>window.__testCalls.find(x=>x.name==="signup").params.options.data.login_id),"new_id");
+ assert.equal(await reg.locator("#authForm").count(),0,"Self registration is disabled");
+ await reg.getByText("管理者アカウントは招待制です").waitFor();
  await reg.close();
- console.log("PASS signup ID metadata");
+ console.log("PASS invitation-only account registration");
 
  const account=await mockPage("account.html");
  await account.getByText("existing_id").waitFor();

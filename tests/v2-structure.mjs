@@ -39,3 +39,20 @@ assert.match(read("supabase/migrations/202611110005_login_id.sql"),/profiles_log
 assert.match(read("supabase/functions/login-with-id/index.ts"),/signInWithPassword/);
 assert.match(read("supabase/config.toml"),/verify_jwt = false/);
 console.log("PASS both email and ID login scaffolding");
+
+const presenceSql=read("supabase/migrations/202611110006_online_presence.sql");
+const sharedClient=read("js/shared.js"),mainApp=read("app.js"),mainPage=read("index.html");
+assert.match(presenceSql,/create table if not exists public\.online_sessions/);
+assert.match(presenceSql,/security definer/);
+assert.match(presenceSql,/create policy "Admins can view online sessions"/);
+assert.match(presenceSql,/presence_admin_list/);
+assert.match(presenceSql,/alter publication supabase_realtime add table public\.online_sessions/);
+assert.match(sharedClient,/presence_heartbeat/);
+assert.match(sharedClient,/presence_leave/);
+assert.match(sharedClient,/presence_admin_list/);
+assert.match(mainPage,/id="onlineUsersPanel"/);
+assert.match(mainApp,/shared\.startPresence\(renderOnlineUsers\)/);
+assert.match(mainApp,/name\.textContent=String\(user\.displayName/);
+assert.match(mainApp,/sharedAction\("note_add"/);
+assert.ok(read("SUPABASE_PRODUCTION_RUNBOOK.md").includes("未本番"));
+console.log("PASS admin-only online presence and shared chat scaffolding");

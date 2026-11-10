@@ -48,5 +48,5 @@ SHARED_V2_SETUP.mdの手順に従い、隔離SupabaseでSQL/Edge Functionを適�
 - 管理画面に「ログイン中のオンラインユーザー」欄（表示名・ID・権限・接続数）を追加。異なる端末の同一アカウントは1人に集約。
 - `sync_version`更新による配信、リクエスト、歌唱、管理チャット、曲リスト、カラオケ情報の再取得を継続。リスナーから管理チャットは取得不可。
 - GitHub Actionsの模擬ブラウザ試験で、管理者間のチャットと楽曲リストの同期、リスナーとのON AIR同期、ログインユーザーの同時接続/ログアウトの動作を確認。
-- **Supabaseプロジェクト未接続につき本番SQL適用・Edge Functionデプロイ・実認証/実Realtime/負荷試験/本番マージは未実施。** 実デプロイが可能になるまで現行mainのGitHub Pagesを変更しない。
+- **SupabaseプロジェクトのSQL・Edge Functionは適用済み。実認証/実Realtime/負荷試験/本番マージは未実施。** 実デプロイが可能になるまで現行mainのGitHub Pagesを変更しない。
 - 実行手順: `SUPABASE_PRODUCTION_RUNBOOK.md`。

@@ -14,6 +14,11 @@ async function serverCall(method,args,role){
   return {data:structuredClone({...server,role,userId:role==="admin"?"admin-id":"listener-id",
     chatNotes:role==="listener"?[]:server.chatNotes}),error:null};
  }
+ if(method==="denmoku_public_snapshot"){
+  return {data:structuredClone({...server,role:"guest",userId:null,sessions:[],chatNotes:[],
+    requests:server.requests.filter(r=>["waiting","singing","done"].includes(r.status))
+      .map(r=>({...r,message:"",userId:null}))}),error:null};
+ }
  if(method==="version")return {data:{version:server.version},error:null};
  if(method==="denmoku_action"){
   if(role!=="admin"&&role!=="owner")
@@ -100,7 +105,8 @@ try{
   ()=>document.querySelector("#listenerStreamLabel")?.textContent==="ON AIR",
   null,{timeout:11500}
  );
- assert.equal(await listener.page.locator("#openRequestDialog").isEnabled(),true);
+ assert.equal(await listener.page.locator("#openRequestDialog").isDisabled(),true,
+   "Guest read access is enabled; anonymous writes remain disabled");
  console.log("PASS remote listener turns ON AIR without reload, even while hidden");
 
  // Chat history and managed song list also propagate between independent admins.

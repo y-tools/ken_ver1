@@ -1,0 +1,16 @@
+:root{color-scheme:dark;font-family:system-ui,-apple-system,"Noto Sans JP",sans-serif;background:#081323;color:#eef5ff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;background:radial-gradient(circle at 20% 15%,#173e6a 0,transparent 35%),#081323}
+.auth-card{width:min(440px,100%);border:1px solid #365275;border-radius:22px;padding:clamp(20px,4vw,35px);background:#12243c;box-shadow:0 25px 75px #0007}
+.eyebrow{color:#60c9ff;letter-spacing:0.13em;font-size:11px;font-weight:800}
+h1{font-size:26px;letter-spacing:.02em;margin:16px 0 24px}
+label{display:block;font-size:13px;margin:15px 0 6px;color:#e2ecfb;font-weight:700}
+input{display:block;background:#09162a;border:1px solid #49658c;color:white;border-radius:10px;padding:13px;width:100%;margin-top:7px;font-size:16px}
+input:focus{outline:2px solid #48bfff;outline-offset:1px}
+button{width:100%;background:#0d91ed;color:white;padding:13px;border:0;border-radius:12px;font-size:15px;font-weight:800;margin-top:22px;cursor:pointer}
+button:disabled{opacity:.5;cursor:wait}
+p{font-size:13px;line-height:1.8;color:#c4d7ed}
+a{color:#7bd2ff}a:hover{text-decoration:none}
+#feedback:not(:empty){border:1px solid #406388;padding:12px;border-radius:10px;background:#182f4b;color:#e9f6ff}
+[hidden]{display:none!important}
+
+.auth-note{color:#c0d2eb;font-size:12px;line-height:1.8}

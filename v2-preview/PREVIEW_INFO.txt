@@ -1,0 +1,2 @@
+Preview of Ken no Denmoku Ver.2. Snapshot of GitHub 299d68ade9b622a195128db05332fe65b15099e0 created 2026-11-11.
+Root production site is NOT modified. Preview is accessible at /ken_ver1/v2-preview/.

@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ja">
+<head><meta name="robots" content="noindex,nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Kenのデンモク。楽曲検索、リクエスト受付、待機楽曲確認">
+<title>Kenのデンモク</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css?v=20261108-dual-search-v1">
+<script src="./config.js?v=20261106-vps-live-v2" defer></script>
+
+
+
+<script src="./data/karaoke-coverage.js?v=20261106-karaoke-v2" defer></script>
+<script src="./data/vps-search.js?v=20261106-vps-phase0-v1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+<script src="./js/shared.js?v=20261111-v2-tk" defer></script>
+<script src="./app.js?v=20261111-v2-tk" defer></script>
+</head>
+<body><aside role="note" style="box-sizing:border-box;position:fixed;z-index:9999;left:0;right:0;top:0;background:#793021;color:white;padding:5px 16px;text-align:center;font:700 12px system-ui,sans-serif">Kenのデンモク Ver.2 テスト版　｜　<a href="../" style="color:#fff;text-decoration:underline">現在の公開版へ戻る</a></aside>
+<header class="site-header" id="siteHeader">
+  <div class="site-header-inner">
+    <div>
+      <div class="brand-small">REALITY / MUSIC REQUEST SYSTEM</div>
+      <h1 class="site-title"><button type="button" class="title-hold-trigger" id="adminTitle" aria-label="管理者は長押しで管理画面を表示"><span id="streamerName">Ken</span>のデンモク</button></h1>
+      <div class="site-subtitle">楽曲検索・リクエスト・現在の待機曲</div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="back-to-listener button" id="toListener" hidden>リスナー画面へ戻る</button>
+      <span class="helper" id="signedInUser"></span>
+      <a class="button subtle" href="./account.html" id="accountNav">アカウント</a>
+      <a id="adminNav" class="button subtle" href="./admin.html" hidden>管理者メニュー</a>
+      <button id="logoutButton" type="button" class="button subtle">ログアウト</button>
+      <div class="connection-status" id="catalogStatus" aria-live="polite">曲カタログ読込中</div>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="notice" id="storageNotice" hidden>共有データを同期しています。同期できない場合はネットワークやログイン状態を確認してください。</div>
+  <div id="listenerView">
+    <div class="home-lead" style="margin-top:18px">
+      <div><h2>ホーム</h2><p>曲を探して、リクエストを送ろう。</p></div>
+      <nav class="quick-nav" aria-label="ホームメニュー">
+        <a href="#singing-section">歌唱中</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#today-history-section">本日の歌唱履歴</a><a href="#practice-section">練習中楽曲</a>
+        <button type="button" class="button primary" id="openRequestDialog">リクエストする</button>
+      </nav>
+    </div>
+    <div id="streamStatus" class="listener-broadcast-status is-offline" role="status" aria-live="polite" aria-atomic="true">
+      <span class="listener-broadcast-label"><span class="broadcast-status-dot" aria-hidden="true"></span><span id="listenerStreamLabel">OFF AIR</span></span>
+      <span id="listenerStreamDetail" class="listener-broadcast-detail">現在は配信していません。楽曲リクエストは受付停止中です。</span>
+    </div>
+    <div class="home-stack">
+      <section class="now-singing-card" id="singing-section" aria-labelledby="singing-heading">
+        <div class="now-singing-head">
+          <span class="now-singing-marker" aria-hidden="true"></span>
+          <div>
+            <div class="now-singing-label">NOW SINGING</div>
+            <h3 id="singing-heading">歌唱中曲</h3>
+          </div>
+        </div>
+        <div id="singingNow" aria-live="polite"><div class="singing-empty">現在、歌唱中の曲はありません。</div></div>
+      </section>
+      <section class="home-card" id="search-section" aria-labelledby="search-heading">
+        <div class="section-head">
+          <span class="section-no">01</span>
+          <div><h3 id="search-heading">楽曲検索</h3><p>TK from 凛として時雨の楽曲だけを、曲名とアーティスト名で検索できます。</p></div>
+        </div>
+        <div class="song-search-fields" role="search" aria-label="楽曲の絞り込み">
+          <div class="song-search-field">
+            <label for="searchInput" class="field">曲名</label>
+            <div class="searchbox">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+              <input type="search" id="searchInput" placeholder="曲名・かな・ローマ字" autocomplete="off" aria-label="曲名で検索">
+            </div>
+          </div>
+          <div class="song-search-field">
+            <label for="searchArtistInput" class="field">アーティスト名</label>
+            <div class="searchbox">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+              <input type="search" id="searchArtistInput" placeholder="アーティスト名・かな・ローマ字" autocomplete="off" aria-label="アーティスト名で検索">
+            </div>
+          </div>
+        </div>
+        <div class="helper" id="searchHelper" aria-live="polite">曲カタログを読み込み中です…</div>
+        <div class="result-list" id="searchResults"></div>
+      </section>
+      <section class="home-card" id="waiting-section" aria-labelledby="waiting-heading">
+        <div class="section-head">
+          <span class="section-no">02</span>
+          <div><h3 id="waiting-heading">歌唱待機楽曲</h3><p>歌唱を待っている楽曲を順番に表示します。</p></div>
+          <span class="count"><span id="waitingCount">0</span> 曲</span>
+        </div>
+        <div class="queue-list" id="waitingList"></div>
+      </section>
+      <section class="home-card" id="today-history-section" aria-labelledby="today-history-heading">
+        <div class="section-head">
+          <span class="section-no">03</span>
+          <div><h3 id="today-history-heading">本日の歌唱履歴</h3><p>本日歌い終わった楽曲の記録です。</p></div>
+          <span class="count"><span id="todaySingingCount">0</span> 曲</span>
+        </div>
+        <div class="queue-list" id="todaySingingList" aria-live="polite"></div>
+      </section>
+      <section class="home-card" id="practice-section" aria-labelledby="practice-heading">
+        <div class="section-head">
+          <span class="section-no">04</span>
+          <div><h3 id="practice-heading">練習中楽曲</h3><p>練習中の曲を一覧で表示します。</p></div>
+          <span class="count"><span id="practiceCount">0</span> 曲</span>
+        </div>
+        <div id="practiceList" class="queue-list"></div>
+      </section>
+    </div>
+  </div>
+  <div id="adminView" hidden>
+    <section id="ownerInvite" class="home-card" hidden>
+      <h3>オーナー専用：管理者招待</h3>
+      <p>メールアドレスで管理者を招待します。招待権限はサーバー側でも確認されます。</p>
+      <form id="inviteAdminForm" class="form-row">
+        <label class="field">招待するメールアドレス<input id="inviteAdminEmail" type="email" autocomplete="off" required maxlength="254"></label>
+        <button class="button primary" type="submit">管理者として招待</button>
+      </form>
+      <p class="helper" id="inviteAdminFeedback" role="status"></p>
+    </section>
+    <div class="admin-heading" style="margin-top:17px">
+      <div><div class="admin-title-line"><h2>管理画面</h2><span id="adminOnAir" class="onair-indicator" hidden><span class="onair-dot"></span>ON AIR</span></div><p>左からリスナー・歌唱待機楽曲・リクエスト・空き枠の4列です。</p></div>
+      <div class="stream-controls">
+        <a class="button primary" id="databaseEditorEntry" href="./database-editor.html" rel="nofollow" aria-label="VPSの楽曲データベースをアーティストごとに編集">楽曲データベース編集</a>
+        <span class="tag wait" id="adminStreamStatus">配信終了中</span>
+        <button type="button" id="startStream" class="button primary">配信開始</button>
+        <button type="button" id="endStream" class="button warning">配信終了</button>
+      </div>
+    </div>
+    <section id="onlineUsersPanel" class="online-users-panel" aria-labelledby="onlineUsersHeading">
+      <div class="online-users-heading">
+        <h3 id="onlineUsersHeading">ログイン中のオンラインユーザー <span class="count" id="onlineUserCount" aria-live="polite">確認中</span></h3>
+        <span class="helper" id="onlineUsersStatus" role="status">サーバーに接続しています</span>
+      </div>
+      <p class="online-users-note">直近75秒以内に接続を確認できたユーザーを表示します。管理者のみ閲覧可能です。</p>
+      <div id="onlineUsersList" class="online-users-list" aria-live="polite">接続状況を確認しています…</div>
+    </section>
+    <div class="admin-columns">
+      <section class="admin-panel preview-panel" aria-label="リスナー画面のプレビュー">
+        <div class="admin-panel-head"><h3>通常リスナー画面</h3><small>01 / 左端</small></div>
+        <iframe class="admin-preview" src="./?embed=1" title="リスナー画面プレビュー" loading="lazy"></iframe>
+      </section>
+      <section class="admin-panel" aria-label="歌唱待機楽曲">
+        <div class="admin-panel-head"><h3>歌唱待機楽曲</h3><small><span id="adminWaitingCount">0</span> 曲</small></div>
+        <div class="admin-panel-body"><div class="admin-singing-label">現在の歌唱中曲</div><div id="adminSinging"></div><div class="admin-singing-label">次の歌唱待機楽曲</div><div id="adminWaiting" class="queue-list"></div></div>
+      </section>
+      <section class="admin-panel" aria-label="受付リクエスト">
+        <div class="admin-panel-head"><h3>リクエスト楽曲</h3><small><span id="adminRequestCount">0</span> 件受付</small></div>
+        <div class="admin-panel-body">
+          <p class="admin-intake-note">未分類の受付曲を振り分けてください。</p>
+          <div id="adminRequests" class="queue-list"></div>
+        </div>
+      </section>
+      <section class="admin-panel chat-tools-panel" aria-label="チャットとChatGPT調査">
+        <div class="admin-panel-head"><h3>チャット / ChatGPT</h3><small>04 / 右端</small></div>
+        <div class="split-tools">
+          <section class="tool-chat" aria-label="チャット画面">
+            <div class="tool-subheading"><h4>チャット画面</h4><small>調査指示・メモ履歴</small></div>
+            <div id="adminChatHistory" class="tool-chat-history" role="log" aria-live="polite"></div>
+            <form id="adminChatForm" class="tool-chat-form">
+              <label for="adminChatInput" class="visually-hidden">メッセージを入力</label>
+              <textarea id="adminChatInput" rows="2" maxlength="1500" placeholder="調査メモを入力"></textarea>
+              <button type="submit" class="button">メモを追加</button>
+            </form>
+            <p class="tool-notice">ここは端末内のメモ欄です。ChatGPTの回答は自動表示されません。</p>
+          </section>
+          <section class="tool-gpt" aria-label="ChatGPTを開くブラウザ連携">
+            <div class="tool-subheading"><h4>ChatGPTブラウザ</h4><small>別タブ連携</small></div>
+            <div class="browser-address"><span aria-hidden="true">🔒</span> chatgpt.com</div>
+            <p class="tool-notice">ChatGPTはサイト内表示が制限されるため、調査指示を作成して別タブで開きます。</p>
+            <label for="gptResearchPrompt" class="tool-field-label">送信用の調査指示</label>
+            <textarea id="gptResearchPrompt" rows="5" readonly placeholder="「さらに調べる」を押すと指示が表示されます。"></textarea>
+            <div class="tool-gpt-actions">
+              <button type="button" class="button" id="gptCopy">指示をコピー</button>
+              <a class="button primary" id="gptOpen" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPTを開く</a>
+              <a class="button subtle" id="lyricsSearch" href="https://www.google.com/" target="_blank" rel="noopener noreferrer">歌詞URLを検索</a>
+            </div>
+            <p class="tool-notice">指示が入力されない場合は「指示をコピー」してChatGPTに貼り付けてください。</p>
+          </section>
+        </div>
+      </section>
+    </div>
+    <details class="admin-tools">
+      <summary>共有配信設定・楽曲リストの登録</summary>
+      <p class="helper">Ver.2では旧端末のリクエスト・履歴・カラオケ確認記録を引き継がず、認証成功後に旧ブラウザ保存分を削除します。</p>
+      <p class="helper">管理機能は招待制の権限で保護し、共有データベースに保存します。</p>
+      <form id="nameForm">
+        <label class="field">配信者の表示名<input id="newName" maxlength="30" placeholder="Ken"></label>
+        <div><button type="submit" class="button">名前を保存</button></div>
+      </form>
+      <form id="songForm">
+        <div class="form-row">
+          <label class="field">曲名<input id="songTitle" required maxlength="120"></label>
+          <label class="field">アーティスト<input id="songArtist" required maxlength="120"></label>
+          <label class="field">区分<select id="songStatus"><option value="ready">歌える曲</option><option value="practice">練習中</option></select></label>
+          <label class="field">リリース年（任意）<input id="songYear" inputmode="numeric" maxlength="4"></label>
+        </div>
+        <label class="field">楽曲メモ（管理画面専用）
+          <textarea id="songMemo" maxlength="2000" rows="3" placeholder="歌い方・キー・練習メモ・注意事項など"></textarea>
+        </label>
+        <div class="song-form-actions"><button type="submit" class="button primary" id="songSaveButton">楽曲を登録</button><button type="button" class="button subtle" id="songEditCancel" hidden>編集を取り消す</button></div>
+      </form>
+      <section class="karaoke-management" aria-labelledby="karaokeManagementHeading">
+        <h3 id="karaokeManagementHeading">DAM / JOYSOUND 配信情報の照合</h3>
+        <p class="helper">公式サイトで曲名・歌手名・対応機種を確認してから登録してください。カタログ収録だけでは配信済みを意味しません。確認情報は共有データベースに保存されます。</p>
+        <form id="karaokeCheckForm">
+          <div class="form-row">
+            <label class="field">曲名 <input id="karaokeTitle" required maxlength="190" placeholder="照合する曲名"></label>
+            <label class="field">アーティスト <input id="karaokeArtist" required maxlength="150" placeholder="照合するアーティスト"></label>
+          </div>
+          <div class="karaoke-provider-grid">
+            <fieldset class="karaoke-provider-box">
+              <legend>DAM</legend>
+              <label class="field">確認結果
+                <select id="karaokeDamStatus">
+                  <option value="unknown">未確認</option>
+                  <option value="available">公式で配信を確認</option>
+                  <option value="searched">検索で見つからず（未配信確定ではない）</option>
+                </select>
+              </label>
+              <label class="field">公式情報URL <input type="url" id="karaokeDamUrl" placeholder="https://www.clubdam.com/..." maxlength="600"></label>
+              <label class="field">曲番号（任意）<input id="karaokeDamNumber" maxlength="35"></label>
+              <a id="karaokeDamLookup" class="button subtle" href="https://www.clubdam.com/karaokesearch/" target="_blank" rel="noopener noreferrer">DAM公式で検索</a>
+            </fieldset>
+            <fieldset class="karaoke-provider-box">
+              <legend>JOYSOUND</legend>
+              <label class="field">確認結果
+                <select id="karaokeJoyStatus">
+                  <option value="unknown">未確認</option>
+                  <option value="available">公式で配信を確認</option>
+                  <option value="searched">検索で見つからず（未配信確定ではない）</option>
+                </select>
+              </label>
+              <label class="field">公式情報URL <input type="url" id="karaokeJoyUrl" placeholder="https://www.joysound.com/..." maxlength="600"></label>
+              <label class="field">曲番号（任意）<input id="karaokeJoyNumber" maxlength="35"></label>
+              <a id="karaokeJoyLookup" class="button subtle" href="https://www.joysound.com/web/search" target="_blank" rel="noopener noreferrer">JOYSOUND公式で検索</a>
+            </fieldset>
+          </div>
+          <label class="field">対応機種・照合メモ（任意）
+            <textarea id="karaokeNotes" maxlength="400" rows="2" placeholder="例：JOYSOUND X1で確認、配信機種に注意"></textarea>
+          </label>
+          <div class="song-form-actions">
+            <button type="submit" class="button primary">確認結果を保存</button>
+            <button type="button" class="button subtle" id="karaokeClear">フォームをクリア</button>
+            <button type="button" class="button" id="karaokeExport">照合データを書き出す</button>
+            <label class="button subtle karaoke-csv-import">CSVを読み込む<input id="karaokeImport" type="file" accept=".csv,text/csv" hidden></label>
+          </div>
+          <p id="karaokeRecordCount" class="helper" aria-live="polite">照合記録 0曲</p>
+        </form>
+      </section>
+      <div class="song-manage-area"><h3>登録曲とメモの確認・編集</h3>
+        <input type="search" id="adminSongSearch" placeholder="曲名・アーティスト・メモで検索" aria-label="登録曲を検索">
+        <p id="adminSongCount" class="helper"></p><div id="adminSongList" class="song-manage-list"></div>
+      </div>
+      <label class="field" style="margin-top:14px">CSV一括取り込み（楽曲名,アーティスト,JASRAC,NexTone,区分,発売年）
+        <input type="file" id="songImport" accept=".csv,text/csv">
+      </label>
+    </details>
+    <section class="report-section" id="streamReports" aria-labelledby="reportHeading">
+      <div class="report-heading"><div><h2 id="reportHeading">配信レポート</h2><p>配信開始から終了までを1回として記録します。</p></div><span id="reportCount" class="count">0 回</span></div>
+      <div id="reportCurrent"></div><div class="report-history" id="reportHistory"></div>
+    </section>
+  </div>
+</main>
+<dialog id="requestDialog" class="request-dialog" aria-labelledby="requestDialogTitle">
+  <div class="dialog-head">
+    <div><h2 id="requestDialogTitle">リクエストを送信</h2><p>曲名・アーティスト・お名前を入力してください。</p></div>
+    <button type="button" id="requestDialogClose" class="button subtle">閉じる</button>
+  </div>
+  <div id="requestAvailability" class="stream-status" role="status">配信開始まで受付停止中です。</div>
+  <form id="requestForm" class="request-form">
+          <div id="chosenSong" class="selection" hidden></div>
+          <div class="form-row">
+            <label class="field">曲名 <input id="reqTitle" name="title" required maxlength="120" placeholder="曲名を入力"></label>
+            <label class="field">アーティスト <input id="reqArtist" name="artist" required maxlength="120" placeholder="アーティスト名を入力"></label>
+          </div>
+          <label class="field">リクエスト者のお名前 <input id="reqName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
+          <label class="field">メッセージ（任意）<textarea id="reqMessage" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
+          <div><button type="submit" class="button primary large" id="sendRequest">リクエストを送信</button></div>
+          <p class="helper">※ リクエストはログイン中のアカウントから送信し、全端末に共有されます。</p>
+        </form>
+</dialog>
+
+<footer class="music-source-credits">
+  楽曲メタデータ出典：
+  <a href="https://musicbrainz.org/" target="_blank" rel="noopener noreferrer">MusicBrainz（CC0）</a> /
+  <a href="https://vocadb.net/" target="_blank" rel="noopener noreferrer">VocaDB（CC BY）</a> /
+  <a href="https://www.wikidata.org/" target="_blank" rel="noopener noreferrer">Wikidata（CC0）</a>
+  <span>掲載曲はカラオケ配信・利用許諾を保証するものではありません。</span>
+</footer>
+<div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>

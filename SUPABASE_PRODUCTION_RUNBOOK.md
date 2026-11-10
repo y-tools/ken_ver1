@@ -9,7 +9,7 @@
 - 旧ブラウザ保存分の移行、決済・Stripe、旧200万曲自動登録は要件外。TK限定98曲、既存VPS楽曲DBを保全する。
 
 ## 1. ステージングでのDB準備
-次の7件の`supabase/migrations/`のファイルを**番号順**に適用・検証する。
+次の8件の`supabase/migrations/`のファイルを**番号順**に適用・検証する。
 1. `202611070001_auth.sql` — profiles、listener/admin/owner、管理者招待
 2. `202611070002_live_data.sql` — 配信・曲・チャット・リクエスト・履歴・共有更新番号
 3. `202611070003_actions.sql` — 権限付き操作RPC・表示用スナップショット
@@ -17,6 +17,7 @@
 5. `202611110005_login_id.sql` — ログインID＋パスワード、重複防止・試行制限
 6. `202611110006_online_presence.sql` — 認証済み接続更新、管理者一覧、RLS、Realtime
 7. `202611110007_revoke_signup_trigger_execution.sql` — 登録トリガー関数の不要な公開RPC権限を撤回
+8. `202611110008_rls_and_foreign_key_indexes.sql` — プロフィールRLS整理とFK索引の改善
 
 既存テーブル、関数、Publication/RLSと衝突しないかデプロイ前にレビューする。Supabase CLIを使用する場合、公式ドキュメントに従って接続後に`supabase db push --remote`で適用する。権限ある環境への適用は慎重に行い、SQL実行ログを残す。
 
@@ -61,3 +62,6 @@ GitHubのmainへ入れた切替変更をrevertしてPagesの前バージョン�
 - https://supabase.com/docs/guides/deployment/managing-environments
 - https://supabase.com/docs/guides/realtime/subscribing-to-database-changes
 - https://supabase.com/docs/guides/functions/deploy
+
+### 2026-11-11 Supabase確認
+東京プロジェクト`ken-denmoku-v2`（`kflsbmlpupvpbwsenfba`）にSQLマイグレーション8件を適用済み。テーブル15件はすべてRLS有効、Realtime publicationに`sync_version`と`online_sessions`、Edge Functions 2件はACTIVE。Authユーザー0件・初代owner未登録・Email Redirect URL未設定のため、公開mainには未反映。実メール・実ログイン・複数端末の本番試験は未完了。

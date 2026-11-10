@@ -21,6 +21,7 @@
   let refreshing = null;
   let onSnapshot = null;
   let lastError = null;
+  let stopPresence = null;
 
   async function authenticate() {
     if (!client) throw Error("Supabaseの設定がありません。config.js を設定してください。");
@@ -98,12 +99,87 @@
       document.removeEventListener("visibilitychange",onVisible);
     };
   }
+  function startPresence(onUsers=()=>{}) {
+    if(!client||!loggedIn)throw Error("Presence requires login");
+    // One stable ID for this browser tab, not one user ID provided by the client.
+    const storageKey="ken-denmoku-presence-tab-v1";
+    let tabId;
+    try{tabId=sessionStorage.getItem(storageKey);}catch(_){}
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tabId||"")){
+      tabId=crypto.randomUUID();
+      try{sessionStorage.setItem(storageKey,tabId);}catch(_){}
+    }
+    const adminAccess=role==="admin"||role==="owner";
+    let running=true,heartbeatTimer=null,listTimer=null,onlineChannel=null,changeTimer=null;
+    let listInFlight=null;
+    const heartbeat=async()=>{
+      if(!running)return;
+      const {error}=await client.rpc("presence_heartbeat",{p_tab_id:tabId});
+      if(error)throw error;
+    };
+    const list=async()=>{
+      if(!running||!adminAccess)return;
+      if(listInFlight)return listInFlight;
+      listInFlight=(async()=>{
+        const {data,error}=await client.rpc("presence_admin_list");
+        if(error)throw error;
+        if(!Array.isArray(data))throw Error("Invalid online user list");
+        if(running)onUsers(data,null);
+      })().catch(error=>{
+        if(running)onUsers(null,error);
+      }).finally(()=>{listInFlight=null;});
+      return listInFlight;
+    };
+    // Throttle bursts of realtime heartbeat events; server still enforces identity.
+    const queueList=()=>{
+      if(!running||!adminAccess||changeTimer)return;
+      changeTimer=setTimeout(()=>{changeTimer=null;void list();},250);
+    };
+    const ping=()=>{void heartbeat().catch(e=>console.warn("Online heartbeat failed",e));};
+    const wake=()=>{ping();queueList();};
+    const onVisible=()=>{if(!document.hidden)wake();};
+    if(adminAccess){
+      onlineChannel=client.channel("denmoku-online-v2")
+        .on("postgres_changes",{
+          event:"*",schema:"public",table:"online_sessions"
+        },queueList)
+        .subscribe(status=>{
+          if(status==="SUBSCRIBED")queueList();
+          if(status==="CHANNEL_ERROR"||status==="TIMED_OUT")queueList();
+        });
+      listTimer=setInterval(queueList,5000); // fallback if Realtime misses an event
+    }
+    ping();queueList();
+    heartbeatTimer=setInterval(ping,15000);
+    window.addEventListener("focus",wake);
+    window.addEventListener("online",wake);
+    document.addEventListener("visibilitychange",onVisible);
+    const stop=async()=>{
+      if(!running)return;
+      running=false;
+      clearInterval(heartbeatTimer);
+      clearInterval(listTimer);
+      clearTimeout(changeTimer);
+      if(onlineChannel)await client.removeChannel(onlineChannel);
+      window.removeEventListener("focus",wake);
+      window.removeEventListener("online",wake);
+      document.removeEventListener("visibilitychange",onVisible);
+      const {error}=await client.rpc("presence_leave",{p_tab_id:tabId});
+      if(error)throw error;
+    };
+    stopPresence=stop;
+    return stop;
+  }
   async function signOut() {
-    if (client) await client.auth.signOut();
+    if(stopPresence){
+      try{await stopPresence();}catch(error){console.warn("Presence logout failed",error);}
+      stopPresence=null;
+    }
+    if(client)await client.auth.signOut();
     location.replace("./login.html");
   }
   window.KEN_SHARED=Object.freeze({
-    client,configured,authenticate,snapshot,action,subscribe,refresh,signOut,
+    client,configured,authenticate,snapshot,action,subscribe,refresh,signOut,startPresence,
     isAdmin:()=>role==="admin"||role==="owner",
     isOwner:()=>role==="owner",
     profile:()=>loggedIn?.profile || null,

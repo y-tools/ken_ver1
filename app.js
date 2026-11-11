@@ -732,18 +732,40 @@ async function loadCatalog(){
 /* Menu visibility is convenience; server RPCs enforce all permissions. */
 function setupAdminUnlock(){
  const trigger=$("#adminTitle");
- const show=()=>{
+ let holdTimer=null;
+ let clickCount=0;
+ let previousClickAt=0;
+ const reveal=()=>{
   if(preview)return;
-  if(!shared?.isAdmin()){toast("管理画面は招待された管理者のみ利用できます");return;}
-  adminMode=true;render();
+  // This is just a discoverability gesture, never a bypass of Supabase Auth.
+  if(shared?.isAdmin()){
+   adminMode=true;render();
+  }else{
+   $("#loginNav").hidden=false;
+  }
  };
- let timer=null;
- trigger.addEventListener("pointerdown",e=>{if(e.button!==0)return;timer=setTimeout(show,750);});
- for(const t of ["pointerup","pointerleave","pointercancel"]){
-  trigger.addEventListener(t,()=>{clearTimeout(timer);timer=null;});
+ trigger.addEventListener("pointerdown",e=>{
+  if(e.button!==0)return;
+  clearTimeout(holdTimer);
+  holdTimer=setTimeout(()=>{holdTimer=null;reveal();},750);
+ });
+ for(const type of ["pointerup","pointerleave","pointercancel"]){
+  trigger.addEventListener(type,()=>{
+   clearTimeout(holdTimer);holdTimer=null;
+  });
  }
- trigger.addEventListener("dblclick",e=>{e.preventDefault();show();});
- trigger.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();show();}});
+ trigger.addEventListener("contextmenu",e=>e.preventDefault());
+ trigger.addEventListener("click",()=>{
+  const now=performance.now();
+  clickCount=now-previousClickAt<=900?clickCount+1:1;
+  previousClickAt=now;
+  if(clickCount>=3){clickCount=0;reveal();}
+ });
+ trigger.addEventListener("keydown",e=>{
+  if(e.key==="Enter"||e.key===" "){
+   e.preventDefault();reveal();
+  }
+ });
 }
 async function attach(){
  if(!shared?.configured){
@@ -764,7 +786,7 @@ async function attach(){
   if($("#signedInUser"))$("#signedInUser").textContent=auth?.profile
     ? auth.profile.display_name+" ("+auth.profile.role+")" : "ゲスト閲覧中";
   if($("#accountNav"))$("#accountNav").hidden=!shared.isAdmin();
-  if($("#loginNav"))$("#loginNav").hidden=shared.isAdmin();
+  if($("#loginNav"))$("#loginNav").hidden=true;
   if($("#logoutButton")){
     $("#logoutButton").hidden=!shared.isAdmin();
     $("#logoutButton").addEventListener("click",()=>void shared.signOut());

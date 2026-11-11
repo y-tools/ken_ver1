@@ -121,17 +121,17 @@ try{
  assert.equal(await listener.locator("#signedInUser").textContent(),"ゲスト閲覧中");
  assert.equal(await listener.locator("#signedInUser").isVisible(),false);
  assert.equal(await listener.locator("#catalogStatus").isVisible(),false);
- assert.equal(await listener.locator("#loginNav").isVisible(),false);
+ assert.equal(await listener.locator("#adminLoginDialog").isVisible(),false);
  assert.equal(await listener.locator("#accountNav").isVisible(),false);
  await listener.locator("#adminTitle").click();
- assert.equal(await listener.locator("#loginNav").isVisible(),false);
+ assert.equal(await listener.locator("#adminLoginDialog").isVisible(),false);
  await listener.locator("#adminTitle").click();
- assert.equal(await listener.locator("#loginNav").isVisible(),false);
+ assert.equal(await listener.locator("#adminLoginDialog").isVisible(),false);
  await listener.locator("#adminTitle").click();
- assert.equal(await listener.locator("#loginNav").isVisible(),true);
+ assert.equal(await listener.locator("#adminLoginDialog").isVisible(),true);
  assert.equal(await listener.locator("#adminView").isVisible(),false);
  await listener.close();
- console.log("PASS hidden admin login appears only after 3 title clicks");
+ console.log("PASS admin login modal appears only after 3 title clicks");
  const longPress=await fixture("listener");
  const titleBox=await longPress.locator("#adminTitle").boundingBox();
  assert.ok(titleBox,"title must be available for long press");
@@ -139,9 +139,9 @@ try{
  await longPress.mouse.down();
  await longPress.waitForTimeout(820);
  await longPress.mouse.up();
- assert.equal(await longPress.locator("#loginNav").isVisible(),true);
+ assert.equal(await longPress.locator("#adminLoginDialog").isVisible(),true);
  await longPress.close();
- console.log("PASS 750ms title hold reveals hidden admin login");
+ console.log("PASS 750ms title hold opens admin login modal");
  assert.deepEqual(errors,[],"No uncaught JS errors");
 }finally{
  await browser.close();

@@ -63,9 +63,10 @@ Deno.serve(async request=>{
  if(!title||!artist||!nickname||note===null||note.length>200||
    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(nonce))
    return json({error:"入力内容を確認してください"},400);
+ const freeform=body.freeform===true;
  const fingerprint=await ipFingerprint(ip,serviceKey);
  try{
-   const r=await fetch(url+"/rest/v1/rpc/denmoku_guest_request",{
+   const r=await fetch(url+"/rest/v1/rpc/"+(freeform?"denmoku_guest_request_freeform":"denmoku_guest_request"),{
      method:"POST",
      headers:{
        "apikey":serviceKey,
@@ -87,7 +88,7 @@ Deno.serve(async request=>{
      if(code==="23514"||/Requests are closed/i.test(detail))
        return json({error:"現在はリクエスト受付時間外です"},409);
      if(code==="22023")
-       return json({error:"TKの楽曲カタログから曲を選択してください"},400);
+       return json({error:freeform?"曲名とアーティスト名を確認してください":"TKの楽曲カタログから曲を選択してください"},400);
      console.error("Guest request DB failure",r.status,code,detail.slice(0,180));
      return json({error:"サーバーへ保存できませんでした"},502);
    }

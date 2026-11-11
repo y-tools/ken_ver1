@@ -532,3 +532,41 @@ body.embed-mode #listenerView :is(#waiting-section,#today-history-section,#pract
 body.embed-mode #listenerView :is(#waiting-section,#today-history-section,#practice-section,#ready-section) .song-title{font-size:16px}
 body.embed-mode #listenerView :is(#waiting-section,#today-history-section,#practice-section,#ready-section) .song-artist{font-size:13px}
 body.embed-mode #listenerView :is(#waiting-section,#today-history-section,#practice-section,#ready-section) :is(.queue-person,.today-sung-meta){font-size:12px}
+
+
+/* Consistent mobile listener menu: six links in paired columns, request button full width. */
+@media (max-width:720px){
+ body:not(.embed-mode) #listenerView .home-lead{display:block;min-width:0}
+ body:not(.embed-mode) #listenerView .quick-nav{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+  width:100%;
+  margin-top:13px;
+  align-items:stretch;
+ }
+ body:not(.embed-mode) #listenerView .quick-nav > :is(a,button){
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+  min-width:0;
+  min-height:48px;
+  height:100%;
+  margin:0;
+  padding:10px 8px;
+  box-sizing:border-box;
+  border-radius:12px;
+  white-space:normal;
+  overflow-wrap:anywhere;
+  text-align:center;
+  line-height:1.4;
+  font-weight:800;
+  font-size:clamp(11px,3.15vw,13px);
+ }
+ body:not(.embed-mode) #listenerView .quick-nav > #openFreeformRequestTop{
+  grid-column:1 / -1;
+  min-height:50px;
+  font-size:clamp(12px,3.5vw,14px);
+ }
+}

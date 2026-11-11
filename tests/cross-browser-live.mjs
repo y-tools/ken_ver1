@@ -28,7 +28,7 @@ async function serverCall(method,args,role){
    if(server.streamLive)return {data:null,error:{message:"Already live"}};
    server.streamLive=true;
    server.activeSessionId="11111111-1111-4111-8111-111111111111";
-   server.activeSessionStartedAt=Date.now();
+   server.activeSessionStartedAt=Date.now()-10000;
    server.sessions=[{id:server.activeSessionId,startedAt:Date.now(),endedAt:null,events:[]}];
   }else if(action==="stream_end"){
    if(!server.streamLive)return {data:null,error:{message:"Already offline"}};
@@ -168,13 +168,13 @@ try{
 
  // A completed request belongs to THIS active stream's visible history.
  server.requests[0].status="done";
- server.requests[0].completedAt=Date.now();
+ server.requests[0].completedAt=Date.now()-1000;
  server.version++;
  await listener.page.waitForFunction(
   ()=>document.querySelector("#todaySingingCount")?.textContent==="1",
   null,{timeout:11500}
  );
- assert.equal(await admin.page.locator("#todaySingingCount").textContent(),"1");
+ await admin.page.waitForFunction(()=>document.querySelector("#todaySingingCount")?.textContent==="1");
  console.log("PASS completed song appears in today's history during the stream");
 
  // Stop is also synchronized to the independent, background listener browser.
@@ -190,7 +190,7 @@ try{
   ()=>document.querySelector("#todaySingingCount")?.textContent==="0",
   null,{timeout:11500}
  );
- assert.equal(await admin.page.locator("#todaySingingCount").textContent(),"0");
+ await admin.page.waitForFunction(()=>document.querySelector("#todaySingingCount")?.textContent==="0");
  assert.equal(server.requests[0].status,"done","song request retained for reporting");
  assert.ok(server.sessions[0].endedAt,"stream report still exists");
  console.log("PASS today's history clears on OFF AIR without deleting report data");

@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261111-freeform-font-v2">
+<link rel="stylesheet" href="./styles.css?v=20261111-freeform-popup-v3">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -16,7 +16,7 @@
 <script src="./data/vps-search.js?v=20261106-vps-phase0-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./app.js?v=20261111-freeform-lyrics-id-v2" defer></script>
+<script src="./app.js?v=20261111-freeform-popup-v3" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -43,7 +43,7 @@
     <div class="home-lead" style="margin-top:18px">
       <div><h2>ホーム</h2><p>曲を探して、リクエストを送ろう。</p></div>
       <nav class="quick-nav" aria-label="ホームメニュー">
-        <a href="#singing-section">歌唱中</a><a href="#freeform-request-section">自由入力リクエスト</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#today-history-section">本日の歌唱履歴</a><a href="#practice-section">練習中楽曲</a>
+        <a href="#singing-section">歌唱中</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#today-history-section">本日の歌唱履歴</a><a href="#practice-section">練習中楽曲</a>
         <button type="button" class="button primary" id="openRequestDialog">リクエストする</button>
       </nav>
     </div>
@@ -62,26 +62,11 @@
         </div>
         <div id="singingNow" aria-live="polite"><div class="singing-empty">現在、歌唱中の曲はありません。</div></div>
       </section>
-      <div class="request-search-layout">
-      <section class="home-card freeform-request-card" id="freeform-request-section" aria-labelledby="freeform-request-heading">
-        <div class="section-head">
-          <span class="section-no">01A</span>
-          <div><h3 id="freeform-request-heading">自由入力リクエスト</h3><p>カタログにない曲も自由に送信できます。</p></div>
-        </div>
-        <form id="freeformRequestForm" class="freeform-request-form">
-          <label class="field">曲名<input id="freeRequestTitle" name="title" required maxlength="120" autocomplete="off" placeholder="曲名を自由入力"></label>
-          <label class="field">アーティスト名<input id="freeRequestArtist" name="artist" required maxlength="120" autocomplete="off" placeholder="アーティスト名を自由入力"></label>
-          <label class="field">リクエスト者のお名前<input id="freeRequestName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
-          <label class="field">メッセージ（任意）<textarea id="freeRequestMessage" name="message" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
-          <div class="form-honeypot" aria-hidden="true"><label>ここは入力しないでください<input id="freeRequestCompany" name="company" tabindex="-1" autocomplete="off"></label></div>
-          <button type="submit" class="button primary large" id="freeRequestSubmit" disabled>自由入力でリクエスト送信</button>
-          <p id="freeRequestFeedback" class="helper" role="status" aria-live="polite">配信開始時に送信できます。</p>
-        </form>
-      </section>
       <section class="home-card" id="search-section" aria-labelledby="search-heading">
-        <div class="section-head">
-          <span class="section-no">01B</span>
-          <div><h3 id="search-heading">楽曲検索</h3><p>TK from 凛として時雨の楽曲だけを、曲名とアーティスト名で検索できます。</p></div>
+        <div class="section-head search-section-head">
+          <span class="section-no">01</span>
+          <div class="search-section-title"><h3 id="search-heading">楽曲検索</h3><p>TK from 凛として時雨の楽曲だけを、曲名とアーティスト名で検索できます。</p></div>
+          <button type="button" class="button primary search-freeform-button" id="openFreeformRequest" aria-haspopup="dialog" aria-controls="freeformRequestDialog">自由入力リクエスト</button>
         </div>
         <div class="song-search-fields" role="search" aria-label="楽曲の絞り込み">
           <div class="song-search-field">
@@ -102,7 +87,6 @@
         <div class="helper" id="searchHelper" aria-live="polite">曲カタログを読み込み中です…</div>
         <div class="result-list" id="searchResults"></div>
       </section>
-      </div>
       <section class="home-card" id="waiting-section" aria-labelledby="waiting-heading">
         <div class="section-head">
           <span class="section-no">02</span>
@@ -308,6 +292,21 @@
     </section>
   </div>
 </main>
+<dialog id="freeformRequestDialog" class="request-dialog freeform-request-dialog" aria-labelledby="freeform-request-heading">
+  <div class="dialog-head">
+    <div><h2 id="freeform-request-heading">自由入力リクエスト</h2><p>曲名とアーティスト名を自由に入力できます。ログインは不要です。</p></div>
+    <button type="button" id="freeRequestDialogClose" class="button subtle" aria-label="自由入力リクエストを閉じる">閉じる</button>
+  </div>
+        <form id="freeformRequestForm" class="freeform-request-form">
+          <label class="field">曲名<input id="freeRequestTitle" name="title" required maxlength="120" autocomplete="off" placeholder="曲名を自由入力"></label>
+          <label class="field">アーティスト名<input id="freeRequestArtist" name="artist" required maxlength="120" autocomplete="off" placeholder="アーティスト名を自由入力"></label>
+          <label class="field">リクエスト者のお名前<input id="freeRequestName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
+          <label class="field">メッセージ（任意）<textarea id="freeRequestMessage" name="message" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
+          <div class="form-honeypot" aria-hidden="true"><label>ここは入力しないでください<input id="freeRequestCompany" name="company" tabindex="-1" autocomplete="off"></label></div>
+          <button type="submit" class="button primary large" id="freeRequestSubmit" disabled>自由入力でリクエスト送信</button>
+          <p id="freeRequestFeedback" class="helper" role="status" aria-live="polite">配信開始時に送信できます。</p>
+        </form>
+</dialog>
 <dialog id="requestDialog" class="request-dialog" aria-labelledby="requestDialogTitle">
   <div class="dialog-head">
     <div><h2 id="requestDialogTitle">リクエストを送信</h2><p>曲名・アーティスト・お名前を入力してください。</p></div>

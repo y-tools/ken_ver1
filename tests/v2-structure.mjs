@@ -77,8 +77,14 @@ console.log("PASS anonymous read-only listener with invite-only staff");
 
 
 const layout=read("index.html"),style=read("styles.css");
-assert.match(layout,/id="freeform-request-section"/);
-assert.ok(layout.indexOf('id="freeform-request-section"')<layout.indexOf('id="search-section"'),"Free input must be LEFT of song search");
+assert.match(layout,/id="freeformRequestDialog"/);
+assert.match(layout,/id="openFreeformRequest"/);
+assert.match(layout,/id="freeRequestDialogClose"/);
+assert.doesNotMatch(layout,/id="freeform-request-section"/);
+const searchStart=layout.indexOf('id="search-section"');
+const openButton=layout.indexOf('id="openFreeformRequest"');
+assert.ok(searchStart>=0&&openButton>searchStart&&openButton<layout.indexOf('id="searchResults"'),
+  "Freeform popup button must be adjacent to the song search heading");
 assert.match(layout,/id="freeRequestTitle"/);
 assert.match(layout,/id="freeRequestArtist"/);
 assert.match(layout,/id="createAdminIdForm"/);
@@ -87,7 +93,11 @@ assert.match(mainApp,/function submitFreeformRequest/);
 assert.match(mainApp,/freeform:true/);
 assert.match(mainApp,/singing-lyrics-row/);
 assert.match(mainApp,/>歌詞検索<\/a>/);
-assert.match(style,/\.request-search-layout/);
+assert.match(style,/\.search-section-head/);
+assert.match(style,/\.search-freeform-button/);
+assert.doesNotMatch(style,/\.request-search-layout/);
+assert.match(mainApp,/function openFreeformRequestDialog/);
+assert.match(mainApp,/function closeFreeformRequestDialog/);
 assert.match(style,/#listenerView :is\(#waiting-section,#today-history-section,#practice-section\)/);
 assert.match(style,/\.song-title\)\{\s*font-size:clamp\(19px/);
 const freeSql=read("supabase/migrations/202611110014_freeform_guest_request.sql");
@@ -102,4 +112,4 @@ assert.match(adminEdge,/auth\.admin\.createUser/);
 assert.match(adminEdge,/owner\?\.role!=="owner"/);
 assert.match(adminEdge,/admin\.auth\.getUser\(token\)/);
 assert.match(read("supabase/config.toml"),/\[functions\.create-admin-id\]\s*verify_jwt = true/);
-console.log("PASS freeform search layout, larger listener text, lyrics and secure admin-ID code");
+console.log("PASS button-opened freeform popup, large listener text, lyrics and secure admin-ID code");

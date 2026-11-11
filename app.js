@@ -20,7 +20,7 @@ async function sharedAction(name,payload={}){
   await shared.refresh(true).catch(()=>{});return false;}
  finally{sharedBusy=false;}
 }
-const initial = {songs:[],requests:[],name:"Ken",streamLive:false,sessions:[],activeSessionId:null,chatNotes:[]};
+const initial = {songs:[],requests:[],name:"Ken",streamLive:false,sessions:[],activeSessionId:null,activeSessionStartedAt:null,chatNotes:[]};
 // Ver.2 starts from server truth; do not load old browser-local requests or songs.
 let state = initial;
 const catalog = {rows:[],idx:[],ready:false,error:false};
@@ -228,8 +228,14 @@ function japanDay(at){
  return new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).format(d);
 }
 function renderTodayHistory(){
+ // Only the active broadcast's completed songs belong to today's visible history.
+ // End stream => activeSessionStartedAt becomes null; historical report data stays intact.
  const today=japanDay(Date.now());
- const records=state.requests.filter(r=>r.completedAt && japanDay(r.completedAt)===today && r.status==="done").sort((a,b)=>a.completedAt-b.completedAt);
+ const started=Number(state.activeSessionStartedAt)||0;
+ const records=started && state.streamLive===true
+  ? state.requests.filter(r=>r.completedAt && r.completedAt>=started &&
+      japanDay(r.completedAt)===today && r.status==="done").sort((a,b)=>a.completedAt-b.completedAt)
+  : [];
  $("#todaySingingCount").textContent=records.length;
  $("#todaySingingList").innerHTML=records.length?records.map((r,i)=>
   '<div class="queue-row"><div class="queue-no">'+(i+1)+'</div><div class="queue-info">'+

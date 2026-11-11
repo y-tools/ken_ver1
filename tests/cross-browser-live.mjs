@@ -124,12 +124,15 @@ try{
   ()=>document.querySelector("#listenerStreamLabel")?.textContent==="ON AIR",
   null,{timeout:11500}
  );
- assert.equal(await listener.page.locator("#openRequestDialog").isEnabled(),true,
-   "Guest requests are now enabled through a separate server-limited endpoint");
+ assert.equal(await listener.page.locator("#openFreeformRequestTop").isEnabled(),true,
+   "Top request button must be usable during ON AIR");
  console.log("PASS remote listener turns ON AIR without reload, even while hidden");
- await listener.page.locator("#openRequestDialog").click();
- await listener.page.locator("#reqTitle").fill("unravel");
- await listener.page.locator("#reqArtist").fill("TK from 凛として時雨");
+ // Song-search results retain the original catalog request dialog.
+ await listener.page.locator("#searchInput").fill("unravel");
+ await listener.page.locator("#searchResults [data-select-index]").first().click();
+ await listener.page.locator("#requestDialog").waitFor({state:"visible"});
+ assert.equal(await listener.page.locator("#reqTitle").inputValue(),"unravel");
+ assert.equal(await listener.page.locator("#reqArtist").inputValue(),"TK from 凛として時雨");
  await listener.page.locator("#reqName").fill("ゲスト試験");
  await listener.page.locator("#sendRequest").click();
  await admin.page.waitForFunction(
@@ -140,7 +143,8 @@ try{
  assert.equal(server.requests[0].userId,null);
  console.log("PASS no-login guest request propagates to admin browser");
  assert.equal(await listener.page.locator("#freeformRequestDialog").isVisible(),false);
- await listener.page.locator("#openFreeformRequest").click();
+ assert.equal(await listener.page.locator("#openFreeformRequestTop").textContent(),"自由入力リクエスト");
+ await listener.page.locator("#openFreeformRequestTop").click();
  await listener.page.locator("#freeformRequestDialog").waitFor({state:"visible"});
  assert.equal(await listener.page.locator("#freeRequestTitle").inputValue(),"");
  assert.equal(await listener.page.locator("#freeRequestArtist").inputValue(),"");
@@ -148,6 +152,7 @@ try{
  await listener.page.locator("#freeRequestTitle").fill("未送信の曲");
  await listener.page.locator("#freeRequestDialogClose").click();
  await listener.page.locator("#freeformRequestDialog").waitFor({state:"hidden"});
+ // The search-heading button opens the same popup.
  await listener.page.locator("#openFreeformRequest").click();
  await listener.page.locator("#freeformRequestDialog").waitFor({state:"visible"});
  assert.equal(await listener.page.locator("#freeRequestTitle").inputValue(),"");
@@ -190,6 +195,14 @@ try{
   ()=>document.querySelector("#adminSongList")?.textContent?.includes("unravel"),
   null,{timeout:12000}
  );
+ await listener.page.waitForFunction(
+  ()=>document.querySelector("#readyCount")?.textContent==="1" &&
+   document.querySelector("#readyList")?.textContent?.includes("unravel"),
+  null,{timeout:12000}
+ );
+ assert.equal(await listener.page.locator("#readyList .song-row").count(),1);
+ assert.equal(await listener.page.locator("#readyList .song-artist").first().textContent(),"TK from 凛として時雨");
+ console.log("PASS 05 singable song list updates from admin without listing entire catalog");
  console.log("PASS managed song list updates between independent admins");
 
  // The active song block must show an actual search link with the new label.
@@ -221,7 +234,9 @@ try{
   null,{timeout:11500}
  );
  assert.equal(server.streamLive,false);
- assert.equal(await listener.page.locator("#openRequestDialog").isDisabled(),true);
+ assert.equal(await listener.page.locator("#openFreeformRequestTop").isDisabled(),true);
+ assert.equal(await listener.page.locator("#readyCount").textContent(),"1",
+  "Singable songs remain listed after OFF AIR");
  await listener.page.waitForFunction(
   ()=>document.querySelector("#todaySingingCount")?.textContent==="0",
   null,{timeout:11500}

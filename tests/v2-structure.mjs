@@ -77,6 +77,19 @@ console.log("PASS anonymous read-only listener with invite-only staff");
 
 
 const layout=read("index.html"),style=read("styles.css");
+assert.match(layout,/id="openFreeformRequestTop"/);
+assert.match(layout,/id="ready-section"/);
+assert.match(layout,/id="readyCount"/);
+assert.match(layout,/id="readyList"/);
+assert.match(layout,/id="signedInUser" hidden/);
+assert.match(layout,/id="catalogStatus" aria-live="polite" hidden/);
+assert.match(layout,/id="loginNav" hidden/);
+assert.match(mainApp,/function renderReadySongs/);
+assert.match(mainApp,/if\(clickCount>=3\)/);
+assert.match(mainApp,/},750\)/);
+assert.doesNotMatch(mainApp,/addEventListener\("dblclick"/);
+assert.match(style,/grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+assert.match(style,/#openFreeformRequestTop\{\s*grid-column:1 \/ -1/);
 assert.match(layout,/id="freeformRequestDialog"/);
 assert.match(layout,/id="openFreeformRequest"/);
 assert.match(layout,/id="freeRequestDialogClose"/);
@@ -98,7 +111,7 @@ assert.match(style,/\.search-freeform-button/);
 assert.doesNotMatch(style,/\.request-search-layout/);
 assert.match(mainApp,/function openFreeformRequestDialog/);
 assert.match(mainApp,/function closeFreeformRequestDialog/);
-assert.match(style,/#listenerView :is\(#waiting-section,#today-history-section,#practice-section\)/);
+assert.match(style,/#listenerView :is\(#waiting-section,#today-history-section,#practice-section,#ready-section\)/);
 assert.match(style,/\.song-title\)\{\s*font-size:clamp\(19px/);
 const freeSql=read("supabase/migrations/202611110014_freeform_guest_request.sql");
 assert.match(freeSql,/public\.denmoku_guest_request_freeform/);

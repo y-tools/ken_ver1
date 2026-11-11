@@ -31,6 +31,8 @@ let selected=null;
 
 let isSending=false;
 let guestPendingNonce=null;
+let freeformPendingNonce=null;
+let freeformSubmitting=false;
 function persist(){
  if(shared)throw Error("Use RPC for shared mutations");
  try{localStorage.setItem(storageKey,JSON.stringify(state));return true;}
@@ -258,7 +260,7 @@ function lyricsSearchUrl(song){
  return "https://www.google.com/search?q="+encodeURIComponent([song.title,song.artist,"歌詞 公式"].filter(Boolean).join(" "));
 }
 function lyricsAction(song){
- return '<a class="button lyrics-action" href="'+esc(lyricsSearchUrl(song))+'" target="_blank" rel="noopener noreferrer" aria-label="'+esc(song.title+" "+song.artist+" 歌詞URL検索")+'">歌詞URL検索</a>';
+ return '<a class="button lyrics-action" href="'+esc(lyricsSearchUrl(song))+'" target="_blank" rel="noopener noreferrer" aria-label="'+esc(song.title+" "+song.artist+" 歌詞検索")+'">歌詞検索</a>';
 }
 function requestItem(r,controls=""){
  const when=r.createdAt?new Date(r.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
@@ -276,7 +278,7 @@ function singingRequest(){return state.requests.find(r=>r.status==="singing")||n
 function renderSinging(){
  const singing=singingRequest();
  $("#singingNow").innerHTML=singing
-  ? '<div class="singing-song-title">'+esc(singing.title)+'</div><div class="singing-song-artist">'+esc(singing.artist)+'</div><div class="singing-song-requester">リクエスト者：'+esc(singing.nickname||"匿名")+'</div>'
+  ? '<div class="singing-song-title">'+esc(singing.title)+'</div><div class="singing-song-artist">'+esc(singing.artist)+'</div><div class="singing-song-requester">リクエスト者：'+esc(singing.nickname||"匿名")+'</div><div class="singing-lyrics-row">'+lyricsAction(singing)+'</div>'
   : '<div class="singing-empty">現在、歌唱中の曲はありません。</div>';
  $("#adminSinging").innerHTML=singing?requestItem(singing,
   '<button type="button" class="button primary" data-do="done" data-id="'+esc(singing.id)+'">歌唱完了</button>'+
@@ -351,6 +353,8 @@ function renderStreamStatus(){
  $("#endStream").disabled=!live;
  $("#openRequestDialog").disabled=!live;
  $("#sendRequest").disabled=!live;
+ $("#freeRequestSubmit").disabled=!live||freeformSubmitting;
+ if(!freeformSubmitting)$("#freeRequestFeedback").textContent=live?"配信中：曲名とアーティスト名を自由入力して送信できます。":"配信終了中：リクエスト受付停止中です。";
 }
 function setStreamLive(live){
  if(shared){if(!adminMode||preview)return;void sharedAction(live?"stream_start":"stream_end");return;}
@@ -503,6 +507,41 @@ function reorder(id,dir){
  list.forEach((r,i)=>r.waitOrder=start+i);
  const tmp=list[a].waitOrder;list[a].waitOrder=list[b].waitOrder;list[b].waitOrder=tmp;
  persist();render();
+}
+async function submitFreeformRequest(event){
+ event.preventDefault();if(freeformSubmitting)return;
+ const feedback=$("#freeRequestFeedback");
+ if(state.streamLive!==true){feedback.textContent="配信終了中はリクエストを送れません。";return;}
+ const title=$("#freeRequestTitle").value.trim(),artist=$("#freeRequestArtist").value.trim(),
+  nickname=$("#freeRequestName").value.trim(),message=$("#freeRequestMessage").value.trim();
+ if(!title||!artist||!nickname||title.length>120||artist.length>120||nickname.length>40||message.length>200){
+  feedback.textContent="曲名・アーティスト名・お名前を確認してください。";return;
+ }
+ freeformSubmitting=true;$("#freeRequestSubmit").disabled=true;
+ feedback.textContent="リクエストを送信しています…";
+ try{
+  if(shared){
+   if(shared.isAdmin()){
+    await shared.action("request_add",{title,artist,nickname,message,nonce:crypto.randomUUID()});
+   }else{
+    if(!freeformPendingNonce)freeformPendingNonce=crypto.randomUUID();
+    await shared.requestGuest({title,artist,nickname,message,
+      nonce:freeformPendingNonce,freeform:true,company:$("#freeRequestCompany").value||""});
+   }
+  }else{
+   const r={id:"r-"+Date.now()+"-"+Math.random().toString(36).slice(2,8),
+     title,artist,nickname,message,status:"new",createdAt:Date.now()};
+   state.requests.push(r);logEvent("request",songSnapshot(r),r.createdAt);
+   if(!persist()){state.requests.pop();throw Error("保存に失敗しました");}
+   render();
+  }
+  freeformPendingNonce=null;
+  $("#freeRequestTitle").value="";$("#freeRequestArtist").value="";$("#freeRequestMessage").value="";
+  try{localStorage.setItem("ken-nickname",nickname)}catch(_){}
+  feedback.textContent="リクエストを受け付けました。";
+  toast("自由入力リクエストを受け付けました");
+ }catch(e){feedback.textContent=String(e?.message||"リクエストを送信できませんでした").slice(0,140);}
+ finally{freeformSubmitting=false;$("#freeRequestSubmit").disabled=state.streamLive!==true;}
 }
 async function requestSubmit(event){
  event.preventDefault();if(isSending)return;
@@ -725,6 +764,9 @@ async function attach(){
   const s=window.__searchResults?.[Number(btn.dataset.selectIndex)];
   if(s)selectSong(s.title,s.artist,s.source);
  });
+ $("#freeformRequestForm").addEventListener("submit",submitFreeformRequest);
+ for(const id of ["freeRequestTitle","freeRequestArtist","freeRequestName","freeRequestMessage"])
+  $("#"+id).addEventListener("input",()=>{freeformPendingNonce=null;});
  $("#requestForm").addEventListener("submit",requestSubmit);
  $("#openRequestDialog").addEventListener("click",()=>openRequestDialog(null));
  $("#requestDialogClose").addEventListener("click",()=>{
@@ -814,11 +856,12 @@ async function attach(){
  });
  if(shared) {
   $("#reqName").value=shared.profile()?.display_name||"";
+  $("#freeRequestName").value=shared.profile()?.display_name||"";
   if(!shared.isAdmin()){
-   try{$("#reqName").value=localStorage.getItem("ken-nickname")||"";}catch(_){}
+   try{$("#reqName").value=localStorage.getItem("ken-nickname")||"";$("#freeRequestName").value=$("#reqName").value;}catch(_){}
   }
  }
- else try{const nick=localStorage.getItem("ken-nickname")||localStorage.getItem("utabox-nick");if(nick)$("#reqName").value=nick;}catch(_){}
+ else try{const nick=localStorage.getItem("ken-nickname")||localStorage.getItem("utabox-nick");if(nick){$("#reqName").value=nick;$("#freeRequestName").value=nick;}}catch(_){}
  $("#newName").value=state.name;
  if(!shared && state.streamLive&&!currentSession()){
   const session={id:makeId("session"),startedAt:Date.now(),endedAt:null,events:[],recovered:true};

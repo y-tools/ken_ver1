@@ -75,10 +75,11 @@ async function openPage(role,{hidden=false}={}){
  }));
  await ctx.route("https://example.supabase.co/functions/v1/public-request",async route=>{
   const payload=route.request().postDataJSON();
-  const valid=server.streamLive &&
-    payload.artist==="TK from 凛として時雨" &&
-    payload.title==="unravel" &&
-    payload.nickname==="ゲスト試験";
+  const valid=server.streamLive && (
+    payload.freeform===true
+      ? payload.title==="自由曲テスト" && payload.artist==="別のアーティスト" && payload.nickname==="自由入力テスト"
+      : payload.artist==="TK from 凛として時雨" && payload.title==="unravel" && payload.nickname==="ゲスト試験"
+  );
   if(!valid){
    await route.fulfill({status:400,contentType:"application/json",
      headers:{"Access-Control-Allow-Origin":"*"},body:JSON.stringify({error:"Invalid guest request"})});return;
@@ -138,6 +139,20 @@ try{
  assert.equal(server.requests.length,1);
  assert.equal(server.requests[0].userId,null);
  console.log("PASS no-login guest request propagates to admin browser");
+ assert.equal(await listener.page.locator("#freeRequestTitle").inputValue(),"");
+ assert.equal(await listener.page.locator("#freeRequestArtist").inputValue(),"");
+ await listener.page.locator("#freeRequestTitle").fill("自由曲テスト");
+ await listener.page.locator("#freeRequestArtist").fill("別のアーティスト");
+ await listener.page.locator("#freeRequestName").fill("自由入力テスト");
+ await listener.page.locator("#freeRequestSubmit").click();
+ await admin.page.waitForFunction(
+  ()=>document.querySelector("#adminRequests")?.textContent?.includes("自由曲テスト"),
+  null,{timeout:12000}
+ );
+ assert.equal(server.requests.length,2);
+ assert.equal(server.requests[1].artist,"別のアーティスト");
+ assert.equal(server.requests[1].userId,null);
+ console.log("PASS freeform song + artist request reaches admin across browsers");
 
  // Chat history and managed song list also propagate between independent admins.
  const secondAdmin=await openPage("admin");
@@ -165,6 +180,16 @@ try{
   null,{timeout:12000}
  );
  console.log("PASS managed song list updates between independent admins");
+
+ // The active song block must show an actual search link with the new label.
+ server.requests[0].status="singing";
+ server.version++;
+ await listener.page.waitForFunction(
+  ()=>document.querySelector("#singingNow .lyrics-action")?.textContent==="歌詞検索",
+  null,{timeout:12000}
+ );
+ assert.match(await listener.page.locator("#singingNow .lyrics-action").getAttribute("href"),/google\.com\/search\?q=/);
+ console.log("PASS singing song lyric search is visible and labeled 歌詞検索");
 
  // A completed request belongs to THIS active stream's visible history.
  server.requests[0].status="done";

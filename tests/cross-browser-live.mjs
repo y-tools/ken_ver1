@@ -107,6 +107,28 @@ try{
  const admin=await openPage("admin");
  const listener=await openPage("listener",{hidden:true});
  assert.equal(await listener.page.locator("#listenerStreamLabel").textContent(),"OFF AIR");
+ // Verify every mobile navigation item is lined up in paired equal-width rows.
+ await listener.page.setViewportSize({width:390,height:844});
+ const menu=await listener.page.evaluate(()=>{
+  const root=document.querySelector("#listenerView .quick-nav");
+  const style=getComputedStyle(root);
+  const items=[...root.children].map(el=>{
+   const r=el.getBoundingClientRect();
+   return {x:r.x,y:r.y,width:r.width,height:r.height};
+  });
+  return {display:style.display,gap:parseFloat(style.columnGap),items};
+ });
+ assert.equal(menu.display,"grid");
+ assert.equal(menu.items.length,7,"Six section links plus one request action");
+ assert.ok(Math.abs(menu.items[0].width-menu.items[1].width)<2);
+ assert.ok(Math.abs(menu.items[0].x-menu.items[2].x)<2);
+ assert.ok(Math.abs(menu.items[1].x-menu.items[3].x)<2);
+ assert.ok(menu.items.slice(0,6).every(item=>item.height>=48));
+ assert.ok(Math.abs(menu.items[6].width-(menu.items[0].width*2+menu.gap))<3,
+  "Last menu button spans both columns");
+ await listener.page.setViewportSize({width:1400,height:900});
+ console.log("PASS 390px smartphone listener navigation uses aligned two-column menu");
+
 
  // Normal listener cannot change stream status even by calling the RPC directly.
  const denied=await listener.page.evaluate(()=>window.KEN_SHARED.client.rpc(

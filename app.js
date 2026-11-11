@@ -744,6 +744,41 @@ async function attach(){
       (data?.error?"招待に失敗しました: "+data.error:"管理者招待メールを送信しました");
     if(!error&&!data?.error)$("#inviteAdminEmail").value="";
   });
+  if($("#createAdminIdForm"))$("#createAdminIdForm").addEventListener("submit",async event=>{
+    event.preventDefault();
+    if(!shared.isOwner())return;
+    const login_id=$("#adminCreateId").value.trim().toLowerCase();
+    const display_name=$("#adminCreateDisplayName").value.trim()||login_id;
+    const password=$("#adminCreatePassword").value;
+    const confirmation=$("#adminCreatePasswordConfirm").value;
+    const feedback=$("#adminCreateFeedback");
+    const submit=$("#adminCreateSubmit");
+    if(!/^[a-z][a-z0-9._-]{3,23}$/.test(login_id)){
+      feedback.textContent="ログインIDは英字で始まる4〜24文字で入力してください。";return;
+    }
+    if(password!==confirmation){
+      feedback.textContent="確認用パスワードが一致しません。";return;
+    }
+    if(password.length<12||password.length>128||!/[A-Za-z]/.test(password)||!/[0-9]/.test(password)){
+      feedback.textContent="パスワードは英字・数字を含む12文字以上で設定してください。";return;
+    }
+    submit.disabled=true;
+    feedback.textContent="管理者アカウントを作成しています…";
+    try{
+      const {data,error}=await shared.client.functions.invoke("create-admin-id",
+        {body:{login_id,display_name,password}});
+      if(error||data?.error||!data?.success)throw Error(data?.error||"サーバーで作成できませんでした");
+      feedback.textContent="管理者「"+data.login_id+"」を作成しました。IDとパスワードを本人へ安全に共有してください。";
+      $("#adminCreateId").value="";
+      $("#adminCreateDisplayName").value="";
+    }catch(e){
+      feedback.textContent="管理者作成に失敗しました: "+String(e?.message||"不明なエラー").slice(0,130);
+    }finally{
+      $("#adminCreatePassword").value="";
+      $("#adminCreatePasswordConfirm").value="";
+      submit.disabled=false;
+    }
+  });
   shared.subscribe(data=>{state={...initial,...data};window.KEN_KARAOKE?.applyShared?.(data.karaoke||[]);if(!shared.isAdmin())adminMode=false;render();});
   // Authenticated server heartbeat is independent of stream/requests data.
   // Only admins receive the aggregated identity list; listeners send heartbeats.

@@ -5,7 +5,7 @@ import { chromium } from "playwright";
 // They do not share localStorage, BroadcastChannel, or browser sessions.
 const browser=await chromium.launch({headless:true});
 const server={
- version:0, name:"Ken", streamLive:false, activeSessionId:null,
+ version:0, name:"Ken", streamLive:false, activeSessionId:null, activeSessionStartedAt:null,
  requests:[], songs:[], sessions:[], chatNotes:[], karaoke:[]
 };
 const errs=[];
@@ -28,11 +28,13 @@ async function serverCall(method,args,role){
    if(server.streamLive)return {data:null,error:{message:"Already live"}};
    server.streamLive=true;
    server.activeSessionId="11111111-1111-4111-8111-111111111111";
+   server.activeSessionStartedAt=Date.now();
    server.sessions=[{id:server.activeSessionId,startedAt:Date.now(),endedAt:null,events:[]}];
   }else if(action==="stream_end"){
    if(!server.streamLive)return {data:null,error:{message:"Already offline"}};
    server.streamLive=false;
    server.activeSessionId=null;
+   server.activeSessionStartedAt=null;
    server.sessions[0].endedAt=Date.now();
   }else if(action==="note_add"){
    server.chatNotes.push({id:"note-"+Date.now(),kind:args.p_data.kind||"note",
@@ -164,6 +166,17 @@ try{
  );
  console.log("PASS managed song list updates between independent admins");
 
+ // A completed request belongs to THIS active stream's visible history.
+ server.requests[0].status="done";
+ server.requests[0].completedAt=Date.now();
+ server.version++;
+ await listener.page.waitForFunction(
+  ()=>document.querySelector("#todaySingingCount")?.textContent==="1",
+  null,{timeout:11500}
+ );
+ assert.equal(await admin.page.locator("#todaySingingCount").textContent(),"1");
+ console.log("PASS completed song appears in today's history during the stream");
+
  // Stop is also synchronized to the independent, background listener browser.
  await admin.page.locator("#endStream").click();
  await admin.page.waitForFunction(()=>document.querySelector("#adminOnAir")?.hidden===true);
@@ -173,7 +186,24 @@ try{
  );
  assert.equal(server.streamLive,false);
  assert.equal(await listener.page.locator("#openRequestDialog").isDisabled(),true);
- console.log("PASS remote listener turns OFF AIR without reload");
+ await listener.page.waitForFunction(
+  ()=>document.querySelector("#todaySingingCount")?.textContent==="0",
+  null,{timeout:11500}
+ );
+ assert.equal(await admin.page.locator("#todaySingingCount").textContent(),"0");
+ assert.equal(server.requests[0].status,"done","song request retained for reporting");
+ assert.ok(server.sessions[0].endedAt,"stream report still exists");
+ console.log("PASS today's history clears on OFF AIR without deleting report data");
+
+ // Even on the same calendar day, a new stream must not resurrect old songs.
+ await admin.page.locator("#startStream").click();
+ await admin.page.waitForFunction(()=>document.querySelector("#adminOnAir")?.hidden===false);
+ await listener.page.waitForFunction(
+  ()=>document.querySelector("#listenerStreamLabel")?.textContent==="ON AIR",
+  null,{timeout:11500}
+ );
+ assert.equal(await listener.page.locator("#todaySingingCount").textContent(),"0");
+ console.log("PASS previously completed song stays cleared after next stream starts");
  assert.deepEqual(errs,[]);
  await secondAdmin.ctx.close();
  await listener.ctx.close();

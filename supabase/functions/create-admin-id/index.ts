@@ -53,7 +53,7 @@ Deno.serve(async request=>{
  }catch{return reply({error:"入力を確認してください"},400);}
  const loginId=typeof body.login_id==="string"?body.login_id.trim().toLowerCase():"";
  const password=typeof body.password==="string"?body.password:"";
- const displayName=typeof body.display_name==="string"?body.display_name.trim():"";
+ const displayName=(typeof body.display_name==="string"?body.display_name.trim():"")||loginId;
  if(!/^[a-z][a-z0-9._-]{3,23}$/.test(loginId) ||
     !displayName||displayName.length>40||
     password.length<12||password.length>128||!/[a-zA-Z]/.test(password)||!/[0-9]/.test(password))

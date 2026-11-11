@@ -730,41 +730,73 @@ async function loadCatalog(){
 }
 
 /* Menu visibility is convenience; server RPCs enforce all permissions. */
+function openAdminLoginDialog(){
+ if(preview)return;
+ const dialog=$("#adminLoginDialog");
+ $("#adminLoginFeedback").textContent="";
+ $("#adminLoginPassword").value="";
+ if(typeof dialog.showModal==="function")dialog.showModal();else dialog.setAttribute("open","");
+ $("#adminLoginIdentifier").focus();
+}
+function closeAdminLoginDialog(){
+ const dialog=$("#adminLoginDialog");
+ $("#adminLoginPassword").value="";
+ if(typeof dialog.close==="function")dialog.close();else dialog.removeAttribute("open");
+}
+async function submitAdminLogin(event){
+ event.preventDefault();
+ const identifier=$("#adminLoginIdentifier").value.trim(),password=$("#adminLoginPassword").value;
+ const feedback=$("#adminLoginFeedback"),submit=$("#adminLoginSubmit");
+ if(!shared?.client){feedback.textContent="認証設定を確認してください";return;}
+ if(!identifier||!password){feedback.textContent="IDとパスワードを入力してください";return;}
+ submit.disabled=true;feedback.textContent="ログインを確認しています…";
+ try{
+  if(identifier.includes("@")){
+   const {error}=await shared.client.auth.signInWithPassword({email:identifier,password});
+   if(error)throw Error("ログイン情報を確認してください");
+  }else{
+   const loginId=identifier.toLowerCase();
+   if(!/^[a-z][a-z0-9._-]{3,23}$/.test(loginId))throw Error("ログイン情報を確認してください");
+   const {data,error}=await shared.client.functions.invoke("login-with-id",{body:{login_id:loginId,password}});
+   if(error||!data?.access_token||!data?.refresh_token)
+    throw Error(data?.error==="試行回数が多すぎます。時間をおいてください"?data.error:"ログイン情報を確認してください");
+   const {error:sessionError}=await shared.client.auth.setSession({
+    access_token:data.access_token,refresh_token:data.refresh_token
+   });
+   if(sessionError)throw Error("ログイン情報を確認してください");
+  }
+  const auth=await shared.enterSite();
+  if(!auth||!shared.isAdmin()){
+   await shared.signOut();
+   throw Error("このアカウントには管理者権限がありません");
+  }
+  closeAdminLoginDialog();
+  window.location.assign("./?admin=1");
+ }catch(e){feedback.textContent=String(e?.message||"ログインに失敗しました").slice(0,120);}
+ finally{$("#adminLoginPassword").value="";submit.disabled=false;}
+}
 function setupAdminUnlock(){
  const trigger=$("#adminTitle");
- let holdTimer=null;
- let clickCount=0;
- let previousClickAt=0;
+ let holdTimer=null,clickCount=0,previousClickAt=0;
  const reveal=()=>{
   if(preview)return;
-  // This is just a discoverability gesture, never a bypass of Supabase Auth.
-  if(shared?.isAdmin()){
-   adminMode=true;render();
-  }else{
-   $("#loginNav").hidden=false;
-  }
+  if(shared?.isAdmin()){adminMode=true;render();}
+  else openAdminLoginDialog();
  };
  trigger.addEventListener("pointerdown",e=>{
   if(e.button!==0)return;
-  clearTimeout(holdTimer);
-  holdTimer=setTimeout(()=>{holdTimer=null;reveal();},750);
+  clearTimeout(holdTimer);holdTimer=setTimeout(()=>{holdTimer=null;reveal();},750);
  });
- for(const type of ["pointerup","pointerleave","pointercancel"]){
-  trigger.addEventListener(type,()=>{
-   clearTimeout(holdTimer);holdTimer=null;
-  });
- }
+ for(const type of ["pointerup","pointerleave","pointercancel"])
+  trigger.addEventListener(type,()=>{clearTimeout(holdTimer);holdTimer=null;});
  trigger.addEventListener("contextmenu",e=>e.preventDefault());
  trigger.addEventListener("click",()=>{
   const now=performance.now();
-  clickCount=now-previousClickAt<=900?clickCount+1:1;
-  previousClickAt=now;
+  clickCount=now-previousClickAt<=900?clickCount+1:1;previousClickAt=now;
   if(clickCount>=3){clickCount=0;reveal();}
  });
  trigger.addEventListener("keydown",e=>{
-  if(e.key==="Enter"||e.key===" "){
-   e.preventDefault();reveal();
-  }
+  if(e.key==="Enter"||e.key===" "){e.preventDefault();reveal();}
  });
 }
 async function attach(){
@@ -786,7 +818,7 @@ async function attach(){
   if($("#signedInUser"))$("#signedInUser").textContent=auth?.profile
     ? auth.profile.display_name+" ("+auth.profile.role+")" : "ゲスト閲覧中";
   if($("#accountNav"))$("#accountNav").hidden=!shared.isAdmin();
-  if($("#loginNav"))$("#loginNav").hidden=true;
+
   if($("#logoutButton")){
     $("#logoutButton").hidden=!shared.isAdmin();
     $("#logoutButton").addEventListener("click",()=>void shared.signOut());
@@ -867,6 +899,9 @@ async function attach(){
   $("#"+id).addEventListener("input",()=>{freeformPendingNonce=null;});
  $("#requestForm").addEventListener("submit",requestSubmit);
  $("#openFreeformRequestTop").addEventListener("click",openFreeformRequestDialog);
+ $("#adminLoginClose").addEventListener("click",closeAdminLoginDialog);
+ $("#adminLoginDialog").addEventListener("close",()=>{$("#adminLoginPassword").value="";});
+ $("#adminLoginForm").addEventListener("submit",submitAdminLogin);
  $("#requestDialogClose").addEventListener("click",()=>{
   const dlg=$("#requestDialog");if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");
  });

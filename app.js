@@ -275,6 +275,24 @@ function renderPractice(){
  $("#practiceList").innerHTML=rows.length?rows.map(s=>'<div class="song-row"><div class="song-info"><div class="song-title">'+esc(s.title)+'</div><div class="song-artist">'+esc(s.artist)+'</div><div class="song-meta"><span class="tag wait">練習中</span>'+ (s.count?' リクエスト '+s.count+'件':'')+'</div></div></div>').join("")
   :'<div class="empty">練習中の楽曲はまだありません。</div>';
 }
+function renderReadySongs(){
+ // Show only songs explicitly marked singable. The public snapshot is refreshed
+ // when staff update a song, so listeners see changes without reloading.
+ const unique=new Map();
+ for(const song of state.songs.filter(song=>song.status==="ready")){
+  const key=readyKey(song.title,song.artist);
+  if(!unique.has(key))unique.set(key,song);
+ }
+ const rows=[...unique.values()].sort((a,b)=>
+  a.title.localeCompare(b.title,"ja")||a.artist.localeCompare(b.artist,"ja"));
+ $("#readyCount").textContent=rows.length;
+ $("#readyList").innerHTML=rows.length?rows.map(song=>
+  '<div class="song-row"><div class="song-info">'+
+  '<div class="song-title">'+esc(song.title)+'</div>'+
+  '<div class="song-artist">'+esc(song.artist)+'</div>'+
+  '</div></div>').join("")
+  :'<div class="empty">歌える曲はまだ登録されていません。</div>';
+}
 function lyricsSearchUrl(song){
  return "https://www.google.com/search?q="+encodeURIComponent([song.title,song.artist,"歌詞 公式"].filter(Boolean).join(" "));
 }
@@ -370,7 +388,7 @@ function renderStreamStatus(){
  $("#adminOnAir").hidden=!live;
  $("#startStream").disabled=live;
  $("#endStream").disabled=!live;
- $("#openRequestDialog").disabled=!live;
+ $("#openFreeformRequestTop").disabled=!live;
  $("#sendRequest").disabled=!live;
  $("#freeRequestSubmit").disabled=!live||freeformSubmitting;
  if(!freeformSubmitting)$("#freeRequestFeedback").textContent=live?"配信中：曲名とアーティスト名を自由入力して送信できます。":"配信終了中：リクエスト受付停止中です。";
@@ -484,7 +502,7 @@ function render(){
  $("#streamerName").textContent=state.name;
  if(shared && $("#newName"))$("#newName").value=state.name;
  document.title=state.name+"のデンモク";
- renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
+ renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderReadySongs();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
  $("#catalogStatus").textContent=catalog.ready?"TK専用カタログ":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  $("#toListener").hidden=!adminMode || preview;
@@ -714,18 +732,40 @@ async function loadCatalog(){
 /* Menu visibility is convenience; server RPCs enforce all permissions. */
 function setupAdminUnlock(){
  const trigger=$("#adminTitle");
- const show=()=>{
+ let holdTimer=null;
+ let clickCount=0;
+ let previousClickAt=0;
+ const reveal=()=>{
   if(preview)return;
-  if(!shared?.isAdmin()){toast("管理画面は招待された管理者のみ利用できます");return;}
-  adminMode=true;render();
+  // This is just a discoverability gesture, never a bypass of Supabase Auth.
+  if(shared?.isAdmin()){
+   adminMode=true;render();
+  }else{
+   $("#loginNav").hidden=false;
+  }
  };
- let timer=null;
- trigger.addEventListener("pointerdown",e=>{if(e.button!==0)return;timer=setTimeout(show,750);});
- for(const t of ["pointerup","pointerleave","pointercancel"]){
-  trigger.addEventListener(t,()=>{clearTimeout(timer);timer=null;});
+ trigger.addEventListener("pointerdown",e=>{
+  if(e.button!==0)return;
+  clearTimeout(holdTimer);
+  holdTimer=setTimeout(()=>{holdTimer=null;reveal();},750);
+ });
+ for(const type of ["pointerup","pointerleave","pointercancel"]){
+  trigger.addEventListener(type,()=>{
+   clearTimeout(holdTimer);holdTimer=null;
+  });
  }
- trigger.addEventListener("dblclick",e=>{e.preventDefault();show();});
- trigger.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();show();}});
+ trigger.addEventListener("contextmenu",e=>e.preventDefault());
+ trigger.addEventListener("click",()=>{
+  const now=performance.now();
+  clickCount=now-previousClickAt<=900?clickCount+1:1;
+  previousClickAt=now;
+  if(clickCount>=3){clickCount=0;reveal();}
+ });
+ trigger.addEventListener("keydown",e=>{
+  if(e.key==="Enter"||e.key===" "){
+   e.preventDefault();reveal();
+  }
+ });
 }
 async function attach(){
  if(!shared?.configured){
@@ -746,7 +786,7 @@ async function attach(){
   if($("#signedInUser"))$("#signedInUser").textContent=auth?.profile
     ? auth.profile.display_name+" ("+auth.profile.role+")" : "ゲスト閲覧中";
   if($("#accountNav"))$("#accountNav").hidden=!shared.isAdmin();
-  if($("#loginNav"))$("#loginNav").hidden=shared.isAdmin();
+  if($("#loginNav"))$("#loginNav").hidden=true;
   if($("#logoutButton")){
     $("#logoutButton").hidden=!shared.isAdmin();
     $("#logoutButton").addEventListener("click",()=>void shared.signOut());
@@ -826,7 +866,7 @@ async function attach(){
  for(const id of ["freeRequestTitle","freeRequestArtist","freeRequestName","freeRequestMessage"])
   $("#"+id).addEventListener("input",()=>{freeformPendingNonce=null;});
  $("#requestForm").addEventListener("submit",requestSubmit);
- $("#openRequestDialog").addEventListener("click",()=>openRequestDialog(null));
+ $("#openFreeformRequestTop").addEventListener("click",openFreeformRequestDialog);
  $("#requestDialogClose").addEventListener("click",()=>{
   const dlg=$("#requestDialog");if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");
  });

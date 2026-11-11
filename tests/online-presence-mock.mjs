@@ -74,7 +74,7 @@ async function open(role){
 const opened=[];
 try{
  const admin=await open("admin");opened.push(admin);
- await admin.page.locator("#adminTitle").dblclick();
+ await admin.page.locator("#adminTitle").click({clickCount:3});
  await admin.page.locator("#onlineUserCount").getByText("1人").waitFor({timeout:10000});
  assert.equal((await admin.page.locator("#onlineUsersList").textContent()).includes("配信管理者"),true);
  const listener=await open("listener");opened.push(listener);

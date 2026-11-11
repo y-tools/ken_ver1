@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261111-freeform-popup-v4">
+<link rel="stylesheet" href="./styles.css?v=20261111-menu-grid-v5">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -16,24 +16,24 @@
 <script src="./data/vps-search.js?v=20261106-vps-phase0-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./app.js?v=20261111-freeform-popup-v4" defer></script>
+<script src="./app.js?v=20261111-admin-gesture-v5" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
   <div class="site-header-inner">
     <div>
       <div class="brand-small">REALITY / MUSIC REQUEST SYSTEM</div>
-      <h1 class="site-title"><button type="button" class="title-hold-trigger" id="adminTitle" aria-label="管理者は長押しで管理画面を表示"><span id="streamerName">Ken</span>のデンモク</button></h1>
+      <h1 class="site-title"><button type="button" class="title-hold-trigger" id="adminTitle" aria-label="長押しまたは3回クリックで管理者ログインを表示"><span id="streamerName">Ken</span>のデンモク</button></h1>
       <div class="site-subtitle">楽曲検索・リクエスト・現在の待機曲</div>
     </div>
     <div class="header-actions">
       <button type="button" class="back-to-listener button" id="toListener" hidden>リスナー画面へ戻る</button>
-      <span class="helper" id="signedInUser"></span>
+      <span class="helper" id="signedInUser" hidden></span>
       <a class="button subtle" href="./account.html" id="accountNav">アカウント</a>
-      <a class="button subtle" href="./login.html" id="loginNav">管理者ログイン</a>
+      <a class="button subtle" href="./login.html" id="loginNav" hidden>管理者ログイン</a>
       <a id="adminNav" class="button subtle" href="./admin.html" hidden>管理者メニュー</a>
       <button id="logoutButton" type="button" class="button subtle">ログアウト</button>
-      <div class="connection-status" id="catalogStatus" aria-live="polite">曲カタログ読込中</div>
+      <div class="connection-status" id="catalogStatus" aria-live="polite" hidden>曲カタログ読込中</div>
     </div>
   </div>
 </header>
@@ -43,8 +43,8 @@
     <div class="home-lead" style="margin-top:18px">
       <div><h2>ホーム</h2><p>曲を探して、リクエストを送ろう。</p></div>
       <nav class="quick-nav" aria-label="ホームメニュー">
-        <a href="#singing-section">歌唱中</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#today-history-section">本日の歌唱履歴</a><a href="#practice-section">練習中楽曲</a>
-        <button type="button" class="button primary" id="openRequestDialog">リクエストする</button>
+        <a href="#singing-section">歌唱中</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#today-history-section">本日の歌唱履歴</a><a href="#practice-section">練習中楽曲</a><a href="#ready-section">歌える曲一覧</a>
+        <button type="button" class="button primary" id="openFreeformRequestTop" aria-haspopup="dialog" aria-controls="freeformRequestDialog">自由入力リクエスト</button>
       </nav>
     </div>
     <div id="streamStatus" class="listener-broadcast-status is-offline" role="status" aria-live="polite" aria-atomic="true">
@@ -110,6 +110,14 @@
           <span class="count"><span id="practiceCount">0</span> 曲</span>
         </div>
         <div id="practiceList" class="queue-list"></div>
+      </section>
+      <section class="home-card" id="ready-section" aria-labelledby="ready-heading">
+        <div class="section-head">
+          <span class="section-no">05</span>
+          <div><h3 id="ready-heading">歌える曲一覧</h3><p>歌唱可能として登録された楽曲を表示します。</p></div>
+          <span class="count"><span id="readyCount">0</span> 曲</span>
+        </div>
+        <div id="readyList" class="queue-list" aria-live="polite"></div>
       </section>
     </div>
   </div>

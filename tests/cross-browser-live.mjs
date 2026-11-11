@@ -107,6 +107,28 @@ try{
  const admin=await openPage("admin");
  const listener=await openPage("listener",{hidden:true});
  assert.equal(await listener.page.locator("#listenerStreamLabel").textContent(),"OFF AIR");
+ // Verify every mobile navigation item is lined up in paired equal-width rows.
+ await listener.page.setViewportSize({width:390,height:844});
+ const menu=await listener.page.evaluate(()=>{
+  const root=document.querySelector("#listenerView .quick-nav");
+  const style=getComputedStyle(root);
+  const items=[...root.children].map(el=>{
+   const r=el.getBoundingClientRect();
+   return {x:r.x,y:r.y,width:r.width,height:r.height};
+  });
+  return {display:style.display,gap:parseFloat(style.columnGap),items};
+ });
+ assert.equal(menu.display,"grid");
+ assert.equal(menu.items.length,7,"Six section links plus one request action");
+ assert.ok(Math.abs(menu.items[0].width-menu.items[1].width)<2);
+ assert.ok(Math.abs(menu.items[0].x-menu.items[2].x)<2);
+ assert.ok(Math.abs(menu.items[1].x-menu.items[3].x)<2);
+ assert.ok(menu.items.slice(0,6).every(item=>item.height>=48));
+ assert.ok(Math.abs(menu.items[6].width-(menu.items[0].width*2+menu.gap))<3,
+  "Last menu button spans both columns");
+ await listener.page.setViewportSize({width:1400,height:900});
+ console.log("PASS 390px smartphone listener navigation uses aligned two-column menu");
+
 
  // Normal listener cannot change stream status even by calling the RPC directly.
  const denied=await listener.page.evaluate(()=>window.KEN_SHARED.client.rpc(
@@ -115,7 +137,7 @@ try{
  assert.match(denied.error?.message||"",/Admin permission/);
 
  // The admin's tab writes server state. Listener is in an independent context.
- await admin.page.locator("#adminTitle").dblclick();
+ await admin.page.locator("#adminTitle").click({clickCount:3});
  await admin.page.locator("#adminView").waitFor({state:"visible"});
  await admin.page.locator("#startStream").click();
  await admin.page.waitForFunction(()=>document.querySelector("#adminOnAir")?.hidden===false);
@@ -124,12 +146,15 @@ try{
   ()=>document.querySelector("#listenerStreamLabel")?.textContent==="ON AIR",
   null,{timeout:11500}
  );
- assert.equal(await listener.page.locator("#openRequestDialog").isEnabled(),true,
-   "Guest requests are now enabled through a separate server-limited endpoint");
+ assert.equal(await listener.page.locator("#openFreeformRequestTop").isEnabled(),true,
+   "Top request button must be usable during ON AIR");
  console.log("PASS remote listener turns ON AIR without reload, even while hidden");
- await listener.page.locator("#openRequestDialog").click();
- await listener.page.locator("#reqTitle").fill("unravel");
- await listener.page.locator("#reqArtist").fill("TK from 凛として時雨");
+ // Song-search results retain the original catalog request dialog.
+ await listener.page.locator("#searchInput").fill("unravel");
+ await listener.page.locator("#searchResults [data-select-index]").first().click();
+ await listener.page.locator("#requestDialog").waitFor({state:"visible"});
+ assert.equal(await listener.page.locator("#reqTitle").inputValue(),"unravel");
+ assert.equal(await listener.page.locator("#reqArtist").inputValue(),"TK from 凛として時雨");
  await listener.page.locator("#reqName").fill("ゲスト試験");
  await listener.page.locator("#sendRequest").click();
  await admin.page.waitForFunction(
@@ -140,7 +165,8 @@ try{
  assert.equal(server.requests[0].userId,null);
  console.log("PASS no-login guest request propagates to admin browser");
  assert.equal(await listener.page.locator("#freeformRequestDialog").isVisible(),false);
- await listener.page.locator("#openFreeformRequest").click();
+ assert.equal(await listener.page.locator("#openFreeformRequestTop").textContent(),"自由入力リクエスト");
+ await listener.page.locator("#openFreeformRequestTop").click();
  await listener.page.locator("#freeformRequestDialog").waitFor({state:"visible"});
  assert.equal(await listener.page.locator("#freeRequestTitle").inputValue(),"");
  assert.equal(await listener.page.locator("#freeRequestArtist").inputValue(),"");
@@ -148,6 +174,7 @@ try{
  await listener.page.locator("#freeRequestTitle").fill("未送信の曲");
  await listener.page.locator("#freeRequestDialogClose").click();
  await listener.page.locator("#freeformRequestDialog").waitFor({state:"hidden"});
+ // The search-heading button opens the same popup.
  await listener.page.locator("#openFreeformRequest").click();
  await listener.page.locator("#freeformRequestDialog").waitFor({state:"visible"});
  assert.equal(await listener.page.locator("#freeRequestTitle").inputValue(),"");
@@ -167,7 +194,7 @@ try{
 
  // Chat history and managed song list also propagate between independent admins.
  const secondAdmin=await openPage("admin");
- await secondAdmin.page.locator("#adminTitle").dblclick();
+ await secondAdmin.page.locator("#adminTitle").click({clickCount:3});
  await secondAdmin.page.locator("#adminView").waitFor({state:"visible"});
  await admin.page.locator("#adminChatInput").fill("サーバー共有チャットの同期試験");
  await admin.page.locator("#adminChatForm button[type=submit]").click();
@@ -190,6 +217,14 @@ try{
   ()=>document.querySelector("#adminSongList")?.textContent?.includes("unravel"),
   null,{timeout:12000}
  );
+ await listener.page.waitForFunction(
+  ()=>document.querySelector("#readyCount")?.textContent==="1" &&
+   document.querySelector("#readyList")?.textContent?.includes("unravel"),
+  null,{timeout:12000}
+ );
+ assert.equal(await listener.page.locator("#readyList .song-row").count(),1);
+ assert.equal(await listener.page.locator("#readyList .song-artist").first().textContent(),"TK from 凛として時雨");
+ console.log("PASS 05 singable song list updates from admin without listing entire catalog");
  console.log("PASS managed song list updates between independent admins");
 
  // The active song block must show an actual search link with the new label.
@@ -221,7 +256,9 @@ try{
   null,{timeout:11500}
  );
  assert.equal(server.streamLive,false);
- assert.equal(await listener.page.locator("#openRequestDialog").isDisabled(),true);
+ assert.equal(await listener.page.locator("#openFreeformRequestTop").isDisabled(),true);
+ assert.equal(await listener.page.locator("#readyCount").textContent(),"1",
+  "Singable songs remain listed after OFF AIR");
  await listener.page.waitForFunction(
   ()=>document.querySelector("#todaySingingCount")?.textContent==="0",
   null,{timeout:11500}

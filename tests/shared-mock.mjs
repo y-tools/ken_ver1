@@ -82,25 +82,27 @@ try{
  await admin.locator("#searchArtistInput").fill("");
  console.log("PASS TK-only catalog and two-field AND search under shared mode");
 
- await admin.locator("#adminTitle").dblclick();
+ await admin.locator("#adminTitle").click({clickCount:3});
  await admin.locator("#adminView").waitFor({state:"visible"});
  assert.equal(await admin.locator("#ownerInvite").isVisible(),false);
  await admin.locator("#startStream").click();
  await admin.locator("#adminOnAir").waitFor({state:"visible"});
  await admin.locator("#toListener").click();
  assert.equal(await admin.locator("#listenerStreamLabel").textContent(),"ON AIR");
- await admin.locator("#openRequestDialog").click();
+ await admin.locator("#searchInput").fill("unravel");
+ await admin.waitForFunction(()=>Boolean(document.querySelector("#searchResults [data-select-index]")));
+ await admin.locator("#searchResults [data-select-index]").first().click();
  await admin.locator("#reqTitle").fill("結合テスト曲");
  await admin.locator("#reqArtist").fill("テスト歌手");
  await admin.locator("#reqName").fill("テスト利用者");
  await admin.locator("#sendRequest").click();
- await admin.locator("#adminTitle").dblclick();
+ await admin.locator("#adminTitle").click({clickCount:3});
  await admin.locator("#adminRequests").getByText("結合テスト曲").waitFor({state:"visible"});
  await admin.close();
  console.log("PASS admin stream start and shared request UI");
 
  const owner=await fixture("owner");
- await owner.locator("#adminTitle").dblclick();
+ await owner.locator("#adminTitle").click({clickCount:3});
  await owner.locator("#adminView").waitFor({state:"visible"});
  assert.equal(await owner.locator("#ownerInvite").isVisible(),true);
  await owner.locator("#adminCreateId").fill("test_operator");
@@ -117,12 +119,29 @@ try{
 
  const listener=await fixture("listener");
  assert.equal(await listener.locator("#signedInUser").textContent(),"ゲスト閲覧中");
- assert.equal(await listener.locator("#loginNav").isVisible(),true);
+ assert.equal(await listener.locator("#signedInUser").isVisible(),false);
+ assert.equal(await listener.locator("#catalogStatus").isVisible(),false);
+ assert.equal(await listener.locator("#loginNav").isVisible(),false);
  assert.equal(await listener.locator("#accountNav").isVisible(),false);
- await listener.locator("#adminTitle").dblclick();
+ await listener.locator("#adminTitle").click();
+ assert.equal(await listener.locator("#loginNav").isVisible(),false);
+ await listener.locator("#adminTitle").click();
+ assert.equal(await listener.locator("#loginNav").isVisible(),false);
+ await listener.locator("#adminTitle").click();
+ assert.equal(await listener.locator("#loginNav").isVisible(),true);
  assert.equal(await listener.locator("#adminView").isVisible(),false);
  await listener.close();
- console.log("PASS listener cannot open admin UI");
+ console.log("PASS hidden admin login appears only after 3 title clicks");
+ const longPress=await fixture("listener");
+ const titleBox=await longPress.locator("#adminTitle").boundingBox();
+ assert.ok(titleBox,"title must be available for long press");
+ await longPress.mouse.move(titleBox.x+titleBox.width/2,titleBox.y+titleBox.height/2);
+ await longPress.mouse.down();
+ await longPress.waitForTimeout(820);
+ await longPress.mouse.up();
+ assert.equal(await longPress.locator("#loginNav").isVisible(),true);
+ await longPress.close();
+ console.log("PASS 750ms title hold reveals hidden admin login");
  assert.deepEqual(errors,[],"No uncaught JS errors");
 }finally{
  await browser.close();

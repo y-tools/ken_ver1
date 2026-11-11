@@ -311,9 +311,31 @@ function requestItem(r,controls=""){
   message+(window.KEN_KARAOKE?.render(r)||"")+'</div>'+(controls?'<div class="song-actions">'+controls+'</div>':"")+'</div>';
 }
 function waitingRequests(){return state.requests.filter(r=>r.status==="waiting").sort((a,b)=>(a.waitOrder||a.createdAt)-(b.waitOrder||b.createdAt));}
+function queueSongKey(title,artist){
+ // Match the database's case-insensitive, trim-only song identity.
+ return String(title||"").trim().toLowerCase()+"\u0000"+String(artist||"").trim().toLowerCase();
+}
+function requesterNames(rows){
+ return [...new Set(rows.map(r=>String(r.nickname||"匿名").trim()||"匿名"))].join("・");
+}
+function waitingGroups(includeSinging=false){
+ const current=singingRequest(), activeKey=current?queueSongKey(current.title,current.artist):null;
+ const groups=new Map();
+ for(const r of waitingRequests()){
+  const key=queueSongKey(r.title,r.artist);
+  if(!includeSinging&&key===activeKey)continue;
+  if(!groups.has(key))groups.set(key,{first:r,rows:[]});
+  groups.get(key).rows.push(r);
+ }
+ return [...groups.values()];
+}
+
 function singingRequest(){return state.requests.find(r=>r.status==="singing")||null;}
 function renderSinging(){
- const singing=singingRequest();
+ const original=singingRequest();
+ const related=original?waitingRequests().filter(r=>
+  queueSongKey(r.title,r.artist)===queueSongKey(original.title,original.artist)):[];
+ const singing=original?{...original,nickname:requesterNames([original,...related])}:null;
  $("#singingNow").innerHTML=singing
   ? '<div class="singing-song-title">'+esc(singing.title)+'</div><div class="singing-song-artist">'+esc(singing.artist)+'</div><div class="singing-song-requester">リクエスト者：'+esc(singing.nickname||"匿名")+'</div><div class="singing-lyrics-row">'+lyricsAction(singing)+'</div>'
   : '<div class="singing-empty">現在、歌唱中の曲はありません。</div>';
@@ -326,7 +348,9 @@ function renderSinging(){
   :'<div class="empty">歌唱中の曲はありません。</div>';
 }
 function renderQueue(){
- const waiting=waitingRequests();
+ const waiting=waitingGroups().map(g=>({
+  ...g.first,nickname:requesterNames(g.rows),groupSize:g.rows.length
+ }));
  $("#waitingCount").textContent=waiting.length;
  $("#waitingList").innerHTML=waiting.length?waiting.map((r,i)=>'<div class="queue-row"><div class="queue-no">'+(i+1)+'</div><div class="queue-info"><div class="song-title">'+esc(r.title)+'</div><div class="song-artist">'+esc(r.artist)+'</div><div class="queue-person">リクエスト者：'+esc(r.nickname||"匿名")+'</div></div></div>').join("")
   :'<div class="empty">現在の待機曲はありません。</div>';
@@ -534,15 +558,14 @@ function changeRequestStatus(id,status){
  persist();render();
 }
 function reorder(id,dir){
- if(shared){const list=waitingRequests(),a=list.findIndex(r=>r.id===id),b=a+dir;
-  if(a<0||b<0||b>=list.length)return;
-  const ids=list.map(r=>r.id);[ids[a],ids[b]]=[ids[b],ids[a]];
-  void sharedAction("request_reorder",{ids});return;}
- const list=waitingRequests();const a=list.findIndex(x=>x.id===id),b=a+dir;
- if(a<0||b<0||b>=list.length)return;
+ const groups=waitingGroups();
+ const a=groups.findIndex(g=>g.first.id===id),b=a+dir;
+ if(a<0||b<0||b>=groups.length)return;
+ [groups[a],groups[b]]=[groups[b],groups[a]];
+ const ordered=groups.flatMap(g=>g.rows);
+ if(shared){void sharedAction("request_reorder",{ids:ordered.map(r=>r.id)});return;}
  const start=Date.now();
- list.forEach((r,i)=>r.waitOrder=start+i);
- const tmp=list[a].waitOrder;list[a].waitOrder=list[b].waitOrder;list[b].waitOrder=tmp;
+ ordered.forEach((r,i)=>r.waitOrder=start+i);
  persist();render();
 }
 async function submitFreeformRequest(event){

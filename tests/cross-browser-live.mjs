@@ -28,7 +28,7 @@ async function serverCall(method,args,role){
    if(server.streamLive)return {data:null,error:{message:"Already live"}};
    server.streamLive=true;
    server.activeSessionId="11111111-1111-4111-8111-111111111111";
-   server.activeSessionStartedAt=Date.now()-10000;
+   server.activeSessionStartedAt=server.sessions.length===0 ? Date.now()-10000 : Date.now();
    server.sessions=[{id:server.activeSessionId,startedAt:Date.now(),endedAt:null,events:[]}];
   }else if(action==="stream_end"){
    if(!server.streamLive)return {data:null,error:{message:"Already offline"}};

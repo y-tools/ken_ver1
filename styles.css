@@ -480,9 +480,11 @@ body.embed-mode .song-search-fields{grid-template-columns:minmax(0,1fr);gap:8px}
 @media(min-width:1200px){.admin-columns{height:calc(100dvh - 312px);min-height:420px}}
 
 
-/* 2026-11-11: Free-form requests appear LEFT of the existing TK catalog search. */
-.request-search-layout{display:grid;grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr);align-items:start;gap:18px}
-.request-search-layout>.home-card{min-width:0;height:100%}
+/* Freeform requests open from a button beside the song-search heading. */
+.search-section-head{flex-wrap:wrap;gap:12px}
+.search-section-title{flex:1 1 200px;min-width:0}
+.search-freeform-button{margin-left:auto;min-height:44px;white-space:normal;text-align:center;font-size:13px}
+.freeform-request-dialog{width:min(560px,calc(100vw - 24px))}
 .freeform-request-form{display:grid;gap:13px}
 .freeform-request-form>.button{width:100%;min-height:47px;white-space:normal;font-size:14px}
 .form-honeypot{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden}
@@ -516,15 +518,16 @@ body.embed-mode .song-search-fields{grid-template-columns:minmax(0,1fr);gap:8px}
 }
 #listenerView :is(#waiting-section,#today-history-section,#practice-section) :is(.queue-info,.song-info){flex:1 1 0;min-width:0}
 #listenerView :is(#waiting-section,#today-history-section,#practice-section) :is(.queue-list){gap:11px}
-@media(max-width:880px){
- .request-search-layout{grid-template-columns:minmax(0,1fr);gap:14px}
+@media(max-width:640px){
+ .search-freeform-button{margin-left:0;flex:1 1 100%}
 }
 @media(max-width:720px){
  #listenerView :is(#waiting-section,#today-history-section,#practice-section) :is(.queue-row,.song-row){padding:14px;gap:11px;min-height:70px}
  #listenerView :is(#waiting-section,#today-history-section,#practice-section) .song-title{font-size:18px}
  #listenerView :is(#waiting-section,#today-history-section,#practice-section) .song-artist{font-size:15px}
 }
-body.embed-mode .request-search-layout{grid-template-columns:minmax(0,1fr);gap:11px}
+body.embed-mode .search-section-head{gap:7px}
+body.embed-mode .search-freeform-button{margin-left:0;font-size:11px;min-height:37px;flex:1 1 auto}
 body.embed-mode #listenerView :is(#waiting-section,#today-history-section,#practice-section) :is(.queue-row,.song-row){padding:12px;min-height:62px;gap:9px}
 body.embed-mode #listenerView :is(#waiting-section,#today-history-section,#practice-section) .song-title{font-size:16px}
 body.embed-mode #listenerView :is(#waiting-section,#today-history-section,#practice-section) .song-artist{font-size:13px}

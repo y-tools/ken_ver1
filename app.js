@@ -110,6 +110,25 @@ function displayRow(s,actions="",status=""){
  (s.year?' · '+esc(s.year):'')+'</div>'+ (tag?'<div class="song-meta">'+tag+'</div>':"")+
  formatSongReadings(s)+(window.KEN_KARAOKE?.render(s)||"")+'</div>'+ (actions?'<div class="song-actions">'+actions+'</div>':"")+'</div>';
 }
+function openFreeformRequestDialog(){
+ const dialog=$("#freeformRequestDialog");
+ // A new free request always starts with blank song / artist fields.
+ $("#freeRequestTitle").value="";
+ $("#freeRequestArtist").value="";
+ $("#freeRequestMessage").value="";
+ freeformPendingNonce=null;
+ if(!$("#freeRequestName").value.trim()){
+  try{$("#freeRequestName").value=localStorage.getItem("ken-nickname")||"";}catch(_){}
+ }
+ if(typeof dialog.showModal==="function")dialog.showModal();
+ else dialog.setAttribute("open","");
+ $("#freeRequestTitle").focus();
+}
+function closeFreeformRequestDialog(){
+ const dialog=$("#freeformRequestDialog");
+ if(typeof dialog.close==="function")dialog.close();
+ else dialog.removeAttribute("open");
+}
 function openRequestDialog(song){
  if(!state.streamLive){toast("現在は配信終了中です。リクエストを送信できません");return;}
  selected=song||null;
@@ -539,6 +558,7 @@ async function submitFreeformRequest(event){
   $("#freeRequestTitle").value="";$("#freeRequestArtist").value="";$("#freeRequestMessage").value="";
   try{localStorage.setItem("ken-nickname",nickname)}catch(_){}
   feedback.textContent="リクエストを受け付けました。";
+  closeFreeformRequestDialog();
   toast("自由入力リクエストを受け付けました");
  }catch(e){feedback.textContent=String(e?.message||"リクエストを送信できませんでした").slice(0,140);}
  finally{freeformSubmitting=false;$("#freeRequestSubmit").disabled=state.streamLive!==true;}
@@ -799,6 +819,9 @@ async function attach(){
   const s=window.__searchResults?.[Number(btn.dataset.selectIndex)];
   if(s)selectSong(s.title,s.artist,s.source);
  });
+ $("#openFreeformRequest").addEventListener("click",openFreeformRequestDialog);
+ $("#freeRequestDialogClose").addEventListener("click",closeFreeformRequestDialog);
+ $("#freeformRequestDialog").addEventListener("close",()=>{freeformPendingNonce=null;});
  $("#freeformRequestForm").addEventListener("submit",submitFreeformRequest);
  for(const id of ["freeRequestTitle","freeRequestArtist","freeRequestName","freeRequestMessage"])
   $("#"+id).addEventListener("input",()=>{freeformPendingNonce=null;});

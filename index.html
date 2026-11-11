@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261111-menu-grid-v5">
+<link rel="stylesheet" href="./styles.css?v=20261111-comingsoon-login-v6">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -16,21 +16,21 @@
 <script src="./data/vps-search.js?v=20261106-vps-phase0-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./app.js?v=20261111-admin-gesture-v5" defer></script>
+<script src="./app.js?v=20261111-comingsoon-login-v6" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
   <div class="site-header-inner">
     <div>
       <div class="brand-small">REALITY / MUSIC REQUEST SYSTEM</div>
-      <h1 class="site-title"><button type="button" class="title-hold-trigger" id="adminTitle" aria-label="長押しまたは3回クリックで管理者ログインを表示"><span id="streamerName">Ken</span>のデンモク</button></h1>
+      <h1 class="site-title"><button type="button" class="title-hold-trigger" id="adminTitle" aria-label="管理者ログインは長押しまたは3回クリック"><span id="streamerName">Ken</span>のデンモク</button></h1>
       <div class="site-subtitle">楽曲検索・リクエスト・現在の待機曲</div>
     </div>
     <div class="header-actions">
       <button type="button" class="back-to-listener button" id="toListener" hidden>リスナー画面へ戻る</button>
       <span class="helper" id="signedInUser" hidden></span>
       <a class="button subtle" href="./account.html" id="accountNav">アカウント</a>
-      <a class="button subtle" href="./login.html" id="loginNav" hidden>管理者ログイン</a>
+      
       <a id="adminNav" class="button subtle" href="./admin.html" hidden>管理者メニュー</a>
       <button id="logoutButton" type="button" class="button subtle">ログアウト</button>
       <div class="connection-status" id="catalogStatus" aria-live="polite" hidden>曲カタログ読込中</div>
@@ -87,37 +87,45 @@
         <div class="helper" id="searchHelper" aria-live="polite">曲カタログを読み込み中です…</div>
         <div class="result-list" id="searchResults"></div>
       </section>
-      <section class="home-card" id="waiting-section" aria-labelledby="waiting-heading">
+      <section class="home-card coming-soon-section" id="waiting-section" aria-labelledby="waiting-heading">
         <div class="section-head">
           <span class="section-no">02</span>
           <div><h3 id="waiting-heading">歌唱待機楽曲</h3><p>歌唱を待っている楽曲を順番に表示します。</p></div>
-          <span class="count"><span id="waitingCount">0</span> 曲</span>
+          <span class="count" hidden><span id="waitingCount">0</span> 曲</span>
         </div>
-        <div class="queue-list" id="waitingList"></div>
+        <div class="queue-list" id="waitingList" hidden></div>
+      
+        <div class="coming-soon-message" role="status" aria-label="Coming Soon">Coming Soon</div>
       </section>
-      <section class="home-card" id="today-history-section" aria-labelledby="today-history-heading">
+      <section class="home-card coming-soon-section" id="today-history-section" aria-labelledby="today-history-heading">
         <div class="section-head">
           <span class="section-no">03</span>
           <div><h3 id="today-history-heading">本日の歌唱履歴</h3><p>本日歌い終わった楽曲の記録です。</p></div>
-          <span class="count"><span id="todaySingingCount">0</span> 曲</span>
+          <span class="count" hidden><span id="todaySingingCount">0</span> 曲</span>
         </div>
-        <div class="queue-list" id="todaySingingList" aria-live="polite"></div>
+        <div class="queue-list" id="todaySingingList" aria-live="polite" hidden></div>
+      
+        <div class="coming-soon-message" role="status" aria-label="Coming Soon">Coming Soon</div>
       </section>
-      <section class="home-card" id="practice-section" aria-labelledby="practice-heading">
+      <section class="home-card coming-soon-section" id="practice-section" aria-labelledby="practice-heading">
         <div class="section-head">
           <span class="section-no">04</span>
           <div><h3 id="practice-heading">練習中楽曲</h3><p>練習中の曲を一覧で表示します。</p></div>
-          <span class="count"><span id="practiceCount">0</span> 曲</span>
+          <span class="count" hidden><span id="practiceCount">0</span> 曲</span>
         </div>
-        <div id="practiceList" class="queue-list"></div>
+        <div id="practiceList" class="queue-list" hidden></div>
+      
+        <div class="coming-soon-message" role="status" aria-label="Coming Soon">Coming Soon</div>
       </section>
-      <section class="home-card" id="ready-section" aria-labelledby="ready-heading">
+      <section class="home-card coming-soon-section" id="ready-section" aria-labelledby="ready-heading">
         <div class="section-head">
           <span class="section-no">05</span>
           <div><h3 id="ready-heading">歌える曲一覧</h3><p>歌唱可能として登録された楽曲を表示します。</p></div>
-          <span class="count"><span id="readyCount">0</span> 曲</span>
+          <span class="count" hidden><span id="readyCount">0</span> 曲</span>
         </div>
-        <div id="readyList" class="queue-list" aria-live="polite"></div>
+        <div id="readyList" class="queue-list" aria-live="polite" hidden></div>
+      
+        <div class="coming-soon-message" role="status" aria-label="Coming Soon">Coming Soon</div>
       </section>
     </div>
   </div>
@@ -300,6 +308,22 @@
     </section>
   </div>
 </main>
+<dialog id="adminLoginDialog" class="request-dialog admin-login-dialog" aria-labelledby="adminLoginTitle">
+  <div class="dialog-head">
+    <div><h2 id="adminLoginTitle">管理者ログイン</h2><p>オーナーまたはadminのID・パスワードでログインできます。</p></div>
+    <button type="button" id="adminLoginClose" class="button subtle" aria-label="ログイン画面を閉じる">閉じる</button>
+  </div>
+  <form id="adminLoginForm" class="admin-login-form">
+    <label class="field">メールアドレスまたはログインID
+      <input id="adminLoginIdentifier" name="identifier" required maxlength="254" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="メールアドレス / ログインID">
+    </label>
+    <label class="field">パスワード
+      <input id="adminLoginPassword" type="password" name="password" required autocomplete="current-password" placeholder="パスワード">
+    </label>
+    <p id="adminLoginFeedback" class="helper" role="status" aria-live="polite"></p>
+    <button class="button primary large" type="submit" id="adminLoginSubmit">ログイン</button>
+  </form>
+</dialog>
 <dialog id="freeformRequestDialog" class="request-dialog freeform-request-dialog" aria-labelledby="freeform-request-heading">
   <div class="dialog-head">
     <div><h2 id="freeform-request-heading">自由入力リクエスト</h2><p>曲名とアーティスト名を自由に入力できます。ログインは不要です。</p></div>

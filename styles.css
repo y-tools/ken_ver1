@@ -570,3 +570,42 @@ body.embed-mode #listenerView :is(#waiting-section,#today-history-section,#pract
   font-size:clamp(12px,3.5vw,14px);
  }
 }
+
+
+/* Temporarily hide listener-side 02 through 05; management data remains intact. */
+#listenerView .coming-soon-section :is(.count,.queue-list)[hidden]{display:none!important}
+#listenerView .coming-soon-section .coming-soon-message{
+ display:flex;align-items:center;justify-content:center;min-height:115px;
+ padding:22px;border:1px dashed rgba(154,182,227,.4);border-radius:14px;
+ background:rgba(15,25,43,.58);color:#bbcee9;
+ font-size:clamp(19px,3vw,27px);font-weight:900;letter-spacing:.12em;
+ text-align:center;
+}
+.admin-login-form{display:grid;gap:15px}
+.admin-login-form .button[type="submit"]{width:100%;min-height:47px}
+.admin-login-dialog{width:min(500px,calc(100vw - 24px))}
+@media(max-width:720px){
+ #listenerView .coming-soon-section .coming-soon-message{min-height:90px;padding:17px;font-size:20px}
+}
+
+
+/* Keep the admin header menu and stream controls in one horizontal row. */
+body.admin-active .header-actions{
+ display:flex;flex-direction:row;align-items:center;justify-content:flex-end;
+ flex-wrap:nowrap;gap:9px;min-width:0;max-width:100%;
+ overflow-x:auto;overscroll-behavior-x:contain;
+ scrollbar-width:thin;
+}
+body.admin-active .header-actions > *{flex:0 0 auto;white-space:nowrap}
+body.admin-active .stream-controls{
+ display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;
+ gap:9px;max-width:100%;min-width:0;overflow-x:auto;
+ overscroll-behavior-x:contain;scrollbar-width:thin;
+}
+body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
+@media(max-width:720px){
+ body.admin-active .site-header-inner{display:flex;flex-direction:column;align-items:stretch;gap:10px}
+ body.admin-active .header-actions{justify-content:flex-start;width:100%;padding-bottom:5px}
+ body.admin-active .admin-heading{align-items:stretch}
+ body.admin-active .stream-controls{width:100%;justify-content:flex-start;padding-bottom:5px}
+}

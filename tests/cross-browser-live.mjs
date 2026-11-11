@@ -208,6 +208,24 @@ try{
  );
  console.log("PASS private admin chat updates in a second browser without reload");
 
+ // Matching requested songs are displayed once, with both requesters.
+ server.requests[0].status="waiting";
+ const duplicate={...structuredClone(server.requests[0]),id:"duplicate-request",nickname:"別リスナー",createdAt:Date.now()+1};
+ server.requests.push(duplicate);
+ server.version++;
+ await admin.page.waitForFunction(
+  ()=>document.querySelector("#adminWaitingCount")?.textContent==="1" &&
+      document.querySelector("#adminWaiting")?.textContent?.includes("ゲスト試験・別リスナー"),
+  null,{timeout:12000}
+ );
+ assert.equal(await admin.page.locator("#adminWaiting .admin-song-entry").count(),1);
+ assert.equal(await listener.page.locator("#waitingList").isVisible(),false);
+ assert.equal(await listener.page.locator("#waiting-section .coming-soon-message").textContent(),"Coming Soon");
+ server.requests=server.requests.filter(r=>r.id!=="duplicate-request");
+ server.requests[0].status="new";
+ server.version++;
+ console.log("PASS identical waiting songs display once with joined requester names");
+
  await secondAdmin.page.locator(".admin-tools > summary").click();
  await secondAdmin.page.locator("#songTitle").fill("unravel");
  await secondAdmin.page.locator("#songArtist").fill("TK from 凛として時雨");
@@ -218,13 +236,14 @@ try{
   null,{timeout:12000}
  );
  await listener.page.waitForFunction(
-  ()=>document.querySelector("#readyCount")?.textContent==="1" &&
-   document.querySelector("#readyList")?.textContent?.includes("unravel"),
+  ()=>document.querySelector("#readyCount")?.textContent==="1",
   null,{timeout:12000}
  );
  assert.equal(await listener.page.locator("#readyList .song-row").count(),1);
- assert.equal(await listener.page.locator("#readyList .song-artist").first().textContent(),"TK from 凛として時雨");
- console.log("PASS 05 singable song list updates from admin without listing entire catalog");
+ assert.equal(await listener.page.locator("#readyList").isVisible(),false);
+ assert.equal(await listener.page.locator("#ready-section .coming-soon-message").textContent(),"Coming Soon");
+ assert.equal(await admin.page.locator("#adminSongList").textContent().then(t=>t.includes("unravel")),true);
+ console.log("PASS 05 list data syncs but remains hidden behind Coming Soon for listeners");
  console.log("PASS managed song list updates between independent admins");
 
  // The active song block must show an actual search link with the new label.
@@ -259,6 +278,7 @@ try{
  assert.equal(await listener.page.locator("#openFreeformRequestTop").isDisabled(),true);
  assert.equal(await listener.page.locator("#readyCount").textContent(),"1",
   "Singable songs remain listed after OFF AIR");
+ assert.equal(await listener.page.locator("#readyList").isVisible(),false);
  await listener.page.waitForFunction(
   ()=>document.querySelector("#todaySingingCount")?.textContent==="0",
   null,{timeout:11500}

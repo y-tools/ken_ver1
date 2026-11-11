@@ -275,6 +275,24 @@ function renderPractice(){
  $("#practiceList").innerHTML=rows.length?rows.map(s=>'<div class="song-row"><div class="song-info"><div class="song-title">'+esc(s.title)+'</div><div class="song-artist">'+esc(s.artist)+'</div><div class="song-meta"><span class="tag wait">練習中</span>'+ (s.count?' リクエスト '+s.count+'件':'')+'</div></div></div>').join("")
   :'<div class="empty">練習中の楽曲はまだありません。</div>';
 }
+function renderReadySongs(){
+ // Show only songs explicitly marked singable. The public snapshot is refreshed
+ // when staff update a song, so listeners see changes without reloading.
+ const unique=new Map();
+ for(const song of state.songs.filter(song=>song.status==="ready")){
+  const key=readyKey(song.title,song.artist);
+  if(!unique.has(key))unique.set(key,song);
+ }
+ const rows=[...unique.values()].sort((a,b)=>
+  a.title.localeCompare(b.title,"ja")||a.artist.localeCompare(b.artist,"ja"));
+ $("#readyCount").textContent=rows.length;
+ $("#readyList").innerHTML=rows.length?rows.map(song=>
+  '<div class="song-row"><div class="song-info">'+
+  '<div class="song-title">'+esc(song.title)+'</div>'+
+  '<div class="song-artist">'+esc(song.artist)+'</div>'+
+  '</div></div>').join("")
+  :'<div class="empty">歌える曲はまだ登録されていません。</div>';
+}
 function lyricsSearchUrl(song){
  return "https://www.google.com/search?q="+encodeURIComponent([song.title,song.artist,"歌詞 公式"].filter(Boolean).join(" "));
 }
@@ -484,7 +502,7 @@ function render(){
  $("#streamerName").textContent=state.name;
  if(shared && $("#newName"))$("#newName").value=state.name;
  document.title=state.name+"のデンモク";
- renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
+ renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderReadySongs();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
  $("#catalogStatus").textContent=catalog.ready?"TK専用カタログ":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  $("#toListener").hidden=!adminMode || preview;

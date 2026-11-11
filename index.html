@@ -43,7 +43,7 @@
     <div class="home-lead" style="margin-top:18px">
       <div><h2>ホーム</h2><p>曲を探して、リクエストを送ろう。</p></div>
       <nav class="quick-nav" aria-label="ホームメニュー">
-        <a href="#singing-section">歌唱中</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#today-history-section">本日の歌唱履歴</a><a href="#practice-section">練習中楽曲</a>
+        <a href="#singing-section">歌唱中</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#today-history-section">本日の歌唱履歴</a><a href="#practice-section">練習中楽曲</a><a href="#ready-section">歌える曲一覧</a>
         <button type="button" class="button primary" id="openFreeformRequestTop" aria-haspopup="dialog" aria-controls="freeformRequestDialog">自由入力リクエスト</button>
       </nav>
     </div>
@@ -110,6 +110,14 @@
           <span class="count"><span id="practiceCount">0</span> 曲</span>
         </div>
         <div id="practiceList" class="queue-list"></div>
+      </section>
+      <section class="home-card" id="ready-section" aria-labelledby="ready-heading">
+        <div class="section-head">
+          <span class="section-no">05</span>
+          <div><h3 id="ready-heading">歌える曲一覧</h3><p>歌唱可能として登録された楽曲を表示します。</p></div>
+          <span class="count"><span id="readyCount">0</span> 曲</span>
+        </div>
+        <div id="readyList" class="queue-list" aria-live="polite"></div>
       </section>
     </div>
   </div>

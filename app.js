@@ -370,7 +370,7 @@ function renderStreamStatus(){
  $("#adminOnAir").hidden=!live;
  $("#startStream").disabled=live;
  $("#endStream").disabled=!live;
- $("#openRequestDialog").disabled=!live;
+ $("#openFreeformRequestTop").disabled=!live;
  $("#sendRequest").disabled=!live;
  $("#freeRequestSubmit").disabled=!live||freeformSubmitting;
  if(!freeformSubmitting)$("#freeRequestFeedback").textContent=live?"配信中：曲名とアーティスト名を自由入力して送信できます。":"配信終了中：リクエスト受付停止中です。";
@@ -826,7 +826,7 @@ async function attach(){
  for(const id of ["freeRequestTitle","freeRequestArtist","freeRequestName","freeRequestMessage"])
   $("#"+id).addEventListener("input",()=>{freeformPendingNonce=null;});
  $("#requestForm").addEventListener("submit",requestSubmit);
- $("#openRequestDialog").addEventListener("click",()=>openRequestDialog(null));
+ $("#openFreeformRequestTop").addEventListener("click",openFreeformRequestDialog);
  $("#requestDialogClose").addEventListener("click",()=>{
   const dlg=$("#requestDialog");if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");
  });

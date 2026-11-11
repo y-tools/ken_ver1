@@ -99,7 +99,7 @@ assert.match(publicEdge,/denmoku_guest_request_freeform/);
 assert.match(publicEdge,/body\.freeform===true/);
 const adminEdge=read("supabase/functions/create-admin-id/index.ts");
 assert.match(adminEdge,/auth\.admin\.createUser/);
-assert.match(adminEdge,/profile\?\.role!=="owner"/);
+assert.match(adminEdge,/owner\?\.role!=="owner"/);
 assert.match(adminEdge,/admin\.auth\.getUser\(token\)/);
 assert.match(read("supabase/config.toml"),/\[functions\.create-admin-id\]\s*verify_jwt = true/);
 console.log("PASS freeform search layout, larger listener text, lyrics and secure admin-ID code");

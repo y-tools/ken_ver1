@@ -42,7 +42,7 @@ function mockSupabase(){
    return {data:null,error:null};
   },
   channel:()=>({on(){return this},subscribe(){return this}}),
-  removeChannel(){},functions:{invoke:async()=>({data:{success:true},error:null})}
+  removeChannel(){},functions:{invoke:async(name,opts)=>({data:name==="create-admin-id"?{success:true,login_id:opts?.body?.login_id}:{success:true},error:null})}
  };
  window.supabase={createClient:()=>client};
 }
@@ -84,6 +84,7 @@ try{
 
  await admin.locator("#adminTitle").dblclick();
  await admin.locator("#adminView").waitFor({state:"visible"});
+ assert.equal(await admin.locator("#ownerInvite").isVisible(),false);
  await admin.locator("#startStream").click();
  await admin.locator("#adminOnAir").waitFor({state:"visible"});
  await admin.locator("#toListener").click();
@@ -97,6 +98,22 @@ try{
  await admin.locator("#adminRequests").getByText("結合テスト曲").waitFor({state:"visible"});
  await admin.close();
  console.log("PASS admin stream start and shared request UI");
+
+ const owner=await fixture("owner");
+ await owner.locator("#adminTitle").dblclick();
+ await owner.locator("#adminView").waitFor({state:"visible"});
+ assert.equal(await owner.locator("#ownerInvite").isVisible(),true);
+ await owner.locator("#adminCreateId").fill("test_operator");
+ await owner.locator("#adminCreatePassword").fill("SecurePass123456");
+ await owner.locator("#adminCreatePasswordConfirm").fill("SecurePass123456");
+ await owner.locator("#adminCreateSubmit").click();
+ await owner.waitForFunction(
+   ()=>document.querySelector("#adminCreateFeedback")?.textContent?.includes("test_operator"),
+   null,{timeout:8000});
+ assert.equal(await owner.locator("#adminCreatePassword").inputValue(),"");
+ assert.equal(await owner.locator("#adminCreatePasswordConfirm").inputValue(),"");
+ await owner.close();
+ console.log("PASS owner-only ID admin UI and password input cleanup");
 
  const listener=await fixture("listener");
  assert.equal(await listener.locator("#signedInUser").textContent(),"ゲスト閲覧中");

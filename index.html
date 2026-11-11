@@ -43,7 +43,7 @@
     <div class="home-lead" style="margin-top:18px">
       <div><h2>ホーム</h2><p>曲を探して、リクエストを送ろう。</p></div>
       <nav class="quick-nav" aria-label="ホームメニュー">
-        <a href="#singing-section">歌唱中</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#today-history-section">本日の歌唱履歴</a><a href="#practice-section">練習中楽曲</a>
+        <a href="#singing-section">歌唱中</a><a href="#freeform-request-section">自由入力リクエスト</a><a href="#search-section">楽曲検索</a><a href="#waiting-section">歌唱待機楽曲</a><a href="#today-history-section">本日の歌唱履歴</a><a href="#practice-section">練習中楽曲</a>
         <button type="button" class="button primary" id="openRequestDialog">リクエストする</button>
       </nav>
     </div>
@@ -62,9 +62,25 @@
         </div>
         <div id="singingNow" aria-live="polite"><div class="singing-empty">現在、歌唱中の曲はありません。</div></div>
       </section>
+      <div class="request-search-layout">
+      <section class="home-card freeform-request-card" id="freeform-request-section" aria-labelledby="freeform-request-heading">
+        <div class="section-head">
+          <span class="section-no">01A</span>
+          <div><h3 id="freeform-request-heading">自由入力リクエスト</h3><p>カタログにない曲も自由に送信できます。</p></div>
+        </div>
+        <form id="freeformRequestForm" class="freeform-request-form">
+          <label class="field">曲名<input id="freeRequestTitle" name="title" required maxlength="120" autocomplete="off" placeholder="曲名を自由入力"></label>
+          <label class="field">アーティスト名<input id="freeRequestArtist" name="artist" required maxlength="120" autocomplete="off" placeholder="アーティスト名を自由入力"></label>
+          <label class="field">リクエスト者のお名前<input id="freeRequestName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
+          <label class="field">メッセージ（任意）<textarea id="freeRequestMessage" name="message" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
+          <div class="form-honeypot" aria-hidden="true"><label>ここは入力しないでください<input id="freeRequestCompany" name="company" tabindex="-1" autocomplete="off"></label></div>
+          <button type="submit" class="button primary large" id="freeRequestSubmit" disabled>自由入力でリクエスト送信</button>
+          <p id="freeRequestFeedback" class="helper" role="status" aria-live="polite">配信開始時に送信できます。</p>
+        </form>
+      </section>
       <section class="home-card" id="search-section" aria-labelledby="search-heading">
         <div class="section-head">
-          <span class="section-no">01</span>
+          <span class="section-no">01B</span>
           <div><h3 id="search-heading">楽曲検索</h3><p>TK from 凛として時雨の楽曲だけを、曲名とアーティスト名で検索できます。</p></div>
         </div>
         <div class="song-search-fields" role="search" aria-label="楽曲の絞り込み">
@@ -86,6 +102,7 @@
         <div class="helper" id="searchHelper" aria-live="polite">曲カタログを読み込み中です…</div>
         <div class="result-list" id="searchResults"></div>
       </section>
+      </div>
       <section class="home-card" id="waiting-section" aria-labelledby="waiting-heading">
         <div class="section-head">
           <span class="section-no">02</span>
@@ -121,6 +138,31 @@
         <button class="button primary" type="submit">管理者として招待</button>
       </form>
       <p class="helper" id="inviteAdminFeedback" role="status"></p>
+      <div class="owner-create-id">
+        <h4>メール不要：IDとパスワードでadminを作成</h4>
+        <p>招待メールなしで管理者アカウントを発行します。作成したログインIDとパスワードを本人に安全に伝えてください。</p>
+        <form id="createAdminIdForm" class="owner-create-id-form">
+          <div class="form-row">
+            <label class="field">ログインID（半角英字で開始・4〜24文字）
+              <input id="adminCreateId" name="login_id" required maxlength="24" minlength="4" pattern="[A-Za-z][A-Za-z0-9._-]{3,23}" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="例: streamer_admin">
+            </label>
+            <label class="field">表示名（省略時はログインID）
+              <input id="adminCreateDisplayName" name="display_name" maxlength="40" autocomplete="off" placeholder="例: 運営スタッフ">
+            </label>
+          </div>
+          <div class="form-row">
+            <label class="field">初期パスワード（英字・数字を含む12文字以上）
+              <input id="adminCreatePassword" name="new-password" type="password" required minlength="12" maxlength="128" autocomplete="new-password">
+            </label>
+            <label class="field">パスワードの確認
+              <input id="adminCreatePasswordConfirm" type="password" required minlength="12" maxlength="128" autocomplete="new-password">
+            </label>
+          </div>
+          <button class="button primary" type="submit" id="adminCreateSubmit">ID・パスワードでadminを作成</button>
+        </form>
+        <p class="helper" id="adminCreateFeedback" role="status" aria-live="polite"></p>
+        <p class="helper">※ メールを登録しないため、メールによるパスワード再設定は利用できません。パスワードはこの画面に保存されません。</p>
+      </div>
     </section>
     <div class="admin-heading" style="margin-top:17px">
       <div><div class="admin-title-line"><h2>管理画面</h2><span id="adminOnAir" class="onair-indicator" hidden><span class="onair-dot"></span>ON AIR</span></div><p>左からリスナー・歌唱待機楽曲・リクエスト・空き枠の4列です。</p></div>

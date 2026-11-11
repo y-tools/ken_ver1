@@ -7,3 +7,7 @@ verify_jwt = false
 # The function enforces origin, IP-derived quotas and only calls a service-role-only RPC.
 [functions.public-request]
 verify_jwt = false
+
+# Owner bearer JWT is required; Edge Function also verifies profile role is owner.
+[functions.create-admin-id]
+verify_jwt = true

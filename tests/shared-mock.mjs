@@ -89,7 +89,9 @@ try{
  await admin.locator("#adminOnAir").waitFor({state:"visible"});
  await admin.locator("#toListener").click();
  assert.equal(await admin.locator("#listenerStreamLabel").textContent(),"ON AIR");
- await admin.locator("#openRequestDialog").click();
+ await admin.locator("#searchInput").fill("unravel");
+ await admin.waitForFunction(()=>Boolean(document.querySelector("#searchResults [data-select-index]")));
+ await admin.locator("#searchResults [data-select-index]").first().click();
  await admin.locator("#reqTitle").fill("結合テスト曲");
  await admin.locator("#reqArtist").fill("テスト歌手");
  await admin.locator("#reqName").fill("テスト利用者");

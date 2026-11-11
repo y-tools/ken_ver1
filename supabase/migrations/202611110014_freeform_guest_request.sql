@@ -22,7 +22,7 @@ begin
      p_artist is null or length(pg_catalog.btrim(p_artist)) not between 1 and 120 or
      v_nick is null or length(v_nick) not between 1 and 40 or
      length(v_note)>200 or
-     v_nick ~ '[<>]' or v_note ~* '(https?://|www\.)'
+     v_nick ~ '[<>]' or v_nick ~ '[[:cntrl:]]' or v_note ~ '[[:cntrl:]]' or v_note ~* '(https?://|www[.])'
   then
     raise exception 'Invalid request fields' using errcode='22023';
   end if;
@@ -43,7 +43,7 @@ begin
   -- Validate all input on the server; apply the SAME IP/global quotas as catalog requests.
   v_title:=pg_catalog.btrim(p_title);
   v_artist:=pg_catalog.btrim(p_artist);
-  if v_title ~* '(https?://|www\\.)' or v_artist ~* '(https?://|www\\.)'
+  if v_title ~* '(https?://|www[.])' or v_artist ~* '(https?://|www[.])'
      or v_title ~ '[<>]' or v_artist ~ '[<>]'
      or v_title ~ '[[:cntrl:]]' or v_artist ~ '[[:cntrl:]]' then
     raise exception 'Invalid free-input song fields' using errcode='22023';

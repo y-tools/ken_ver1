@@ -139,8 +139,18 @@ try{
  assert.equal(server.requests.length,1);
  assert.equal(server.requests[0].userId,null);
  console.log("PASS no-login guest request propagates to admin browser");
+ assert.equal(await listener.page.locator("#freeformRequestDialog").isVisible(),false);
+ await listener.page.locator("#openFreeformRequest").click();
+ await listener.page.locator("#freeformRequestDialog").waitFor({state:"visible"});
  assert.equal(await listener.page.locator("#freeRequestTitle").inputValue(),"");
  assert.equal(await listener.page.locator("#freeRequestArtist").inputValue(),"");
+ // Closing and reopening must reset unsent song fields, not keep old choices.
+ await listener.page.locator("#freeRequestTitle").fill("未送信の曲");
+ await listener.page.locator("#freeRequestDialogClose").click();
+ await listener.page.locator("#freeformRequestDialog").waitFor({state:"hidden"});
+ await listener.page.locator("#openFreeformRequest").click();
+ await listener.page.locator("#freeformRequestDialog").waitFor({state:"visible"});
+ assert.equal(await listener.page.locator("#freeRequestTitle").inputValue(),"");
  await listener.page.locator("#freeRequestTitle").fill("自由曲テスト");
  await listener.page.locator("#freeRequestArtist").fill("別のアーティスト");
  await listener.page.locator("#freeRequestName").fill("自由入力テスト");
@@ -152,7 +162,8 @@ try{
  assert.equal(server.requests.length,2);
  assert.equal(server.requests[1].artist,"別のアーティスト");
  assert.equal(server.requests[1].userId,null);
- console.log("PASS freeform song + artist request reaches admin across browsers");
+ await listener.page.locator("#freeformRequestDialog").waitFor({state:"hidden"});
+ console.log("PASS freeform popup opens, starts blank, closes and syncs to admin across browsers");
 
  // Chat history and managed song list also propagate between independent admins.
  const secondAdmin=await openPage("admin");

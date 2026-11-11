@@ -115,7 +115,7 @@ try{
  assert.match(denied.error?.message||"",/Admin permission/);
 
  // The admin's tab writes server state. Listener is in an independent context.
- await admin.page.locator("#adminTitle").dblclick();
+ await admin.page.locator("#adminTitle").click({clickCount:3});
  await admin.page.locator("#adminView").waitFor({state:"visible"});
  await admin.page.locator("#startStream").click();
  await admin.page.waitForFunction(()=>document.querySelector("#adminOnAir")?.hidden===false);
@@ -172,7 +172,7 @@ try{
 
  // Chat history and managed song list also propagate between independent admins.
  const secondAdmin=await openPage("admin");
- await secondAdmin.page.locator("#adminTitle").dblclick();
+ await secondAdmin.page.locator("#adminTitle").click({clickCount:3});
  await secondAdmin.page.locator("#adminView").waitFor({state:"visible"});
  await admin.page.locator("#adminChatInput").fill("サーバー共有チャットの同期試験");
  await admin.page.locator("#adminChatForm button[type=submit]").click();

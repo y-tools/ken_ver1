@@ -13,7 +13,7 @@ function mockSupabase(){
    signOut:async()=>({error:null})},
   from:(name)=>({select:()=>({in:async()=>({data:[
      {id:data.userId,display_name:"テスト利用者",role:"owner",login_id:"ownerid",created_at:"2026-11-01T00:00:00Z"},
-     {id:"22222222-2222-4222-8222-222222222222",display_name:"ケン",role:"admin",login_id:"kenmori05280602",created_at:"2026-11-02T00:00:00Z"}],error:null}),
+     {id:"22222222-2222-4222-8222-222222222222",display_name:"ケン",role:"admin",login_id:"kenmorley05280602",created_at:"2026-11-02T00:00:00Z"}],error:null}),
    eq:()=>({single:async()=>({data:name==="profiles"?
     {id:data.userId,display_name:"テスト利用者",role:data.role,login_id:window.__KEN_TEST_LOGIN_ID||null}:{version:data.version},error:null})})})}),
   rpc:async(name,params)=>{
@@ -131,7 +131,7 @@ try{
  // Admin list falls back to profiles when the e-mail RPC is not installed yet.
  await owner.locator("#ownerAdminListLoad").click();
  await owner.locator("#ownerAdminListBody table").waitFor({state:"visible"});
- assert.ok((await owner.locator("#ownerAdminListBody").textContent()).includes("@kenmori05280602"));
+ assert.ok((await owner.locator("#ownerAdminListBody").textContent()).includes("@kenmorley05280602"));
  await owner.locator("#adminCreateId").fill("test_operator");
  await owner.locator("#adminCreatePassword").fill("SecurePass123456");
  await owner.locator("#adminCreatePasswordConfirm").fill("SecurePass123456");

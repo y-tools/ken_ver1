@@ -678,8 +678,8 @@ async function priorityAction(event){
  }catch(e){fb.textContent=String(e.message||e).slice(0,140);b.disabled=false;}
  finally{priorityBusy=false;}
 }
-// Kenの優先リクエスト（送信フォームと一覧）はオーナーとけんもり(kenmori05280602)だけに表示（サーバー側でも同条件で制限）
-const PRIORITY_LOGIN_IDS=["kenmori05280602"];
+// Kenの優先リクエスト（送信フォームと一覧）はオーナーとけんもり(kenmorley05280602)だけに表示（サーバー側でも同条件で制限）
+const PRIORITY_LOGIN_IDS=["kenmorley05280602"];
 function canUsePriority(){
  if(!shared?.isAdmin?.())return false;
  if(shared.isOwner?.())return true;

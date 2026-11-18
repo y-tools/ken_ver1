@@ -24,9 +24,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS ken_priority_requests_open_unique
   WHERE status = 'requested';
 DO $$
 BEGIN
+  -- 本番VPSの検索APIは kenapi ロール（unixソケットのpeer認証）、例示環境は ken_search
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ken_search') THEN
     GRANT SELECT, INSERT ON ken_priority_requests TO ken_search;
     GRANT USAGE ON SEQUENCE ken_priority_requests_id_seq TO ken_search;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'kenapi') THEN
+    GRANT SELECT, INSERT ON ken_priority_requests TO kenapi;
+    GRANT USAGE ON SEQUENCE ken_priority_requests_id_seq TO kenapi;
   END IF;
 END $$;
 COMMIT;

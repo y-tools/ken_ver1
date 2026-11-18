@@ -12,7 +12,7 @@ kenapi.153-127-64-17.sslip.io {
 
     @song_api {
         path /api/v1/search /api/v1/health /api/v1/stats /api/v1/priority-requests /api/v1/priority-requests/*
-        method GET OPTIONS
+        method GET POST OPTIONS
     }
 
     @admin_api {

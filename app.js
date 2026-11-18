@@ -525,6 +525,24 @@ function renderOnlineUsers(users,error){
  }
  list.replaceChildren(...elements);
 }
+let dbTotalsTimer=null;
+async function refreshDbTotals(){
+ const box=$("#dbTotals");
+ if(!box||!window.KEN_VPS_SEARCH?.stats)return;
+ if(document.hidden||$("#adminView")?.hidden)return;
+ try{
+  const t=await window.KEN_VPS_SEARCH.stats();
+  $("#dbSongCount").textContent=t.songCount.toLocaleString("ja-JP");
+  $("#dbArtistCount").textContent=t.artistCount.toLocaleString("ja-JP");
+  box.classList.remove("stale");box.title="VPSの楽曲データベースの登録数（"+clockLabel(Date.now())+" 更新・15秒ごと）";
+ }catch(e){box.classList.add("stale");box.title="データベースの件数を取得できませんでした（再試行します）";}
+}
+function startDbTotals(){
+ if(dbTotalsTimer||preview)return;
+ void refreshDbTotals();
+ dbTotalsTimer=setInterval(refreshDbTotals,15000);
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)void refreshDbTotals();});
+}
 function render(){
  $("#streamerName").textContent=state.name;
  if(shared && $("#newName"))$("#newName").value=state.name;
@@ -532,6 +550,7 @@ function render(){
  renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderReadySongs();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
  $("#catalogStatus").textContent=catalog.ready?"楽曲DB検索":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
+ if(adminMode&&!preview&&shared?.isAdmin?.())startDbTotals();
  $("#toListener").hidden=!adminMode || preview;
  if($("#adminNav"))$("#adminNav").hidden=preview||!shared?.isAdmin();
  document.body.classList.toggle("admin-active",adminMode&&!preview);
@@ -902,7 +921,7 @@ async function attach(){
   shared.subscribe(data=>{state={...initial,...data};window.KEN_KARAOKE?.applyShared?.(data.karaoke||[]);if(!shared.isAdmin())adminMode=false;render();});
   // Authenticated server heartbeat is independent of stream/requests data.
   // Only admins receive the aggregated identity list; listeners send heartbeats.
-  if(shared.isAdmin())shared.startPresence(renderOnlineUsers);
+  if(shared.isAdmin()){shared.startPresence(renderOnlineUsers);}
  }catch(e){
   console.error("Denmoku shared bootstrap failed",e);
   document.querySelector("main").innerHTML='<section class="notice">共有データの取得に失敗しました。Supabaseの設定・権限・SQLを確認してください。</section>';return;

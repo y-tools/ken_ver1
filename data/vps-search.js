@@ -44,5 +44,17 @@
   if(cache.size>30)cache.delete(cache.keys().next().value);
   return promise;
  }
- window.KEN_VPS_SEARCH=Object.freeze({search,apiConfigured:true});
+ async function stats(){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),6000);
+  try{
+   const response=await fetch(base+"/api/v1/stats",{method:"GET",mode:"cors",credentials:"omit",
+    cache:"no-store",headers:{"Accept":"application/json"},signal:controller.signal});
+   if(!response.ok)throw Error("API response "+response.status);
+   const payload=await response.json();
+   if(!Number.isFinite(payload?.songCount)||!Number.isFinite(payload?.artistCount))throw Error("Unexpected API schema");
+   return payload;
+  }finally{clearTimeout(timer);}
+ }
+ window.KEN_VPS_SEARCH=Object.freeze({search,stats,apiConfigured:true});
 })();

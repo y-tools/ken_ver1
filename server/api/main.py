@@ -72,7 +72,7 @@ _MAX_TRACKED_CLIENTS = 5000
 
 @app.middleware("http")
 async def search_rate_limit(request: Request, call_next):
-    if request.url.path != "/api/v1/search":
+    if request.url.path not in ("/api/v1/search", "/api/v1/stats"):
         return await call_next(request)
     ip = request.client.host if request.client else "unknown"
     now = monotonic()
@@ -148,6 +148,33 @@ async def health(request: Request):
     except Exception:
         raise HTTPException(status_code=503, detail="Service unavailable")
     return {"ok": True, "service": "ken-song-api"}
+
+
+_STATS_CACHE: dict = {"at": 0.0, "data": None}
+
+
+@app.get("/api/v1/stats")
+async def stats(request: Request):
+    """Public aggregate counts only (no rows). Cached briefly to protect the VPS."""
+    now = monotonic()
+    if _STATS_CACHE["data"] is not None and now - _STATS_CACHE["at"] < 5:
+        return _STATS_CACHE["data"]
+    try:
+        async with request.app.state.pool.connection() as conn:
+            async with conn.transaction():
+                async with conn.cursor() as cur:
+                    await cur.execute("SET LOCAL statement_timeout = '2500ms'")
+                    await cur.execute("SET LOCAL default_transaction_read_only = on")
+                    await cur.execute(
+                        "SELECT (SELECT COUNT(*) FROM songs) AS song_count,"
+                        " (SELECT COUNT(*) FROM artists) AS artist_count"
+                    )
+                    row = await cur.fetchone()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Stats temporarily unavailable")
+    data = {"songCount": int(row["song_count"]), "artistCount": int(row["artist_count"])}
+    _STATS_CACHE.update(at=now, data=data)
+    return data
 
 
 @app.get("/api/v1/search")

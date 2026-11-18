@@ -74,6 +74,10 @@ class SearchTests(unittest.TestCase):
             self.assertIn("統合テスト曲", [x["title"] for x in middle_title.json()["items"]])
             middle_artist = client.get("/api/v1/search", params={"q": "test", "mode": "artist"})
             self.assertIn("統合テスト曲", [x["title"] for x in middle_artist.json()["items"]])
+            stats = client.get("/api/v1/stats")
+            self.assertEqual(stats.status_code, 200, stats.text)
+            self.assertGreaterEqual(stats.json()["songCount"], 1)
+            self.assertGreaterEqual(stats.json()["artistCount"], 1)
             invalid = client.get("/api/v1/search", params={"q": "a", "mode": "title"})
             self.assertEqual(invalid.status_code, 422)
 

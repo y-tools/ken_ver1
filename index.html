@@ -13,10 +13,10 @@
 
 
 <script src="./data/karaoke-coverage.js?v=20261106-karaoke-v2" defer></script>
-<script src="./data/vps-search.js?v=20261106-vps-phase0-v1" defer></script>
+<script src="./data/vps-search.js?v=20261118-stats-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./app.js?v=20261118-allsongs-v1" defer></script>
+<script src="./app.js?v=20261118-dbtotals-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -177,6 +177,10 @@
       <div class="online-users-heading">
         <h3 id="onlineUsersHeading">ログイン中のオンラインユーザー <span class="count" id="onlineUserCount" aria-live="polite">確認中</span></h3>
         <span class="helper" id="onlineUsersStatus" role="status">サーバーに接続しています</span>
+        <div class="db-totals" id="dbTotals" aria-live="polite" title="VPSの楽曲データベースの登録数（15秒ごとに更新）">
+          <span>楽曲 <strong id="dbSongCount">—</strong>曲</span>
+          <span>アーティスト <strong id="dbArtistCount">—</strong>組</span>
+        </div>
       </div>
       <p class="online-users-note">直近75秒以内に接続を確認できたユーザーを表示します。管理者のみ閲覧可能です。</p>
       <div id="onlineUsersList" class="online-users-list" aria-live="polite">接続状況を確認しています…</div>

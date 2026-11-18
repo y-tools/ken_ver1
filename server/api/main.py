@@ -7,6 +7,7 @@ VPS. Put this service behind TLS and nginx rate limiting; never publish port
 from __future__ import annotations
 
 import asyncio
+import logging
 import json
 import os
 import re
@@ -207,6 +208,8 @@ async def require_priority_user(authorization: str | None) -> dict:
     admin = await require_admin(authorization)
     # オーナーと、許可されたログインID（KenMorley）だけが利用できる
     if admin["role"] != "owner" and admin["login_id"] not in PRIORITY_LOGIN_IDS:
+        logging.getLogger("uvicorn.error").warning(
+            "priority denied: role=%s login_id=%r", admin.get("role"), admin.get("login_id"))
         raise HTTPException(status_code=403, detail="Kenの優先リクエストは許可されたIDだけが利用できます")
     return admin
 
@@ -233,6 +236,8 @@ async def require_admin(authorization: str | None) -> dict:
         raise HTTPException(status_code=401, detail="ログインを確認できませんでした。再ログインしてください")
     profile = rows[0] if isinstance(rows, list) and rows else {}
     if profile.get("role") not in ("owner", "admin"):
+        logging.getLogger("uvicorn.error").warning(
+            "admin denied: role=%r login_id=%r", profile.get("role"), profile.get("login_id"))
         raise HTTPException(status_code=403, detail="管理者のみ利用できます")
     info = {"uid": uid, "name": str(profile.get("display_name") or "")[:80],
             "login_id": str(profile.get("login_id") or "").lower(), "role": profile.get("role")}

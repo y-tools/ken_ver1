@@ -164,7 +164,9 @@ async def session_check(token_hash: str = Depends(auth)):
 
 def encode_artist(row):
     return {"id": row["id"], "name": row["name"], "version": as_iso(row["updated_at"]),
-            "lastResearchedOn": as_iso(row.get("last_researched_on"))}
+            "lastResearchedOn": as_iso(row.get("last_researched_on")),
+            "releasedSongCount": row.get("released_song_count"),
+            "releasedSongCountSourceUrl": row.get("released_song_count_source_url")}
 
 
 def encode_song(row):
@@ -211,7 +213,8 @@ async def artists(request: Request, q: str = Query(min_length=2, max_length=80),
                   UNION
                   SELECT artist_id FROM artist_names WHERE search_key LIKE %s ESCAPE '!'
                 )
-                SELECT a.id, a.name, a.updated_at, a.last_researched_on
+                SELECT a.id, a.name, a.updated_at, a.last_researched_on,
+                       a.released_song_count, a.released_song_count_source_url
                 FROM matches m JOIN artists a ON a.id=m.artist_id
                 ORDER BY a.name LIMIT 40
                 """, (pattern, pattern))
@@ -228,7 +231,7 @@ async def artist_detail(
 ):
     async with request.app.state.pool.connection() as conn:
         async with conn.cursor() as cur:
-            await cur.execute("SELECT id,name,updated_at,last_researched_on FROM artists WHERE id=%s", (artist_id,))
+            await cur.execute("SELECT id,name,updated_at,last_researched_on,released_song_count,released_song_count_source_url FROM artists WHERE id=%s", (artist_id,))
             artist = await cur.fetchone()
             if not artist:
                 raise HTTPException(404, "アーティストが見つかりません")
@@ -296,6 +299,24 @@ class ArtistResearchUpdate(BaseModel):
         if value and (value < date(1980, 1, 1) or value > datetime.now(timezone(timedelta(hours=9))).date()):
             raise ValueError("最終調査日は1980年以降の実際に調査した日付を指定してください")
         return value
+
+
+class ArtistReleasedSongCountUpdate(BaseModel):
+    version: datetime
+    releasedSongCount: int | None = Field(ge=0, le=1_000_000)
+    releasedSongCountSourceUrl: str | None = Field(default=None, max_length=600)
+
+    @model_validator(mode="after")
+    def verify_released_song_count(self):
+        # A researched count is distinct from the number of catalog rows.
+        if self.releasedSongCount is None:
+            if self.releasedSongCountSourceUrl:
+                raise ValueError("未確認の楽曲数には出典URLを設定できません")
+        elif not self.releasedSongCountSourceUrl:
+            raise ValueError("リリース済み楽曲数には確認した出典URLが必要です")
+        if self.releasedSongCountSourceUrl:
+            clean_url(self.releasedSongCountSourceUrl)
+        return self
 
 
 class SongUpdate(BaseModel):
@@ -370,7 +391,7 @@ async def update_artist(artist_id: int, body: ArtistUpdate, request: Request, to
                         raise HTTPException(422, "アーティスト名が空です")
                     await cur.execute("""
                       UPDATE artists SET name=%s,name_key=%s,identity_status='human_confirmed',updated_at=now()
-                      WHERE id=%s RETURNING id,name,updated_at,last_researched_on
+                      WHERE id=%s RETURNING id,name,updated_at,last_researched_on,released_song_count,released_song_count_source_url
                     """, (body.name, key, artist_id))
                     after = await cur.fetchone()
                     await audit(cur, "artist_update", "artist", artist_id,
@@ -388,7 +409,7 @@ async def update_artist_research(
         async with conn.transaction():
             async with conn.cursor() as cur:
                 await cur.execute(
-                    "SELECT id,name,updated_at,last_researched_on FROM artists WHERE id=%s FOR UPDATE",
+                    "SELECT id,name,updated_at,last_researched_on,released_song_count,released_song_count_source_url FROM artists WHERE id=%s FOR UPDATE",
                     (artist_id,),
                 )
                 before = await cur.fetchone()
@@ -398,12 +419,49 @@ async def update_artist_research(
                     raise HTTPException(409, "ほかの編集が先に保存されました。再読み込みしてください")
                 await cur.execute("""
                     UPDATE artists SET last_researched_on=%s,updated_at=now()
-                    WHERE id=%s RETURNING id,name,updated_at,last_researched_on
+                    WHERE id=%s RETURNING id,name,updated_at,last_researched_on,released_song_count,released_song_count_source_url
                 """, (body.lastResearchedOn, artist_id))
                 after = await cur.fetchone()
                 await audit(cur, "artist_research_date_update", "artist", artist_id,
                             {"lastResearchedOn": as_iso(before["last_researched_on"])},
                             {"lastResearchedOn": as_iso(after["last_researched_on"])})
+    return {"artist": encode_artist(after)}
+
+
+@app.post("/api/admin/artists/{artist_id}/released-song-count")
+async def update_artist_released_song_count(
+    artist_id: int, body: ArtistReleasedSongCountUpdate,
+    request: Request, token_hash: str = Depends(auth)
+):
+    """Set the independently researched number of released unique songs.
+
+    Never infer this total from the incomplete Ken Denmoku catalog.
+    """
+    async with request.app.state.pool.connection() as conn:
+        async with conn.transaction():
+            async with conn.cursor() as cur:
+                await cur.execute("""
+                    SELECT id,updated_at,released_song_count,released_song_count_source_url
+                    FROM artists WHERE id=%s FOR UPDATE
+                """, (artist_id,))
+                before = await cur.fetchone()
+                if not before:
+                    raise HTTPException(404, "アーティストが見つかりません")
+                if before["updated_at"] != body.version:
+                    raise HTTPException(409, "ほかの編集が先に保存されました。再読み込みしてください")
+                await cur.execute("""
+                    UPDATE artists
+                    SET released_song_count=%s, released_song_count_source_url=%s, updated_at=now()
+                    WHERE id=%s
+                    RETURNING id,name,updated_at,last_researched_on,
+                              released_song_count,released_song_count_source_url
+                """, (body.releasedSongCount, body.releasedSongCountSourceUrl, artist_id))
+                after = await cur.fetchone()
+                await audit(cur, "artist_released_song_count_update", "artist", artist_id,
+                            {"releasedSongCount": before["released_song_count"],
+                             "releasedSongCountSourceUrl": before["released_song_count_source_url"]},
+                            {"releasedSongCount": after["released_song_count"],
+                             "releasedSongCountSourceUrl": after["released_song_count_source_url"]})
     return {"artist": encode_artist(after)}
 
 

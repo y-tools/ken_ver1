@@ -556,6 +556,26 @@ function startDbTotals(){
  dbTotalsTimer=setInterval(refreshDbTotals,15000);
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)void refreshDbTotals();});
 }
+async function loadOwnerAdminList(){
+ const body=$("#ownerAdminListBody");if(!body||!shared?.isOwner?.())return;
+ body.hidden=false;body.textContent="読み込み中…";
+ const {data,error}=await shared.client.rpc("denmoku_owner_admin_list");
+ if(error){body.textContent="取得できませんでした："+String(error.message||error).slice(0,120);return;}
+ const roleLabel={owner:"オーナー",admin:"管理者"};
+ const table=document.createElement("table");
+ table.innerHTML="<thead><tr><th>名前</th><th>ログインID</th><th>メールアドレス</th><th>パスワード</th><th>権限</th><th>作成日</th><th>最終ログイン</th><th>ユーザーID</th></tr></thead>";
+ const tbody=document.createElement("tbody");
+ for(const u of data||[]){
+  const tr=document.createElement("tr");
+  const cells=[u.display_name||"—",u.login_id?"@"+u.login_id:"—",u.email||"—","表示不可（暗号化保存）",
+   roleLabel[u.role]||u.role,u.created_at?timeLabel(Date.parse(u.created_at)):"—",
+   u.last_sign_in_at?timeLabel(Date.parse(u.last_sign_in_at)):"未ログイン",u.id];
+  cells.forEach((v,k)=>{const td=document.createElement("td");td.textContent=v;
+   if(k===3)td.className="pw";if(k===7)td.className="id";tr.appendChild(td);});
+  tbody.appendChild(tr);
+ }
+ table.appendChild(tbody);body.replaceChildren(table);
+}
 // ---- Kenの優先リクエスト (VPS DB; admin token verified server-side) ----
 let priorityLoaded=false,priorityBusy=false;
 async function adminAccessToken(){
@@ -932,6 +952,7 @@ async function attach(){
   }
   adminMode=params.get("admin")==="1"&&shared.isAdmin();
   if($("#ownerInvite"))$("#ownerInvite").hidden=!shared.isOwner();
+  if($("#ownerAdminList"))$("#ownerAdminList").hidden=!shared.isOwner();
   if($("#inviteAdminForm"))$("#inviteAdminForm").addEventListener("submit",async event=>{
     event.preventDefault();
     if(!shared.isOwner())return;
@@ -1037,6 +1058,7 @@ async function attach(){
  });
  $("#adminSongSearch").addEventListener("input",renderAdminSongList);
  $("#prioritySongForm")?.addEventListener("submit",e=>submitPriority("song",e));
+ $("#ownerAdminListLoad")?.addEventListener("click",()=>void loadOwnerAdminList());
  $("#priorityArtistForm")?.addEventListener("submit",e=>submitPriority("artist",e));
  $("#adminSongList").addEventListener("click",e=>{
   const button=e.target.closest("[data-song-edit]");if(button)startSongEdit(button.dataset.songEdit);

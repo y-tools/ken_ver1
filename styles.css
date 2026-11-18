@@ -644,3 +644,10 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 .priority-item .status.registered{background:#1d3f7a;border-color:#6aa2ff;color:#dbe8ff}
 .priority-item .status.rejected{background:var(--bg2);border-color:var(--edge);color:var(--muted)}
 .priority-item.fresh{animation:dbPop .5s ease-out}
+
+.owner-admin-list{overflow-x:auto;margin-top:8px}
+.owner-admin-list table{width:100%;border-collapse:collapse;font-size:12px}
+.owner-admin-list th,.owner-admin-list td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--edge);white-space:nowrap}
+.owner-admin-list th{color:var(--muted);font-weight:800}
+.owner-admin-list td.id{font-family:ui-monospace,monospace;font-size:11px;color:var(--soft)}
+.owner-admin-list .pw{color:var(--muted)}

@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261118-priority-v1">
+<link rel="stylesheet" href="./styles.css?v=20261118-adminlist-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -16,7 +16,7 @@
 <script src="./data/vps-search.js?v=20261118-priority-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./app.js?v=20261118-priority-v1" defer></script>
+<script src="./app.js?v=20261118-adminlist-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -163,6 +163,11 @@
         <p class="helper" id="adminCreateFeedback" role="status" aria-live="polite"></p>
         <p class="helper">※ メールを登録しないため、メールによるパスワード再設定は利用できません。パスワードはこの画面に保存されません。</p>
       </div>
+    </section>
+    <section id="ownerAdminList" class="home-card" hidden>
+      <div class="report-heading"><div><h3>オーナー専用：現在の管理者一覧</h3><p>ID・ログインID・メールアドレス・権限を確認できます。パスワードは暗号化して保存されるため表示できません。</p></div>
+        <button type="button" class="button" id="ownerAdminListLoad">一覧を開く／更新</button></div>
+      <div id="ownerAdminListBody" class="owner-admin-list" hidden></div>
     </section>
     <div class="admin-heading" style="margin-top:17px">
       <div><div class="admin-title-line"><h2>管理画面</h2><span id="adminOnAir" class="onair-indicator" hidden><span class="onair-dot"></span>ON AIR</span></div><p>左からリスナー・歌唱待機楽曲・リクエスト・空き枠の4列です。</p></div>

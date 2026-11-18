@@ -20,7 +20,7 @@ class PriorityTests(unittest.TestCase):
         self._orig = api._supabase_get
         roles = {"admin-token-xxxxxxxxxxxxxxxx": "admin", "listener-token-xxxxxxxxxxxxx": "listener",
                  "other-admin-token-xxxxxxxxxx": "admin", "owner-token-xxxxxxxxxxxxxxxx": "owner"}
-        logins = {"admin-token-xxxxxxxxxxxxxxxx": "kenmorley", "other-admin-token-xxxxxxxxxx": "someone",
+        logins = {"admin-token-xxxxxxxxxxxxxxxx": "kenmori05280602", "other-admin-token-xxxxxxxxxx": "someone",
                   "owner-token-xxxxxxxxxxxxxxxx": "ownerid"}
 
         def fake(path, token):

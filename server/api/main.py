@@ -191,7 +191,7 @@ SUPABASE_KEY = os.environ.get("KEN_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_2M
 _ADMIN_CACHE: OrderedDict = OrderedDict()
 # Kenの優先リクエストを使えるログインID（大文字小文字は区別しない）
 PRIORITY_LOGIN_IDS = {
-    v.strip().lower() for v in os.environ.get("KEN_PRIORITY_LOGIN_IDS", "kenmorley").split(",") if v.strip()
+    v.strip().lower() for v in os.environ.get("KEN_PRIORITY_LOGIN_IDS", "kenmori05280602").split(",") if v.strip()
 }
 
 
@@ -206,7 +206,7 @@ def _supabase_get(path: str, token: str):
 
 async def require_priority_user(authorization: str | None) -> dict:
     admin = await require_admin(authorization)
-    # オーナーと、許可されたログインID（KenMorley）だけが利用できる
+    # オーナーと、許可されたログインID（けんもり(kenmori05280602)）だけが利用できる
     if admin["role"] != "owner" and admin["login_id"] not in PRIORITY_LOGIN_IDS:
         logging.getLogger("uvicorn.error").warning(
             "priority denied: role=%s login_id=%r", admin.get("role"), admin.get("login_id"))

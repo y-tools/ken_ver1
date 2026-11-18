@@ -526,15 +526,28 @@ function renderOnlineUsers(users,error){
  list.replaceChildren(...elements);
 }
 let dbTotalsTimer=null;
+function setDbCount(selector,value){
+ const el=$(selector);if(!el)return;
+ const prev=el.dataset.value===undefined?null:Number(el.dataset.value);
+ el.dataset.value=String(value);
+ el.textContent=value.toLocaleString("ja-JP");
+ if(prev===null||value<=prev)return;
+ // Flash red and float "+N" only when the registered count actually grows.
+ const stat=el.closest(".db-stat");if(!stat)return;
+ stat.classList.remove("bump");void stat.offsetWidth;stat.classList.add("bump");
+ const plus=document.createElement("span");plus.className="db-plus";
+ plus.textContent="+"+(value-prev).toLocaleString("ja-JP");stat.appendChild(plus);
+ setTimeout(()=>{plus.remove();stat.classList.remove("bump");},1500);
+}
 async function refreshDbTotals(){
  const box=$("#dbTotals");
  if(!box||!window.KEN_VPS_SEARCH?.stats)return;
  if(document.hidden||$("#adminView")?.hidden)return;
  try{
   const t=await window.KEN_VPS_SEARCH.stats();
-  $("#dbSongCount").textContent=t.songCount.toLocaleString("ja-JP");
-  $("#dbArtistCount").textContent=t.artistCount.toLocaleString("ja-JP");
-  box.classList.remove("stale");box.title="VPSの楽曲データベースの登録数（"+clockLabel(Date.now())+" 更新・15秒ごと）";
+  setDbCount("#dbArtistCount",t.artistCount);
+  setDbCount("#dbSongCount",t.songCount);
+  box.classList.remove("stale","syncing");void box.offsetWidth;box.classList.add("syncing");box.title="VPSの楽曲データベースの登録数（"+clockLabel(Date.now())+" 更新・15秒ごと）";
  }catch(e){box.classList.add("stale");box.title="データベースの件数を取得できませんでした（再試行します）";}
 }
 function startDbTotals(){

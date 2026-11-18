@@ -60,16 +60,6 @@
        <button type="submit" class="primary">最終調査日を保存</button>
        <p id="artistResearchHelp" class="hint">実際にアーティスト情報を調査した日付を記録します。名前や楽曲を編集しただけでは更新されません。</p>
      </form>
-     <form id="artistReleasedSongCountForm" class="artist-research-form">
-       <label for="artistReleasedSongCount">現在リリース楽曲数（未確認は空欄）
-         <input id="artistReleasedSongCount" name="releasedSongCount" type="number" min="0" max="1000000" step="1" placeholder="例：150" aria-describedby="artistReleasedSongCountHelp">
-       </label>
-       <label for="artistReleasedSongCountSourceUrl">確認元URL（楽曲数を登録する場合は必須）
-         <input id="artistReleasedSongCountSourceUrl" name="releasedSongCountSourceUrl" type="url" maxlength="600" placeholder="https://..." aria-describedby="artistReleasedSongCountHelp">
-       </label>
-       <button type="submit" class="primary">現在リリース楽曲数を保存</button>
-       <p id="artistReleasedSongCountHelp" class="hint">公式リリース済みの重複しない楽曲数を、出典とともに登録します。デンモク登録曲数（<strong id="artistRegisteredSongCount">—</strong>曲）とは別の情報です。正確な数が確認できない場合は空欄にします。</p>
-     </form>
      <form id="artistReleaseCountForm" class="artist-research-form">
        <label for="artistReleasedSongCount">現在リリース楽曲数（未確認は空欄）
          <input id="artistReleasedSongCount" name="releasedSongCount" inputmode="numeric" type="number" min="0" max="1000000" step="1" placeholder="例：120" aria-describedby="artistReleaseCountHelp">
@@ -78,7 +68,7 @@
          <input id="artistReleaseCountSourceUrl" name="releasedSongCountSourceUrl" type="url" maxlength="600" placeholder="https://...">
        </label>
        <button type="submit" class="primary">現在リリース楽曲数を保存</button>
-       <p id="artistReleaseCountHelp" class="hint">公式リリース済みの重複を除いた曲数を登録します。Kenのデンモクに登録済みの曲数とは別です。未調査の場合は空欄にし、確認済み数値には根拠となるHTTPSの出典URLを付けてください。</p>
+       <p id="artistReleaseCountHelp" class="hint">公式リリース済みの重複を除いた曲数を登録します。デンモク登録曲数（<strong id="artistRegisteredSongCount">—</strong>曲）とは別の情報です。未調査の場合は空欄にし、確認済み数値には根拠となるHTTPSの出典URLを付けてください。</p>
      </form>
      <h3>アーティストの読み・正式表記</h3>
      <div id="artistAliases"></div>

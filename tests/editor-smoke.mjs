@@ -100,6 +100,7 @@ try{
  assert.equal(state.artist.releasedSongCount,120);
  assert.equal(state.artist.releasedSongCountSourceUrl,"https://official.example.com/artist/discography");
  assert.equal(await page.locator("#songsCount").textContent(),"1曲");
+ assert.equal(await page.locator("#artistRegisteredSongCount").textContent(),"1");
  console.log("PASS Verified released-song count is independently saved from catalog song total");
  await page.locator("#artistReleasedSongCount").fill("");
  await page.locator("#artistReleaseCountSourceUrl").fill("");

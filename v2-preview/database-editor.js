@@ -97,6 +97,7 @@ async function loadArtist(id,page=0){
  $("#artistLastResearchedOn").value=artist.lastResearchedOn||"";
  $("#artistReleasedSongCount").value=artist.releasedSongCount??"";
  $("#artistReleaseCountSourceUrl").value=artist.releasedSongCountSourceUrl||"";
+ $("#artistRegisteredSongCount").textContent=total.toLocaleString("ja-JP");
  $("#artistLastResearchedOn").max=new Intl.DateTimeFormat("en-CA",
   {timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
  makeAliasList("artist");showSongList(data.songs);

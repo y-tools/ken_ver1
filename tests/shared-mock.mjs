@@ -121,9 +121,9 @@ try{
  await owner.locator("#adminTitle").click({clickCount:3});
  await owner.locator("#adminView").waitFor({state:"visible"});
  assert.equal(await owner.locator("#ownerInvite").isVisible(),true);
- // Owner sees KenMorley's priority request list (without the submit form).
+ // Owner sees the priority request form and list.
  assert.equal(await owner.locator("#priorityRequests").isVisible(),true);
- assert.equal(await owner.locator("#priorityForm").isHidden(),true);
+ assert.equal(await owner.locator("#priorityForm").isVisible(),true);
  await owner.locator("#adminCreateId").fill("test_operator");
  await owner.locator("#adminCreatePassword").fill("SecurePass123456");
  await owner.locator("#adminCreatePasswordConfirm").fill("SecurePass123456");

@@ -63,18 +63,16 @@ class PriorityTests(unittest.TestCase):
             self.assertEqual(items[0]["requestedBy"], "テスト管理者")
             sid = r.json()["item"]["id"]
             self.assertEqual(c.post(f"/api/v1/priority-requests/{sid}/clear", headers=admin).status_code, 409)
-            started = c.post(f"/api/v1/priority-requests/{sid}/status", headers=admin, json={"status": "in_progress"})
-            self.assertEqual(started.status_code, 200, started.text)
-            self.assertIsNotNone(started.json()["item"]["handledAt"])
-            self.assertIsNone(started.json()["item"]["completedAt"])
-            done = c.post(f"/api/v1/priority-requests/{sid}/status", headers=admin,
-                          json={"status": "done", "addedArtistName": " テスト歌手P ", "addedSongCount": 12})
-            self.assertEqual(done.status_code, 200, done.text)
-            self.assertIsNotNone(done.json()["item"]["completedAt"])
-            self.assertEqual(done.json()["item"]["addedArtistName"], "テスト歌手P")
-            self.assertEqual(done.json()["item"]["addedSongCount"], 12)
-            self.assertEqual(c.post(f"/api/v1/priority-requests/{a.json()['item']['id']}/status", headers=admin,
-                json={"status": "done", "addedSongCount": -1}).status_code, 422)
+            self.assertEqual(c.post(f"/api/v1/priority-requests/{sid}/status", headers=admin,
+                json={"status": "done"}).status_code, 404)
+            # Claude's processing writes the result columns directly in the database.
+            import psycopg
+            with psycopg.connect(os.environ["KEN_IMPORT_DATABASE_URL"]) as conn:
+                conn.execute("""UPDATE ken_priority_requests SET status='done', handled_at=now(), completed_at=now(),
+                                added_artist_name='テスト歌手P', added_song_count=12 WHERE id=%s""", (sid,))
+            done = [i for i in c.get("/api/v1/priority-requests", headers=admin).json()["items"] if i["id"] == sid][0]
+            self.assertEqual(done["addedSongCount"], 12)
+            self.assertIsNotNone(done["completedAt"])
             # After completion the same song may be requested again.
             again = c.post("/api/v1/priority-requests", headers=admin,
                            json={"kind": "song", "artist": "テスト歌手P", "title": "テスト曲P"})

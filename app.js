@@ -602,25 +602,13 @@ function renderPriorityList(items,freshId){
   cell(it.kind==="artist"?"（アーティスト全体）":(it.title||"—"),it.kind==="artist"?"muted":"what");
   cell(it.note||"—","note");
   cell(at(it.createdAt),"date");cell(at(it.handledAt),"date");
-  const open=it.status==="requested"||it.status==="in_progress";
-  if(open){
-   // Enter the results here, then press 完了 to record them with the completion time.
-   const addTd=cell("","added-input");const addIn=document.createElement("input");
-   addIn.type="text";addIn.maxLength=120;addIn.className="priority-added-artist";addIn.dataset.id=String(it.id);
-   addIn.placeholder="追加アーティスト名";addIn.value=it.artist;addIn.setAttribute("aria-label","追加アーティスト名");addTd.appendChild(addIn);
-   const cntTd=cell("","added-input");const cntIn=document.createElement("input");
-   cntIn.type="number";cntIn.min="0";cntIn.max="100000";cntIn.step="1";cntIn.inputMode="numeric";
-   cntIn.className="priority-added-count";cntIn.dataset.id=String(it.id);cntIn.placeholder="曲数";cntIn.setAttribute("aria-label","追加楽曲数");cntTd.appendChild(cntIn);
-  }else{
-   cell(it.addedArtistName||"—",it.addedArtistName?"what":"muted");
-   cell(it.addedSongCount==null?"—":Number(it.addedSongCount).toLocaleString("ja-JP")+" 曲","count-cell");
-  }
+  // 対応日・追加アーティスト名・追加楽曲数・完了日時はクロードの処理が書き込む。管理画面からは編集しない。
+  cell(it.addedArtistName||"—",it.addedArtistName?"what":"muted");
+  cell(it.addedSongCount==null?"—":Number(it.addedSongCount).toLocaleString("ja-JP")+" 曲","count-cell");
   cell(at(it.completedAt),"date");
   const act=cell("","actions");
   const btn=(label,cls,action,title)=>{const b=document.createElement("button");b.type="button";b.className="button "+cls;
    b.textContent=label;b.dataset.priorityAction=action;b.dataset.id=String(it.id);if(title){b.title=title;b.setAttribute("aria-label",title);}act.appendChild(b);};
-  if(it.status==="requested")btn("対応開始","subtle","in_progress");
-  if(it.status==="requested"||it.status==="in_progress")btn("完了","primary","done");
   if(it.status==="done")btn("×","priority-clear","clear","対応完了の「"+it.artist+(it.title?" / "+it.title:"")+"」を一覧から消し込む");
   tbody.appendChild(tr);
  }
@@ -633,25 +621,13 @@ async function priorityAction(event){
  try{
   const token=await adminAccessToken();
   if(action==="clear"){await window.KEN_VPS_SEARCH.priorityClear(token,id);fb.textContent="対応完了のリクエストを消し込みました";}
-  else if(action==="done"){
-   const name=(document.querySelector('.priority-added-artist[data-id="'+id+'"]')?.value||"").trim();
-   const raw=(document.querySelector('.priority-added-count[data-id="'+id+'"]')?.value||"").trim();
-   const count=raw===""?null:Number(raw);
-   if(count!==null&&(!Number.isInteger(count)||count<0)){fb.textContent="追加楽曲数は0以上の整数で入力してください";b.disabled=false;return;}
-   await window.KEN_VPS_SEARCH.priorityStatus(token,id,"done",{addedArtistName:name||null,addedSongCount:count});
-   fb.textContent="対応完了にしました";
-  }else{await window.KEN_VPS_SEARCH.priorityStatus(token,id,action);fb.textContent="対応中にしました";}
+  else return;
   await loadPriorityRequests(action==="clear"?null:id);
  }catch(e){fb.textContent=String(e.message||e).slice(0,140);b.disabled=false;}
  finally{priorityBusy=false;}
 }
-// Kenの優先リクエストはオーナーと許可されたログインID（KenMorley）だけに表示（サーバー側でも同条件で制限）
+// Kenの優先リクエスト（送信フォームと一覧）はオーナーとKenMorleyだけに表示（サーバー側でも同条件で制限）
 const PRIORITY_LOGIN_IDS=["kenmorley"];
-// 送信フォームはKenMorleyだけ。オーナーはKenMorleyのリクエスト一覧の確認と対応（対応開始・完了・×）を行う
-function canSubmitPriority(){
- const id=String(shared?.profile?.()?.login_id||"").toLowerCase();
- return Boolean(shared?.isAdmin?.()&&id&&PRIORITY_LOGIN_IDS.includes(id));
-}
 function canUsePriority(){
  if(!shared?.isAdmin?.())return false;
  if(shared.isOwner?.())return true;
@@ -690,7 +666,7 @@ function render(){
  $("#catalogStatus").textContent=catalog.ready?"楽曲DB検索":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  if($("#priorityRequests"))$("#priorityRequests").hidden=!canUsePriority();
- if($("#priorityForm"))$("#priorityForm").hidden=!canSubmitPriority();
+
  if(adminMode&&!preview&&shared?.isAdmin?.()){startDbTotals();if(!priorityLoaded&&canUsePriority()){priorityLoaded=true;void loadPriorityRequests();}}
  $("#toListener").hidden=!adminMode || preview;
  if($("#adminNav"))$("#adminNav").hidden=preview||!shared?.isAdmin();

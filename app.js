@@ -652,7 +652,13 @@ function renderPriorityList(items,freshId){
   const stTd=cell("");stTd.appendChild(st);
   cell(it.artist,"what");
   cell(it.kind==="artist"?"（アーティスト全体）":(it.title||"—"),it.kind==="artist"?"muted":"what");
-  cell(it.note||"—","note");
+  // メモは「詳細」ボタン。押すと行の下に内容を開く（閉じる時はもう一度押す）
+  const noteTd=cell("","note");
+  if(it.note){
+   const nb=document.createElement("button");nb.type="button";nb.className="button subtle priority-note-toggle";
+   nb.textContent="詳細";nb.dataset.noteFor=String(it.id);nb.setAttribute("aria-expanded","false");
+   nb.setAttribute("aria-controls","priority-note-"+it.id);noteTd.appendChild(nb);
+  }else noteTd.textContent="—";
   cell(at(it.createdAt),"date");cell(at(it.handledAt),"date");
   // 対応日・追加アーティスト名・追加楽曲数・完了日時はクロードの処理が書き込む。管理画面からは編集しない。
   cell(it.addedArtistName||"—",it.addedArtistName?"what":"muted");
@@ -663,10 +669,23 @@ function renderPriorityList(items,freshId){
    b.textContent=label;b.dataset.priorityAction=action;b.dataset.id=String(it.id);if(title){b.title=title;b.setAttribute("aria-label",title);}act.appendChild(b);};
   if(it.status==="done")btn("×","priority-clear","clear","対応完了の「"+it.artist+(it.title?" / "+it.title:"")+"」を一覧から消し込む");
   tbody.appendChild(tr);
+  if(it.note){
+   const dtr=document.createElement("tr");dtr.className="priority-note-row";dtr.id="priority-note-"+it.id;dtr.hidden=true;
+   const dtd=document.createElement("td");dtd.colSpan=10;
+   const label=document.createElement("strong");label.textContent="メモ：";
+   const body=document.createElement("span");body.textContent=it.note;
+   dtd.append(label,body);dtr.appendChild(dtd);tbody.appendChild(dtr);
+  }
  }
  table.appendChild(tbody);list.replaceChildren(table);
 }
 async function priorityAction(event){
+ const nb=event.target.closest("button[data-note-for]");
+ if(nb){
+  const row=document.getElementById("priority-note-"+nb.dataset.noteFor);
+  if(row){row.hidden=!row.hidden;nb.setAttribute("aria-expanded",String(!row.hidden));nb.textContent=row.hidden?"詳細":"閉じる";}
+  return;
+ }
  const b=event.target.closest("button[data-priority-action]");if(!b||priorityBusy)return;
  const id=Number(b.dataset.id),action=b.dataset.priorityAction,fb=$("#priorityFeedback");
  priorityBusy=true;b.disabled=true;

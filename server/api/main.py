@@ -286,6 +286,7 @@ async def add_priority_request(
         async with request.app.state.pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor() as cur:
+                    await cur.execute("SET TRANSACTION READ WRITE")
                     await cur.execute(
                         f"""INSERT INTO ken_priority_requests(kind, artist_name, song_title, note, requested_by, requested_uid)
                             VALUES (%s, %s, %s, %s, %s, %s)
@@ -321,6 +322,7 @@ async def update_priority_status(
         async with request.app.state.pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor() as cur:
+                    await cur.execute("SET TRANSACTION READ WRITE")
                     await cur.execute(sql, (request_id,))
                     row = await cur.fetchone()
     except Exception:
@@ -338,6 +340,7 @@ async def clear_priority_request(request: Request, request_id: int, authorizatio
         async with request.app.state.pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor() as cur:
+                    await cur.execute("SET TRANSACTION READ WRITE")
                     await cur.execute(
                         "UPDATE ken_priority_requests SET cleared_at=now(), updated_at=now()"
                         " WHERE id=%s AND status='done' AND cleared_at IS NULL RETURNING id",

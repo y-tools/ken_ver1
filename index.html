@@ -65,22 +65,22 @@
       <section class="home-card" id="search-section" aria-labelledby="search-heading">
         <div class="section-head search-section-head">
           <span class="section-no">01</span>
-          <div class="search-section-title"><h3 id="search-heading">楽曲検索</h3><p>登録されている楽曲を、曲名とアーティスト名で検索できます。</p></div>
+          <div class="search-section-title"><h3 id="search-heading">楽曲検索</h3><p>登録されている楽曲を、アーティスト名と曲名で検索できます。</p></div>
           <button type="button" class="button primary search-freeform-button" id="openFreeformRequest" aria-haspopup="dialog" aria-controls="freeformRequestDialog">自由入力リクエスト</button>
         </div>
         <div class="song-search-fields" role="search" aria-label="楽曲の絞り込み">
-          <div class="song-search-field">
-            <label for="searchInput" class="field">曲名</label>
-            <div class="searchbox">
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
-              <input type="search" id="searchInput" placeholder="曲名・かな・ローマ字" autocomplete="off" aria-label="曲名で検索">
-            </div>
-          </div>
           <div class="song-search-field">
             <label for="searchArtistInput" class="field">アーティスト名</label>
             <div class="searchbox">
               <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
               <input type="search" id="searchArtistInput" placeholder="アーティスト名・かな・ローマ字" autocomplete="off" aria-label="アーティスト名で検索">
+            </div>
+          </div>
+          <div class="song-search-field">
+            <label for="searchInput" class="field">曲名</label>
+            <div class="searchbox">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+              <input type="search" id="searchInput" placeholder="曲名・かな・ローマ字" autocomplete="off" aria-label="曲名で検索">
             </div>
           </div>
         </div>
@@ -236,8 +236,8 @@
       </form>
       <form id="songForm">
         <div class="form-row">
-          <label class="field">曲名<input id="songTitle" required maxlength="120"></label>
           <label class="field">アーティスト<input id="songArtist" required maxlength="120"></label>
+          <label class="field">曲名<input id="songTitle" required maxlength="120"></label>
           <label class="field">区分<select id="songStatus"><option value="ready">歌える曲</option><option value="practice">練習中</option></select></label>
           <label class="field">リリース年（任意）<input id="songYear" inputmode="numeric" maxlength="4"></label>
         </div>
@@ -248,11 +248,11 @@
       </form>
       <section class="karaoke-management" aria-labelledby="karaokeManagementHeading">
         <h3 id="karaokeManagementHeading">DAM / JOYSOUND 配信情報の照合</h3>
-        <p class="helper">公式サイトで曲名・歌手名・対応機種を確認してから登録してください。カタログ収録だけでは配信済みを意味しません。確認情報は共有データベースに保存されます。</p>
+        <p class="helper">公式サイトで歌手名・曲名・対応機種を確認してから登録してください。カタログ収録だけでは配信済みを意味しません。確認情報は共有データベースに保存されます。</p>
         <form id="karaokeCheckForm">
           <div class="form-row">
-            <label class="field">曲名 <input id="karaokeTitle" required maxlength="190" placeholder="照合する曲名"></label>
             <label class="field">アーティスト <input id="karaokeArtist" required maxlength="150" placeholder="照合するアーティスト"></label>
+            <label class="field">曲名 <input id="karaokeTitle" required maxlength="190" placeholder="照合する曲名"></label>
           </div>
           <div class="karaoke-provider-grid">
             <fieldset class="karaoke-provider-box">
@@ -295,7 +295,7 @@
         </form>
       </section>
       <div class="song-manage-area"><h3>登録曲とメモの確認・編集</h3>
-        <input type="search" id="adminSongSearch" placeholder="曲名・アーティスト・メモで検索" aria-label="登録曲を検索">
+        <input type="search" id="adminSongSearch" placeholder="アーティスト・曲名・メモで検索" aria-label="登録曲を検索">
         <p id="adminSongCount" class="helper"></p><div id="adminSongList" class="song-manage-list"></div>
       </div>
       <label class="field" style="margin-top:14px">CSV一括取り込み（楽曲名,アーティスト,JASRAC,NexTone,区分,発売年）
@@ -326,12 +326,12 @@
 </dialog>
 <dialog id="freeformRequestDialog" class="request-dialog freeform-request-dialog" aria-labelledby="freeform-request-heading">
   <div class="dialog-head">
-    <div><h2 id="freeform-request-heading">自由入力リクエスト</h2><p>曲名とアーティスト名を自由に入力できます。ログインは不要です。</p></div>
+    <div><h2 id="freeform-request-heading">自由入力リクエスト</h2><p>アーティスト名と曲名を自由に入力できます。ログインは不要です。</p></div>
     <button type="button" id="freeRequestDialogClose" class="button subtle" aria-label="自由入力リクエストを閉じる">閉じる</button>
   </div>
         <form id="freeformRequestForm" class="freeform-request-form">
-          <label class="field">曲名<input id="freeRequestTitle" name="title" required maxlength="120" autocomplete="off" placeholder="曲名を自由入力"></label>
           <label class="field">アーティスト名<input id="freeRequestArtist" name="artist" required maxlength="120" autocomplete="off" placeholder="アーティスト名を自由入力"></label>
+          <label class="field">曲名<input id="freeRequestTitle" name="title" required maxlength="120" autocomplete="off" placeholder="曲名を自由入力"></label>
           <label class="field">リクエスト者のお名前<input id="freeRequestName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
           <label class="field">メッセージ（任意）<textarea id="freeRequestMessage" name="message" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
           <div class="form-honeypot" aria-hidden="true"><label>ここは入力しないでください<input id="freeRequestCompany" name="company" tabindex="-1" autocomplete="off"></label></div>
@@ -341,15 +341,15 @@
 </dialog>
 <dialog id="requestDialog" class="request-dialog" aria-labelledby="requestDialogTitle">
   <div class="dialog-head">
-    <div><h2 id="requestDialogTitle">リクエストを送信</h2><p>曲名・アーティスト・お名前を入力してください。</p></div>
+    <div><h2 id="requestDialogTitle">リクエストを送信</h2><p>アーティスト・曲名・お名前を入力してください。</p></div>
     <button type="button" id="requestDialogClose" class="button subtle">閉じる</button>
   </div>
   <div id="requestAvailability" class="stream-status" role="status">配信開始まで受付停止中です。</div>
   <form id="requestForm" class="request-form">
           <div id="chosenSong" class="selection" hidden></div>
           <div class="form-row">
-            <label class="field">曲名 <input id="reqTitle" name="title" required maxlength="120" list="guestSongSuggestions" placeholder="曲名を入力・選択"></label><datalist id="guestSongSuggestions"></datalist>
             <label class="field">アーティスト <input id="reqArtist" name="artist" required maxlength="120" placeholder="アーティスト名を入力"></label>
+            <label class="field">曲名 <input id="reqTitle" name="title" required maxlength="120" list="guestSongSuggestions" placeholder="曲名を入力・選択"></label><datalist id="guestSongSuggestions"></datalist>
           </div>
           <label class="field">リクエスト者のお名前 <input id="reqName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
           <label class="field">メッセージ（任意）<textarea id="reqMessage" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>

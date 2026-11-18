@@ -7,16 +7,16 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261118-dbtotals-v2">
+<link rel="stylesheet" href="./styles.css?v=20261118-priority-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
 
 <script src="./data/karaoke-coverage.js?v=20261106-karaoke-v2" defer></script>
-<script src="./data/vps-search.js?v=20261118-stats-v1" defer></script>
+<script src="./data/vps-search.js?v=20261118-priority-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./app.js?v=20261118-dbtotals-v2" defer></script>
+<script src="./app.js?v=20261118-priority-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -310,6 +310,26 @@
     <section class="report-section" id="streamReports" aria-labelledby="reportHeading">
       <div class="report-heading"><div><h2 id="reportHeading">配信レポート</h2><p>配信開始から終了までを1回として記録します。</p></div><span id="reportCount" class="count">0 回</span></div>
       <div id="reportCurrent"></div><div class="report-history" id="reportHistory"></div>
+    </section>
+    <section class="home-card priority-section" id="priorityRequests" aria-labelledby="priorityHeading">
+      <div class="report-heading"><div><h2 id="priorityHeading">Kenの優先リクエスト</h2><p>優先して調べて登録してほしい楽曲・アーティストを、楽曲データベース（VPS）に記録します。</p></div><span id="priorityCount" class="count">— 件</span></div>
+      <div class="priority-forms">
+        <form id="prioritySongForm" class="priority-form">
+          <h3>優先楽曲登録</h3>
+          <label class="field">アーティスト名 <input id="prioritySongArtist" required maxlength="120" autocomplete="off"></label>
+          <label class="field">曲名 <input id="prioritySongTitle" required maxlength="120" autocomplete="off"></label>
+          <label class="field">メモ（任意） <input id="prioritySongNote" maxlength="300" autocomplete="off"></label>
+          <button type="submit" class="button primary">優先楽曲をリクエスト</button>
+        </form>
+        <form id="priorityArtistForm" class="priority-form">
+          <h3>優先アーティストリクエスト</h3>
+          <label class="field">アーティスト名 <input id="priorityArtistName" required maxlength="120" autocomplete="off"></label>
+          <label class="field">メモ（任意） <input id="priorityArtistNote" maxlength="300" autocomplete="off"></label>
+          <button type="submit" class="button primary">優先アーティストをリクエスト</button>
+        </form>
+      </div>
+      <p class="helper" id="priorityFeedback" role="status" aria-live="polite"></p>
+      <div class="priority-list" id="priorityList">読み込み中…</div>
     </section>
   </div>
 </main>

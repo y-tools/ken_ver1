@@ -556,6 +556,53 @@ function startDbTotals(){
  dbTotalsTimer=setInterval(refreshDbTotals,15000);
  document.addEventListener("visibilitychange",()=>{if(!document.hidden)void refreshDbTotals();});
 }
+// ---- Kenの優先リクエスト (VPS DB; admin token verified server-side) ----
+let priorityLoaded=false,priorityBusy=false;
+async function adminAccessToken(){
+ const {data}=await shared.client.auth.getSession();
+ const token=data?.session?.access_token;
+ if(!token)throw Error("管理者ログインを確認できません。再ログインしてください");
+ return token;
+}
+function renderPriorityList(items,freshId){
+ const list=$("#priorityList");if(!list)return;
+ $("#priorityCount").textContent=items.length+" 件";
+ if(!items.length){list.textContent="まだ優先リクエストはありません";return;}
+ const statusLabel={requested:"リクエスト済み",registered:"登録済み",rejected:"見送り"};
+ list.replaceChildren(...items.map(it=>{
+  const row=document.createElement("div");row.className="priority-item"+(it.id===freshId?" fresh":"");
+  const kind=document.createElement("span");kind.className="kind "+it.kind;kind.textContent=it.kind==="artist"?"アーティスト":"楽曲";
+  const what=document.createElement("span");what.className="what";what.textContent=it.kind==="artist"?it.artist:it.artist+" / "+it.title;
+  const status=document.createElement("span");status.className="status "+it.status;status.textContent=statusLabel[it.status]||it.status;
+  const meta=document.createElement("span");meta.className="meta";
+  meta.textContent=timeLabel(Date.parse(it.createdAt))+(it.requestedBy?" · "+it.requestedBy:"")+(it.note?" · "+it.note:"");
+  row.append(kind,what,status,meta);return row;
+ }));
+}
+async function loadPriorityRequests(freshId){
+ if(!shared?.isAdmin?.()||!window.KEN_VPS_SEARCH?.priorityList)return;
+ try{
+  const data=await window.KEN_VPS_SEARCH.priorityList(await adminAccessToken());
+  renderPriorityList(data.items||[],freshId);
+ }catch(e){$("#priorityList").textContent="読み込めませんでした："+String(e.message||e).slice(0,100);}
+}
+async function submitPriority(kind,event){
+ event.preventDefault();if(priorityBusy)return;
+ const fb=$("#priorityFeedback");
+ const payload=kind==="song"
+  ?{kind,artist:$("#prioritySongArtist").value.trim(),title:$("#prioritySongTitle").value.trim(),note:$("#prioritySongNote").value.trim()}
+  :{kind,artist:$("#priorityArtistName").value.trim(),note:$("#priorityArtistNote").value.trim()};
+ if(!payload.artist||(kind==="song"&&!payload.title)){fb.textContent="必須項目を入力してください";return;}
+ priorityBusy=true;fb.textContent="送信しています…";
+ try{
+  const res=await window.KEN_VPS_SEARCH.priorityAdd(await adminAccessToken(),payload);
+  event.target.reset();
+  fb.textContent=(kind==="song"?"優先楽曲":"優先アーティスト")+"をリクエスト済みにしました";
+  toast("Kenの優先リクエストに保存しました");
+  await loadPriorityRequests(res?.item?.id);
+ }catch(e){fb.textContent=String(e.message||e).slice(0,140);}
+ finally{priorityBusy=false;}
+}
 function render(){
  $("#streamerName").textContent=state.name;
  if(shared && $("#newName"))$("#newName").value=state.name;
@@ -563,7 +610,7 @@ function render(){
  renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderReadySongs();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
  $("#catalogStatus").textContent=catalog.ready?"楽曲DB検索":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
- if(adminMode&&!preview&&shared?.isAdmin?.())startDbTotals();
+ if(adminMode&&!preview&&shared?.isAdmin?.()){startDbTotals();if(!priorityLoaded){priorityLoaded=true;void loadPriorityRequests();}}
  $("#toListener").hidden=!adminMode || preview;
  if($("#adminNav"))$("#adminNav").hidden=preview||!shared?.isAdmin();
  document.body.classList.toggle("admin-active",adminMode&&!preview);
@@ -989,6 +1036,8 @@ async function attach(){
   renderSearch();renderSinging();renderQueue();renderAdminRequests();renderAdminSongList();
  });
  $("#adminSongSearch").addEventListener("input",renderAdminSongList);
+ $("#prioritySongForm")?.addEventListener("submit",e=>submitPriority("song",e));
+ $("#priorityArtistForm")?.addEventListener("submit",e=>submitPriority("artist",e));
  $("#adminSongList").addEventListener("click",e=>{
   const button=e.target.closest("[data-song-edit]");if(button)startSongEdit(button.dataset.songEdit);
  });

@@ -60,5 +60,7 @@ jobs:
         run: psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/020_artist_last_researched_on.sql
       - name: Apply artist released song count migration
         run: psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/022_artist_released_song_count.sql
+      - name: Apply Ken priority requests migration
+        run: psql -h 127.0.0.1 -U postgres -d ken_test -v ON_ERROR_STOP=1 -f server/sql/023_ken_priority_requests.sql
       - name: Run PostgreSQL search and pronunciation verification
         run: python -m unittest discover -s server/tests -p 'test_*.py' -v

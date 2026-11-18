@@ -56,5 +56,22 @@
    return payload;
   }finally{clearTimeout(timer);}
  }
- window.KEN_VPS_SEARCH=Object.freeze({search,stats,apiConfigured:true});
+ async function adminCall(method,token,body){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10000);
+  try{
+   const response=await fetch(base+"/api/v1/priority-requests",{method,mode:"cors",credentials:"omit",cache:"no-store",
+    headers:{"Accept":"application/json","Authorization":"Bearer "+token,...(body?{"Content-Type":"application/json"}:{})},
+    body:body?JSON.stringify(body):undefined,signal:controller.signal});
+   let payload=null;try{payload=await response.json();}catch(_){}
+   if(!response.ok){
+    const d=payload?.detail;
+    throw Error(typeof d==="string"?d:"サーバーエラー（"+response.status+"）");
+   }
+   return payload;
+  }finally{clearTimeout(timer);}
+ }
+ const priorityList=token=>adminCall("GET",token);
+ const priorityAdd=(token,data)=>adminCall("POST",token,data);
+ window.KEN_VPS_SEARCH=Object.freeze({search,stats,priorityList,priorityAdd,apiConfigured:true});
 })();

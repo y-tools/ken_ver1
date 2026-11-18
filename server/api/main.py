@@ -6,8 +6,11 @@ VPS. Put this service behind TLS and nginx rate limiting; never publish port
 """
 from __future__ import annotations
 
+import asyncio
+import json
 import os
 import re
+import urllib.request
 import unicodedata
 from contextlib import asynccontextmanager
 from collections import OrderedDict, deque
@@ -15,7 +18,8 @@ from time import monotonic
 from datetime import date
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi import FastAPI, Header, HTTPException, Query, Request
+from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
@@ -57,8 +61,8 @@ app = FastAPI(title="Ken Song Search API", version="0.1.0", lifespan=lifespan, d
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ORIGINS,
-    allow_methods=["GET"],
-    allow_headers=["Accept", "Content-Type"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Accept", "Content-Type", "Authorization"],
     allow_credentials=False,
     max_age=1800,
 )
@@ -72,7 +76,7 @@ _MAX_TRACKED_CLIENTS = 5000
 
 @app.middleware("http")
 async def search_rate_limit(request: Request, call_next):
-    if request.url.path not in ("/api/v1/search", "/api/v1/stats"):
+    if request.url.path not in ("/api/v1/search", "/api/v1/stats", "/api/v1/priority-requests"):
         return await call_next(request)
     ip = request.client.host if request.client else "unknown"
     now = monotonic()
@@ -175,6 +179,120 @@ async def stats(request: Request):
     data = {"songCount": int(row["song_count"]), "artistCount": int(row["artist_count"])}
     _STATS_CACHE.update(at=now, data=data)
     return data
+
+
+# ---------------------------------------------------------------------------
+# Kenの優先リクエスト (admin only). The browser sends its Supabase access token;
+# the VPS verifies it with Supabase and requires profiles.role owner/admin.
+SUPABASE_URL = os.environ.get("KEN_SUPABASE_URL", "https://kflsbmlpupvpbwsenfba.supabase.co").rstrip("/")
+SUPABASE_KEY = os.environ.get("KEN_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_2Mm0B-H0tGj0CfKRavlptg_onKxPkFM")
+_ADMIN_CACHE: OrderedDict = OrderedDict()
+
+
+def _supabase_get(path: str, token: str):
+    req = urllib.request.Request(
+        SUPABASE_URL + path,
+        headers={"apikey": SUPABASE_KEY, "Authorization": "Bearer " + token, "Accept": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=6) as res:
+        return json.loads(res.read().decode("utf-8"))
+
+
+async def require_admin(authorization: str | None) -> dict:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="管理者ログインが必要です")
+    token = authorization[7:].strip()
+    if not (20 <= len(token) <= 4096):
+        raise HTTPException(status_code=401, detail="管理者ログインが必要です")
+    now = monotonic()
+    hit = _ADMIN_CACHE.get(token)
+    if hit and now - hit[0] < 60:
+        return hit[1]
+    try:
+        user = await asyncio.to_thread(_supabase_get, "/auth/v1/user", token)
+        uid = str(user.get("id") or "")
+        if not re.fullmatch(r"[0-9a-f-]{36}", uid):
+            raise ValueError("no user")
+        rows = await asyncio.to_thread(
+            _supabase_get, "/rest/v1/profiles?select=role,display_name&id=eq." + uid, token
+        )
+    except Exception:
+        raise HTTPException(status_code=401, detail="ログインを確認できませんでした。再ログインしてください")
+    profile = rows[0] if isinstance(rows, list) and rows else {}
+    if profile.get("role") not in ("owner", "admin"):
+        raise HTTPException(status_code=403, detail="管理者のみ利用できます")
+    info = {"uid": uid, "name": str(profile.get("display_name") or "")[:80]}
+    _ADMIN_CACHE[token] = (now, info)
+    while len(_ADMIN_CACHE) > 200:
+        _ADMIN_CACHE.popitem(last=False)
+    return info
+
+
+class PriorityRequestIn(BaseModel):
+    kind: Literal["song", "artist"]
+    artist: str = Field(min_length=1, max_length=120)
+    title: str | None = Field(default=None, max_length=120)
+    note: str = Field(default="", max_length=300)
+
+
+def _priority_row(r: dict) -> dict:
+    return {
+        "id": r["id"], "kind": r["kind"], "artist": r["artist_name"], "title": r["song_title"],
+        "note": r["note"], "status": r["status"], "requestedBy": r["requested_by"],
+        "createdAt": r["created_at"].isoformat(),
+    }
+
+
+PRIORITY_COLUMNS = "id, kind, artist_name, song_title, note, status, requested_by, created_at"
+
+
+@app.get("/api/v1/priority-requests")
+async def list_priority_requests(request: Request, authorization: str | None = Header(default=None)):
+    await require_admin(authorization)
+    try:
+        async with request.app.state.pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute(
+                    f"SELECT {PRIORITY_COLUMNS} FROM ken_priority_requests ORDER BY created_at DESC, id DESC LIMIT 200"
+                )
+                rows = await cur.fetchall()
+            await conn.rollback()
+    except Exception:
+        raise HTTPException(status_code=503, detail="優先リクエストを読み込めませんでした")
+    return {"items": [_priority_row(r) for r in rows]}
+
+
+@app.post("/api/v1/priority-requests", status_code=201)
+async def add_priority_request(
+    request: Request, body: PriorityRequestIn, authorization: str | None = Header(default=None)
+):
+    admin = await require_admin(authorization)
+    bad = re.compile(r"[<>\x00-\x1f]")
+    artist = body.artist.strip()
+    title = (body.title or "").strip() or None
+    note = body.note.strip()
+    if not artist or bad.search(artist) or (title and bad.search(title)) or re.search(r"[\x00-\x08\x0b-\x1f]", note):
+        raise HTTPException(status_code=422, detail="入力内容を確認してください")
+    if body.kind == "song" and not title:
+        raise HTTPException(status_code=422, detail="曲名を入力してください")
+    if body.kind == "artist":
+        title = None
+    try:
+        async with request.app.state.pool.connection() as conn:
+            async with conn.transaction():
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        f"""INSERT INTO ken_priority_requests(kind, artist_name, song_title, note, requested_by, requested_uid)
+                            VALUES (%s, %s, %s, %s, %s, %s)
+                            ON CONFLICT DO NOTHING RETURNING {PRIORITY_COLUMNS}""",
+                        (body.kind, artist, title, note, admin["name"], admin["uid"]),
+                    )
+                    row = await cur.fetchone()
+    except Exception:
+        raise HTTPException(status_code=503, detail="優先リクエストを保存できませんでした")
+    if row is None:
+        raise HTTPException(status_code=409, detail="同じ内容がすでにリクエスト済みです")
+    return {"item": _priority_row(row)}
 
 
 @app.get("/api/v1/search")

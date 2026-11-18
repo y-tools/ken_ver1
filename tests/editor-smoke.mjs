@@ -104,7 +104,8 @@ try{
  await page.locator("#artistReleasedSongCount").fill("");
  await page.locator("#artistReleaseCountSourceUrl").fill("");
  await page.locator("#artistReleaseCountForm button[type=submit]").click();
- await page.waitForFunction(()=>state.artist.releasedSongCount===null);
+ await page.waitForFunction(()=>document.querySelector("#artistReleasedSongCount")?.value==="");
+ assert.equal(state.artist.releasedSongCount,null);
  assert.equal(await page.locator("#artistReleasedSongCount").inputValue(),"");
  console.log("PASS Released-song count can be reset to unverified");
  await page.locator("#songList button").first().click();

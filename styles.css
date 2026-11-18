@@ -669,3 +669,12 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 .button.priority-clear{width:30px;height:30px;padding:0!important;border-radius:50%;font-size:16px!important;font-weight:900;background:#3a1620;border:1px solid #ff5d73;color:#ffb3bf}
 .button.priority-clear:hover{background:#ff3b5c;color:#fff}
 @media(max-width:720px){.priority-list{overflow-x:auto}.priority-table{min-width:680px}}
+
+.priority-table td.added-input input{width:100%;min-width:90px;background:var(--bg);border:1px solid var(--edge);border-radius:8px;color:var(--text);padding:5px 7px;font-size:12px}
+.priority-table td.added-input input.priority-added-count{min-width:64px;max-width:80px}
+.priority-table td.count-cell{white-space:nowrap;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+@media(max-width:720px){.priority-table{min-width:900px}}
+
+.priority-form-single{margin:10px 0}
+.priority-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.priority-form-single .button{align-self:flex-start;min-width:220px}

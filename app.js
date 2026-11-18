@@ -591,7 +591,7 @@ function renderPriorityList(items,freshId){
  const statusLabel={requested:"リクエスト済み",in_progress:"対応中",done:"対応完了",rejected:"見送り"};
  const at=v=>v?timeLabel(Date.parse(v)):"—";
  const table=document.createElement("table");table.className="priority-table";
- table.innerHTML="<thead><tr><th>状態</th><th>アーティスト</th><th>楽曲名</th><th>メモ</th><th>投稿日</th><th>対応日</th><th>完了日時</th><th></th></tr></thead>";
+ table.innerHTML="<thead><tr><th>状態</th><th>アーティスト</th><th>楽曲名</th><th>メモ</th><th>投稿日</th><th>対応日</th><th>追加アーティスト名</th><th>追加楽曲数</th><th>完了日時</th><th></th></tr></thead>";
  const tbody=document.createElement("tbody");
  for(const it of items){
   const tr=document.createElement("tr");tr.className="priority-row "+it.status+(it.id===freshId?" fresh":"");
@@ -601,7 +601,21 @@ function renderPriorityList(items,freshId){
   cell(it.artist,"what");
   cell(it.kind==="artist"?"（アーティスト全体）":(it.title||"—"),it.kind==="artist"?"muted":"what");
   cell(it.note||"—","note");
-  cell(at(it.createdAt),"date");cell(at(it.handledAt),"date");cell(at(it.completedAt),"date");
+  cell(at(it.createdAt),"date");cell(at(it.handledAt),"date");
+  const open=it.status==="requested"||it.status==="in_progress";
+  if(open){
+   // Enter the results here, then press 完了 to record them with the completion time.
+   const addTd=cell("","added-input");const addIn=document.createElement("input");
+   addIn.type="text";addIn.maxLength=120;addIn.className="priority-added-artist";addIn.dataset.id=String(it.id);
+   addIn.placeholder="追加アーティスト名";addIn.value=it.artist;addIn.setAttribute("aria-label","追加アーティスト名");addTd.appendChild(addIn);
+   const cntTd=cell("","added-input");const cntIn=document.createElement("input");
+   cntIn.type="number";cntIn.min="0";cntIn.max="100000";cntIn.step="1";cntIn.inputMode="numeric";
+   cntIn.className="priority-added-count";cntIn.dataset.id=String(it.id);cntIn.placeholder="曲数";cntIn.setAttribute("aria-label","追加楽曲数");cntTd.appendChild(cntIn);
+  }else{
+   cell(it.addedArtistName||"—",it.addedArtistName?"what":"muted");
+   cell(it.addedSongCount==null?"—":Number(it.addedSongCount).toLocaleString("ja-JP")+" 曲","count-cell");
+  }
+  cell(at(it.completedAt),"date");
   const act=cell("","actions");
   const btn=(label,cls,action,title)=>{const b=document.createElement("button");b.type="button";b.className="button "+cls;
    b.textContent=label;b.dataset.priorityAction=action;b.dataset.id=String(it.id);if(title){b.title=title;b.setAttribute("aria-label",title);}act.appendChild(b);};
@@ -619,7 +633,14 @@ async function priorityAction(event){
  try{
   const token=await adminAccessToken();
   if(action==="clear"){await window.KEN_VPS_SEARCH.priorityClear(token,id);fb.textContent="対応完了のリクエストを消し込みました";}
-  else{await window.KEN_VPS_SEARCH.priorityStatus(token,id,action);fb.textContent=action==="done"?"対応完了にしました":"対応中にしました";}
+  else if(action==="done"){
+   const name=(document.querySelector('.priority-added-artist[data-id="'+id+'"]')?.value||"").trim();
+   const raw=(document.querySelector('.priority-added-count[data-id="'+id+'"]')?.value||"").trim();
+   const count=raw===""?null:Number(raw);
+   if(count!==null&&(!Number.isInteger(count)||count<0)){fb.textContent="追加楽曲数は0以上の整数で入力してください";b.disabled=false;return;}
+   await window.KEN_VPS_SEARCH.priorityStatus(token,id,"done",{addedArtistName:name||null,addedSongCount:count});
+   fb.textContent="対応完了にしました";
+  }else{await window.KEN_VPS_SEARCH.priorityStatus(token,id,action);fb.textContent="対応中にしました";}
   await loadPriorityRequests(action==="clear"?null:id);
  }catch(e){fb.textContent=String(e.message||e).slice(0,140);b.disabled=false;}
  finally{priorityBusy=false;}
@@ -637,23 +658,22 @@ async function loadPriorityRequests(freshId){
   renderPriorityList(data.items||[],freshId);
  }catch(e){$("#priorityList").textContent="読み込めませんでした："+String(e.message||e).slice(0,100);}
 }
-async function submitPriority(kind,event){
+async function submitPriority(event){
  event.preventDefault();if(priorityBusy)return;
  const fb=$("#priorityFeedback");
- const payload=kind==="song"
-  ?{kind,artist:$("#prioritySongArtist").value.trim(),title:$("#prioritySongTitle").value.trim(),note:$("#prioritySongNote").value.trim()}
-  :{kind,artist:$("#priorityArtistName").value.trim(),note:$("#priorityArtistNote").value.trim()};
- if(!payload.artist){fb.textContent="アーティスト名を入力してください（未入力では送信できません）";return;}
- if(kind==="song"&&!payload.title){fb.textContent="曲名を入力してください";return;}
- priorityBusy=true;fb.textContent="送信しています…";
+ const artist=$("#priorityArtist").value.trim(),title=$("#priorityTitle").value.trim(),note=$("#priorityNote").value.trim();
+ if(!artist){fb.textContent="アーティスト名を入力してください（未入力では送信できません）";return;}
+ // 曲名があれば楽曲リクエスト、空欄ならアーティスト全体のリクエスト
+ const payload=title?{kind:"song",artist,title,note}:{kind:"artist",artist,note};
+ priorityBusy=true;$("#prioritySubmit").disabled=true;fb.textContent="送信しています…";
  try{
   const res=await window.KEN_VPS_SEARCH.priorityAdd(await adminAccessToken(),payload);
   event.target.reset();
-  fb.textContent=(kind==="song"?"優先楽曲":"優先アーティスト")+"をリクエスト済みにしました";
+  fb.textContent=(title?"「"+artist+" / "+title+"」":"「"+artist+"」（アーティスト全体）")+"をリクエスト済みにしました";
   toast("Kenの優先リクエストに保存しました");
   await loadPriorityRequests(res?.item?.id);
  }catch(e){fb.textContent=String(e.message||e).slice(0,140);}
- finally{priorityBusy=false;}
+ finally{priorityBusy=false;$("#prioritySubmit").disabled=!$("#priorityArtist").value.trim();}
 }
 function render(){
  $("#streamerName").textContent=state.name;
@@ -1090,15 +1110,11 @@ async function attach(){
   renderSearch();renderSinging();renderQueue();renderAdminRequests();renderAdminSongList();
  });
  $("#adminSongSearch").addEventListener("input",renderAdminSongList);
-// Submit stays disabled until the artist name (and song title for songs) is entered.
- const syncPriorityButtons=()=>{
-  const songBtn=$("#prioritySongSubmit"),artistBtn=$("#priorityArtistSubmit");
-  if(songBtn)songBtn.disabled=priorityBusy||!$("#prioritySongArtist").value.trim()||!$("#prioritySongTitle").value.trim();
-  if(artistBtn)artistBtn.disabled=priorityBusy||!$("#priorityArtistName").value.trim();
- };
- for(const id of ["#prioritySongArtist","#prioritySongTitle","#priorityArtistName"])$(id)?.addEventListener("input",syncPriorityButtons);
- for(const id of ["#prioritySongForm","#priorityArtistForm"])$(id)?.addEventListener("reset",()=>setTimeout(syncPriorityButtons,0));
- $("#prioritySongForm")?.addEventListener("submit",e=>submitPriority("song",e));
+// Submit stays disabled until the artist name is entered (曲名・メモは任意).
+ const syncPrioritySubmit=()=>{const b=$("#prioritySubmit");if(b)b.disabled=priorityBusy||!$("#priorityArtist").value.trim();};
+ $("#priorityArtist")?.addEventListener("input",syncPrioritySubmit);
+ $("#priorityForm")?.addEventListener("reset",()=>setTimeout(syncPrioritySubmit,0));
+ $("#priorityForm")?.addEventListener("submit",submitPriority);
  $("#priorityList")?.addEventListener("click",priorityAction);
  $("#ownerAdminListLoad")?.addEventListener("click",()=>void loadOwnerAdminList());
  $("#priorityArtistForm")?.addEventListener("submit",e=>submitPriority("artist",e));

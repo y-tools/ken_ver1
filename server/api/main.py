@@ -255,11 +255,13 @@ def _priority_row(r: dict) -> dict:
         "createdAt": r["created_at"].isoformat(),
         "handledAt": r["handled_at"].isoformat() if r["handled_at"] else None,
         "completedAt": r["completed_at"].isoformat() if r["completed_at"] else None,
+        "addedArtistName": r["added_artist_name"],
+        "addedSongCount": r["added_song_count"],
     }
 
 
 PRIORITY_COLUMNS = ("id, kind, artist_name, song_title, note, status, requested_by, created_at,"
-                    " handled_at, completed_at")
+                    " handled_at, completed_at, added_artist_name, added_song_count")
 
 
 @app.get("/api/v1/priority-requests")
@@ -315,6 +317,8 @@ async def add_priority_request(
 
 class PriorityStatusIn(BaseModel):
     status: Literal["in_progress", "done"]
+    addedArtistName: str | None = Field(default=None, max_length=120)
+    addedSongCount: int | None = Field(default=None, ge=0, le=100000)
 
 
 @app.post("/api/v1/priority-requests/{request_id}/status")
@@ -328,14 +332,18 @@ async def update_priority_status(
                f" updated_at=now() WHERE id=%s AND status='requested' AND cleared_at IS NULL RETURNING {PRIORITY_COLUMNS}")
     else:
         sql = (f"UPDATE ken_priority_requests SET status='done', handled_at=coalesce(handled_at, now()),"
-               f" completed_at=now(), updated_at=now()"
+               f" completed_at=now(), added_artist_name=%s, added_song_count=%s, updated_at=now()"
                f" WHERE id=%s AND status IN ('requested','in_progress') AND cleared_at IS NULL RETURNING {PRIORITY_COLUMNS}")
+    added_artist = re.sub(r"\s+", " ", body.addedArtistName or "").strip() or None
+    if added_artist and re.search(r"[<>\x00-\x1f]", added_artist):
+        raise HTTPException(status_code=422, detail="追加アーティスト名を確認してください")
+    params = (request_id,) if body.status == "in_progress" else (added_artist, body.addedSongCount, request_id)
     try:
         async with request.app.state.pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor() as cur:
                     await cur.execute("SET TRANSACTION READ WRITE")
-                    await cur.execute(sql, (request_id,))
+                    await cur.execute(sql, params)
                     row = await cur.fetchone()
     except Exception:
         raise HTTPException(status_code=503, detail="状態を更新できませんでした")

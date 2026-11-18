@@ -64,9 +64,14 @@ class PriorityTests(unittest.TestCase):
             self.assertEqual(started.status_code, 200, started.text)
             self.assertIsNotNone(started.json()["item"]["handledAt"])
             self.assertIsNone(started.json()["item"]["completedAt"])
-            done = c.post(f"/api/v1/priority-requests/{sid}/status", headers=admin, json={"status": "done"})
+            done = c.post(f"/api/v1/priority-requests/{sid}/status", headers=admin,
+                          json={"status": "done", "addedArtistName": " テスト歌手P ", "addedSongCount": 12})
             self.assertEqual(done.status_code, 200, done.text)
             self.assertIsNotNone(done.json()["item"]["completedAt"])
+            self.assertEqual(done.json()["item"]["addedArtistName"], "テスト歌手P")
+            self.assertEqual(done.json()["item"]["addedSongCount"], 12)
+            self.assertEqual(c.post(f"/api/v1/priority-requests/{a.json()['item']['id']}/status", headers=admin,
+                json={"status": "done", "addedSongCount": -1}).status_code, 422)
             # After completion the same song may be requested again.
             again = c.post("/api/v1/priority-requests", headers=admin,
                            json={"kind": "song", "artist": "テスト歌手P", "title": "テスト曲P"})

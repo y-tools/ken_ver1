@@ -101,15 +101,18 @@ try{
  // The priority section is only for the KenMorley login ID; this mock admin has another ID.
  assert.equal(await admin.locator("#priorityRequests").isHidden(),true);
  await admin.evaluate(()=>{document.querySelector("#priorityRequests").hidden=false;});
- const prioritySubmitState=()=>admin.evaluate(()=>[
-   document.querySelector("#prioritySongSubmit").disabled,document.querySelector("#priorityArtistSubmit").disabled]);
- assert.deepEqual(await prioritySubmitState(),[true,true]);
- await admin.locator("#prioritySongTitle").fill("曲だけ");
- await admin.locator("#priorityArtistName").fill("   ");
- assert.deepEqual(await prioritySubmitState(),[true,true]);
- await admin.locator("#prioritySongArtist").fill("YOASOBI");
- await admin.locator("#priorityArtistName").fill("ヨルシカ");
- assert.deepEqual(await prioritySubmitState(),[false,false]);
+ const prioritySubmitDisabled=()=>admin.evaluate(()=>document.querySelector("#prioritySubmit").disabled);
+ assert.equal(await prioritySubmitDisabled(),true);
+ await admin.locator("#priorityTitle").fill("曲だけ");
+ await admin.locator("#priorityNote").fill("メモだけ");
+ assert.equal(await prioritySubmitDisabled(),true);
+ await admin.locator("#priorityArtist").fill("   ");
+ assert.equal(await prioritySubmitDisabled(),true);
+ await admin.locator("#priorityArtist").fill("ヨルシカ");
+ assert.equal(await prioritySubmitDisabled(),false);
+ await admin.locator("#priorityTitle").fill("");
+ await admin.locator("#priorityNote").fill("");
+ assert.equal(await prioritySubmitDisabled(),false);
  console.log("PASS priority requests hidden for other IDs and cannot be sent without an artist name");
  await admin.close();
  console.log("PASS admin stream start and shared request UI");

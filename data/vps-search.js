@@ -73,7 +73,7 @@
  }
  const priorityList=token=>adminCall("GET",token);
  const priorityAdd=(token,data)=>adminCall("POST",token,data);
- const priorityStatus=(token,id,status)=>adminCall("POST",token,{status},"/"+encodeURIComponent(id)+"/status");
+ const priorityStatus=(token,id,status,extra={})=>adminCall("POST",token,{status,...extra},"/"+encodeURIComponent(id)+"/status");
  const priorityClear=(token,id)=>adminCall("POST",token,{},"/"+encodeURIComponent(id)+"/clear");
  window.KEN_VPS_SEARCH=Object.freeze({search,stats,priorityList,priorityAdd,priorityStatus,priorityClear,apiConfigured:true});
 })();

@@ -65,7 +65,7 @@ async function fixture(role){
 try{
  const admin=await fixture("admin");
  assert.equal(await admin.locator("#listenerStreamLabel").textContent(),"OFF AIR");
- await admin.waitForFunction(()=>document.querySelector("#catalogStatus")?.textContent==="TK専用カタログ");
+ await admin.waitForFunction(()=>document.querySelector("#catalogStatus")?.textContent==="楽曲DB検索");
  const tkCatalog=await admin.evaluate(async()=>await (await fetch("./catalog.json",{cache:"no-store"})).json());
  assert.equal(tkCatalog.length,98,"Static catalog remains exactly 98 songs");
  assert.ok(tkCatalog.every(row=>row[1]==="TK from 凛として時雨"));

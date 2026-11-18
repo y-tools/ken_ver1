@@ -16,7 +16,7 @@
 <script src="./data/vps-search.js?v=20261106-vps-phase0-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./app.js?v=20261111-comingsoon-login-v6" defer></script>
+<script src="./app.js?v=20261118-allsongs-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -65,7 +65,7 @@
       <section class="home-card" id="search-section" aria-labelledby="search-heading">
         <div class="section-head search-section-head">
           <span class="section-no">01</span>
-          <div class="search-section-title"><h3 id="search-heading">楽曲検索</h3><p>TK from 凛として時雨の楽曲だけを、曲名とアーティスト名で検索できます。</p></div>
+          <div class="search-section-title"><h3 id="search-heading">楽曲検索</h3><p>登録されている楽曲を、曲名とアーティスト名で検索できます。</p></div>
           <button type="button" class="button primary search-freeform-button" id="openFreeformRequest" aria-haspopup="dialog" aria-controls="freeformRequestDialog">自由入力リクエスト</button>
         </div>
         <div class="song-search-fields" role="search" aria-label="楽曲の絞り込み">
@@ -348,14 +348,14 @@
   <form id="requestForm" class="request-form">
           <div id="chosenSong" class="selection" hidden></div>
           <div class="form-row">
-            <label class="field">曲名（TK専用カタログから選択） <input id="reqTitle" name="title" required maxlength="120" list="guestSongSuggestions" placeholder="曲名を入力・選択"></label><datalist id="guestSongSuggestions"></datalist>
+            <label class="field">曲名 <input id="reqTitle" name="title" required maxlength="120" list="guestSongSuggestions" placeholder="曲名を入力・選択"></label><datalist id="guestSongSuggestions"></datalist>
             <label class="field">アーティスト <input id="reqArtist" name="artist" required maxlength="120" placeholder="アーティスト名を入力"></label>
           </div>
           <label class="field">リクエスト者のお名前 <input id="reqName" name="nickname" required maxlength="40" autocomplete="nickname" placeholder="REALITYでのお名前"></label>
           <label class="field">メッセージ（任意）<textarea id="reqMessage" maxlength="200" placeholder="ひとことあればどうぞ"></textarea></label>
           <div><button type="submit" class="button primary large" id="sendRequest">リクエストを送信</button></div>
           <div aria-hidden="true" style="position:absolute;left:-9999px"><label>入力しないでください<input type="text" id="requestCompany" name="company" tabindex="-1" autocomplete="off"></label></div>
-          <p class="helper">※ リスナーはログイン不要です。配信中のみTKの登録曲をリクエストできます。連続投稿にはサーバー側の制限があります。</p>
+          <p class="helper">※ リスナーはログイン不要です。配信中のみリクエストできます。連続投稿にはサーバー側の制限があります。</p>
         </form>
 </dialog>
 

@@ -96,11 +96,11 @@ async def search_rate_limit(request: Request, call_next):
 # IDs are not sequential public data paths; API exposes only read-only search.
 SEARCH_TITLE = """
 WITH matched AS (
- SELECT id AS song_id, 0 AS priority FROM songs WHERE title_key LIKE %s
+ SELECT id AS song_id, CASE WHEN title_key LIKE %s ESCAPE '!' THEN 0 ELSE 1 END AS priority
+ FROM songs WHERE title_key LIKE %s ESCAPE '!'
  UNION ALL
- SELECT song_id, CASE WHEN verification IN ('source_confirmed','human_confirmed')
-                       THEN 1 ELSE 2 END AS priority
- FROM song_names WHERE search_key LIKE %s
+ SELECT song_id, CASE WHEN search_key LIKE %s ESCAPE '!' THEN 2 ELSE 3 END AS priority
+ FROM song_names WHERE search_key LIKE %s ESCAPE '!'
 )
 SELECT s.id, s.title, s.release_year, s.release_month, s.release_day,
        s.release_precision, a.id AS artist_id, a.name AS artist,
@@ -113,11 +113,11 @@ LIMIT %s
 """
 SEARCH_ARTIST = """
 WITH matched AS (
- SELECT id AS artist_id, 0 AS priority FROM artists WHERE name_key LIKE %s
+ SELECT id AS artist_id, CASE WHEN name_key LIKE %s ESCAPE '!' THEN 0 ELSE 1 END AS priority
+ FROM artists WHERE name_key LIKE %s ESCAPE '!'
  UNION ALL
- SELECT artist_id, CASE WHEN verification IN ('source_confirmed','human_confirmed')
-                        THEN 1 ELSE 2 END AS priority
- FROM artist_names WHERE search_key LIKE %s
+ SELECT artist_id, CASE WHEN search_key LIKE %s ESCAPE '!' THEN 2 ELSE 3 END AS priority
+ FROM artist_names WHERE search_key LIKE %s ESCAPE '!'
 )
 SELECT s.id, s.title, s.release_year, s.release_month, s.release_day,
        s.release_precision, a.id AS artist_id, a.name AS artist,
@@ -162,17 +162,19 @@ async def search(
         return {"items": [], "query": q, "mode": mode}
     if len(term) > 120:
         raise HTTPException(status_code=422, detail="Query is too long")
-    pattern = term.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%"
-    statement = (SEARCH_ARTIST if mode == "artist" else SEARCH_TITLE).replace(
-        "LIKE %s", "LIKE %s ESCAPE '!'"
-    )
+    escaped = term.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+    # Prefix matches rank first, but partial (middle) matches are also returned
+    # so that e.g. "凛として" finds "TK from 凛として時雨".
+    prefix = escaped + "%"
+    pattern = "%" + escaped + "%"
+    statement = SEARCH_ARTIST if mode == "artist" else SEARCH_TITLE
     try:
         async with request.app.state.pool.connection() as conn:
             async with conn.transaction():
                 async with conn.cursor() as cur:
                     await cur.execute("SET LOCAL statement_timeout = '2500ms'")
                     await cur.execute("SET LOCAL default_transaction_read_only = on")
-                    await cur.execute(statement, (pattern, pattern, limit))
+                    await cur.execute(statement, (prefix, pattern, prefix, pattern, limit))
                     rows = await cur.fetchall()
                     song_ids = [r["id"] for r in rows]
                     artist_ids = list({r["artist_id"] for r in rows})

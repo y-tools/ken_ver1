@@ -70,6 +70,10 @@ class SearchTests(unittest.TestCase):
             wrong_field = client.get("/api/v1/search", params={"q": "tougo", "mode": "title"})
             self.assertEqual(wrong_field.status_code, 200)
             self.assertNotIn("統合テスト曲", [x["title"] for x in wrong_field.json()["items"]])
+            middle_title = client.get("/api/v1/search", params={"q": "テストきょく", "mode": "title"})
+            self.assertIn("統合テスト曲", [x["title"] for x in middle_title.json()["items"]])
+            middle_artist = client.get("/api/v1/search", params={"q": "test", "mode": "artist"})
+            self.assertIn("統合テスト曲", [x["title"] for x in middle_artist.json()["items"]])
             invalid = client.get("/api/v1/search", params={"q": "a", "mode": "title"})
             self.assertEqual(invalid.status_code, 422)
 

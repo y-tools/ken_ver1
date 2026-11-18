@@ -43,6 +43,10 @@ function toast(message){
  clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.hidden=true,3400);
 }
 function readyKey(t,a){return norm(t)+"|"+norm(a);}
+function inGuestCatalog(title,artist){
+ const t=String(title).trim().toLowerCase(),a=String(artist).trim().toLowerCase();
+ return catalog.rows.some(r=>String(r[0]).trim().toLowerCase()===t&&String(r[1]).trim().toLowerCase()===a);
+}
 function readySet(){return new Set(state.songs.filter(x=>x.status==="ready").map(x=>readyKey(x.title,x.artist)));}
 function makeId(prefix){return prefix+"-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);}
 function currentSession(){return state.sessions.find(x=>x.id===state.activeSessionId&&!x.endedAt)||null;}
@@ -133,7 +137,7 @@ function openRequestDialog(song){
  if(!state.streamLive){toast("現在は配信終了中です。リクエストを送信できません");return;}
  selected=song||null;
  $("#reqTitle").value=song?.title||"";
- $("#reqArtist").value=song?.artist||(shared&&!shared.isAdmin()?TK_ONLY_ARTIST:"");
+ $("#reqArtist").value=song?.artist||"";
  $("#chosenSong").hidden=!song;
  $("#chosenSong").textContent=song?"選択中："+song.title+" / "+song.artist:"";
  const dlg=$("#requestDialog");
@@ -162,14 +166,14 @@ function renderSearch(){
  const unchanged=()=>sequence===extendedSearchSequence&&
   $("#searchInput").value.trim()===titleQuery&&
   $("#searchArtistInput").value.trim()===artistQuery;
- const ready=state.songs.filter(s=>s.status==="ready" && isTKArtist(s.artist));
+ const ready=state.songs.filter(s=>s.status==="ready");
  const statusLookup=new Map(state.songs.map(s=>[readyKey(s.title,s.artist),s.status]));
  $("#searchHelper").textContent=catalog.ready
-  ? "TK from 凛として時雨のみ "+catalog.rows.length.toLocaleString("ja-JP")+"曲。曲名・アーティスト名は片方だけでも両方でも検索できます。"
-  : catalog.error?"TK限定カタログを読み込めませんでした。":"TK限定カタログを読み込み中です…";
+  ? "楽曲データベースから検索します。曲名・アーティスト名は片方だけでも両方でも検索できます（2文字以上で全登録曲を検索）。"
+  : catalog.error?"内蔵カタログを読み込めませんでした（データベース検索は継続します）。":"内蔵カタログを読み込み中です…";
  const list=[],indices=new Map();
  const add=song=>{
-  if(!isTKArtist(song.artist)||!matchesBothFields(song,titleTerm,artistTerm))return;
+  if(!matchesBothFields(song,titleTerm,artistTerm))return;
   const key=readyKey(song.title,song.artist);
   const i=indices.get(key);
   if(i!==undefined){
@@ -527,7 +531,7 @@ function render(){
  if(shared && $("#newName"))$("#newName").value=state.name;
  document.title=state.name+"のデンモク";
  renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderReadySongs();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
- $("#catalogStatus").textContent=catalog.ready?"TK専用カタログ":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
+ $("#catalogStatus").textContent=catalog.ready?"楽曲DB検索":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  $("#toListener").hidden=!adminMode || preview;
  if($("#adminNav"))$("#adminNav").hidden=preview||!shared?.isAdmin();
@@ -610,7 +614,6 @@ async function requestSubmit(event){
  const title=$("#reqTitle").value.trim(),artist=$("#reqArtist").value.trim(),nickname=$("#reqName").value.trim();
  if(!title||!artist||!nickname){toast("曲名・アーティスト・お名前を入力してください");return;}
  if(title.length>120||artist.length>120||nickname.length>40){toast("入力文字数を確認してください");return;}
- if(shared&&!shared.isAdmin()&&!isTKArtist(artist)){toast("TK from 凛として時雨の楽曲を選んでください");return;}
  isSending=true;
  if(shared){
   try{
@@ -622,8 +625,11 @@ async function requestSubmit(event){
    }else{
     try{
      if(!guestPendingNonce)guestPendingNonce=crypto.randomUUID();
+     // Songs outside the fixed server-side request catalog (TK) use the
+     // existing free-input RPC, which applies the same validation and quotas.
      await shared.requestGuest({title,artist,nickname,message,
-       nonce:guestPendingNonce,company:$("#requestCompany")?.value||""});
+       nonce:guestPendingNonce,freeform:!inGuestCatalog(title,artist),
+       company:$("#requestCompany")?.value||""});
      guestPendingNonce=null;
      ok=true;
     }catch(e){
@@ -632,7 +638,7 @@ async function requestSubmit(event){
     }
    }
    if(ok){
-    $("#reqMessage").value="";$("#reqTitle").value="";$("#reqArtist").value=shared.isAdmin()?"":TK_ONLY_ARTIST;selected=null;
+    $("#reqMessage").value="";$("#reqTitle").value="";$("#reqArtist").value="";selected=null;
     $("#chosenSong").hidden=true;const dlg=$("#requestDialog");
     if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");
     try{localStorage.setItem("ken-nickname",nickname)}catch(_){}

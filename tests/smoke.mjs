@@ -19,7 +19,7 @@ try{
  await page.locator("#listenerView").waitFor({state:"visible"});
  await check((await text(page.locator("#listenerStreamLabel")))==="OFF AIR","Listener starts OFF AIR");
  await page.waitForFunction(
-  () => document.querySelector("#catalogStatus")?.textContent?.includes("TK専用カタログ"),
+  () => document.querySelector("#catalogStatus")?.textContent?.includes("楽曲DB検索"),
   null,{timeout:30000}
  );
  const tkName="TK from 凛として時雨";
@@ -39,13 +39,13 @@ try{
    "Title + TK artist query returns TK only");
  await page.locator("#searchArtistInput").fill("B'z");
  await page.waitForTimeout(700);
- await check((await page.evaluate(()=>window.__searchResults||[])).length===0,
-   "Non-TK artist cannot appear even when a TK title is entered");
+ await check((await page.evaluate(()=>window.__searchResults||[])).every(row=>row.artist!==tkName),
+   "Title + other artist query applies the artist AND filter");
  await page.locator("#searchInput").fill("");
- await page.locator("#searchArtistInput").fill("B'z");
+ await page.locator("#searchArtistInput").fill("凛として");
  await page.waitForTimeout(700);
- await check((await page.evaluate(()=>window.__searchResults||[])).length===0,
-   "Non-TK artist-only query returns no results");
+ await check((await page.evaluate(()=>window.__searchResults||[])).some(row=>row.artist===tkName),
+   "Artist search matches in the middle of the artist name");
  await page.locator("#searchArtistInput").fill(tkName);
  await page.waitForTimeout(700);
  await check((await page.evaluate(()=>window.__searchResults||[])).every(row=>row.artist===tkName),

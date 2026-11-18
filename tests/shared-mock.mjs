@@ -98,6 +98,16 @@ try{
  await admin.locator("#sendRequest").click();
  await admin.locator("#adminTitle").click({clickCount:3});
  await admin.locator("#adminRequests").getByText("結合テスト曲").waitFor({state:"visible"});
+ const prioritySubmitState=()=>admin.evaluate(()=>[
+   document.querySelector("#prioritySongSubmit").disabled,document.querySelector("#priorityArtistSubmit").disabled]);
+ assert.deepEqual(await prioritySubmitState(),[true,true]);
+ await admin.locator("#prioritySongTitle").fill("曲だけ");
+ await admin.locator("#priorityArtistName").fill("   ");
+ assert.deepEqual(await prioritySubmitState(),[true,true]);
+ await admin.locator("#prioritySongArtist").fill("YOASOBI");
+ await admin.locator("#priorityArtistName").fill("ヨルシカ");
+ assert.deepEqual(await prioritySubmitState(),[false,false]);
+ console.log("PASS priority requests cannot be sent without an artist name");
  await admin.close();
  console.log("PASS admin stream start and shared request UI");
 

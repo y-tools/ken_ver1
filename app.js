@@ -612,7 +612,8 @@ async function submitPriority(kind,event){
  const payload=kind==="song"
   ?{kind,artist:$("#prioritySongArtist").value.trim(),title:$("#prioritySongTitle").value.trim(),note:$("#prioritySongNote").value.trim()}
   :{kind,artist:$("#priorityArtistName").value.trim(),note:$("#priorityArtistNote").value.trim()};
- if(!payload.artist||(kind==="song"&&!payload.title)){fb.textContent="必須項目を入力してください";return;}
+ if(!payload.artist){fb.textContent="アーティスト名を入力してください（未入力では送信できません）";return;}
+ if(kind==="song"&&!payload.title){fb.textContent="曲名を入力してください";return;}
  priorityBusy=true;fb.textContent="送信しています…";
  try{
   const res=await window.KEN_VPS_SEARCH.priorityAdd(await adminAccessToken(),payload);
@@ -1057,6 +1058,14 @@ async function attach(){
   renderSearch();renderSinging();renderQueue();renderAdminRequests();renderAdminSongList();
  });
  $("#adminSongSearch").addEventListener("input",renderAdminSongList);
+// Submit stays disabled until the artist name (and song title for songs) is entered.
+ const syncPriorityButtons=()=>{
+  const songBtn=$("#prioritySongSubmit"),artistBtn=$("#priorityArtistSubmit");
+  if(songBtn)songBtn.disabled=priorityBusy||!$("#prioritySongArtist").value.trim()||!$("#prioritySongTitle").value.trim();
+  if(artistBtn)artistBtn.disabled=priorityBusy||!$("#priorityArtistName").value.trim();
+ };
+ for(const id of ["#prioritySongArtist","#prioritySongTitle","#priorityArtistName"])$(id)?.addEventListener("input",syncPriorityButtons);
+ for(const id of ["#prioritySongForm","#priorityArtistForm"])$(id)?.addEventListener("reset",()=>setTimeout(syncPriorityButtons,0));
  $("#prioritySongForm")?.addEventListener("submit",e=>submitPriority("song",e));
  $("#ownerAdminListLoad")?.addEventListener("click",()=>void loadOwnerAdminList());
  $("#priorityArtistForm")?.addEventListener("submit",e=>submitPriority("artist",e));

@@ -12,7 +12,7 @@ function mockSupabase(){
   auth:{getUser:async()=>({data:{user:{id:data.userId,email:"test@example.com"}},error:null}),
    signOut:async()=>({error:null})},
   from:(name)=>({select:()=>({eq:()=>({single:async()=>({data:name==="profiles"?
-    {id:data.userId,display_name:"テスト利用者",role:data.role}:{version:data.version},error:null})})})}),
+    {id:data.userId,display_name:"テスト利用者",role:data.role,login_id:window.__KEN_TEST_LOGIN_ID||null}:{version:data.version},error:null})})})}),
   rpc:async(name,params)=>{
    if(name==="denmoku_snapshot")return {data:JSON.parse(JSON.stringify(data)),error:null};
    if(name==="denmoku_public_snapshot")return {data:{
@@ -98,6 +98,9 @@ try{
  await admin.locator("#sendRequest").click();
  await admin.locator("#adminTitle").click({clickCount:3});
  await admin.locator("#adminRequests").getByText("結合テスト曲").waitFor({state:"visible"});
+ // The priority section is only for the KenMorley login ID; this mock admin has another ID.
+ assert.equal(await admin.locator("#priorityRequests").isHidden(),true);
+ await admin.evaluate(()=>{document.querySelector("#priorityRequests").hidden=false;});
  const prioritySubmitState=()=>admin.evaluate(()=>[
    document.querySelector("#prioritySongSubmit").disabled,document.querySelector("#priorityArtistSubmit").disabled]);
  assert.deepEqual(await prioritySubmitState(),[true,true]);
@@ -107,7 +110,7 @@ try{
  await admin.locator("#prioritySongArtist").fill("YOASOBI");
  await admin.locator("#priorityArtistName").fill("ヨルシカ");
  assert.deepEqual(await prioritySubmitState(),[false,false]);
- console.log("PASS priority requests cannot be sent without an artist name");
+ console.log("PASS priority requests hidden for other IDs and cannot be sent without an artist name");
  await admin.close();
  console.log("PASS admin stream start and shared request UI");
 

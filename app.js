@@ -624,8 +624,14 @@ async function priorityAction(event){
  }catch(e){fb.textContent=String(e.message||e).slice(0,140);b.disabled=false;}
  finally{priorityBusy=false;}
 }
+// Kenの優先リクエストは許可されたログインIDだけに表示（サーバー側でも同じIDで制限）
+const PRIORITY_LOGIN_IDS=["kenmorley"];
+function canUsePriority(){
+ const id=String(shared?.profile?.()?.login_id||"").toLowerCase();
+ return Boolean(shared?.isAdmin?.()&&id&&PRIORITY_LOGIN_IDS.includes(id));
+}
 async function loadPriorityRequests(freshId){
- if(!shared?.isAdmin?.()||!window.KEN_VPS_SEARCH?.priorityList)return;
+ if(!canUsePriority()||!window.KEN_VPS_SEARCH?.priorityList)return;
  try{
   const data=await window.KEN_VPS_SEARCH.priorityList(await adminAccessToken());
   renderPriorityList(data.items||[],freshId);
@@ -656,7 +662,8 @@ function render(){
  renderSearch();renderSinging();renderQueue();renderTodayHistory();renderPractice();renderReadySongs();renderAdminRequests();renderStreamStatus();renderAdminSongList();renderReports();renderChatNotes();
  $("#catalogStatus").textContent=catalog.ready?"楽曲DB検索":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
- if(adminMode&&!preview&&shared?.isAdmin?.()){startDbTotals();if(!priorityLoaded){priorityLoaded=true;void loadPriorityRequests();}}
+ if($("#priorityRequests"))$("#priorityRequests").hidden=!canUsePriority();
+ if(adminMode&&!preview&&shared?.isAdmin?.()){startDbTotals();if(!priorityLoaded&&canUsePriority()){priorityLoaded=true;void loadPriorityRequests();}}
  $("#toListener").hidden=!adminMode || preview;
  if($("#adminNav"))$("#adminNav").hidden=preview||!shared?.isAdmin();
  document.body.classList.toggle("admin-active",adminMode&&!preview);

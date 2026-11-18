@@ -18,14 +18,16 @@ import server.api.main as api
 class PriorityTests(unittest.TestCase):
     def setUp(self):
         self._orig = api._supabase_get
-        roles = {"admin-token-xxxxxxxxxxxxxxxx": "admin", "listener-token-xxxxxxxxxxxxx": "listener"}
+        roles = {"admin-token-xxxxxxxxxxxxxxxx": "admin", "listener-token-xxxxxxxxxxxxx": "listener",
+                 "other-admin-token-xxxxxxxxxx": "admin"}
+        logins = {"admin-token-xxxxxxxxxxxxxxxx": "kenmorley", "other-admin-token-xxxxxxxxxx": "someone"}
 
         def fake(path, token):
             if path == "/auth/v1/user":
                 if token not in roles:
                     raise ValueError("bad token")
                 return {"id": "11111111-2222-3333-4444-555555555555"}
-            return [{"role": roles[token], "display_name": "テスト管理者"}]
+            return [{"role": roles[token], "display_name": "テスト管理者", "login_id": logins.get(token)}]
         api._supabase_get = fake
         api._ADMIN_CACHE.clear()
 
@@ -38,6 +40,8 @@ class PriorityTests(unittest.TestCase):
             self.assertEqual(c.get("/api/v1/priority-requests").status_code, 401)
             self.assertEqual(c.get("/api/v1/priority-requests",
                 headers={"Authorization": "Bearer listener-token-xxxxxxxxxxxxx"}).status_code, 403)
+            self.assertEqual(c.get("/api/v1/priority-requests",
+                headers={"Authorization": "Bearer other-admin-token-xxxxxxxxxx"}).status_code, 403)
             r = c.post("/api/v1/priority-requests", headers=admin,
                        json={"kind": "song", "artist": "テスト歌手P", "title": "テスト曲P"})
             self.assertEqual(r.status_code, 201, r.text)

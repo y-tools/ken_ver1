@@ -188,6 +188,10 @@ async def stats(request: Request):
 SUPABASE_URL = os.environ.get("KEN_SUPABASE_URL", "https://kflsbmlpupvpbwsenfba.supabase.co").rstrip("/")
 SUPABASE_KEY = os.environ.get("KEN_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_2Mm0B-H0tGj0CfKRavlptg_onKxPkFM")
 _ADMIN_CACHE: OrderedDict = OrderedDict()
+# Kenの優先リクエストを使えるログインID（大文字小文字は区別しない）
+PRIORITY_LOGIN_IDS = {
+    v.strip().lower() for v in os.environ.get("KEN_PRIORITY_LOGIN_IDS", "kenmorley").split(",") if v.strip()
+}
 
 
 def _supabase_get(path: str, token: str):
@@ -197,6 +201,13 @@ def _supabase_get(path: str, token: str):
     )
     with urllib.request.urlopen(req, timeout=6) as res:
         return json.loads(res.read().decode("utf-8"))
+
+
+async def require_priority_user(authorization: str | None) -> dict:
+    admin = await require_admin(authorization)
+    if admin["login_id"] not in PRIORITY_LOGIN_IDS:
+        raise HTTPException(status_code=403, detail="Kenの優先リクエストは許可されたIDだけが利用できます")
+    return admin
 
 
 async def require_admin(authorization: str | None) -> dict:
@@ -215,14 +226,15 @@ async def require_admin(authorization: str | None) -> dict:
         if not re.fullmatch(r"[0-9a-f-]{36}", uid):
             raise ValueError("no user")
         rows = await asyncio.to_thread(
-            _supabase_get, "/rest/v1/profiles?select=role,display_name&id=eq." + uid, token
+            _supabase_get, "/rest/v1/profiles?select=role,display_name,login_id&id=eq." + uid, token
         )
     except Exception:
         raise HTTPException(status_code=401, detail="ログインを確認できませんでした。再ログインしてください")
     profile = rows[0] if isinstance(rows, list) and rows else {}
     if profile.get("role") not in ("owner", "admin"):
         raise HTTPException(status_code=403, detail="管理者のみ利用できます")
-    info = {"uid": uid, "name": str(profile.get("display_name") or "")[:80]}
+    info = {"uid": uid, "name": str(profile.get("display_name") or "")[:80],
+            "login_id": str(profile.get("login_id") or "").lower()}
     _ADMIN_CACHE[token] = (now, info)
     while len(_ADMIN_CACHE) > 200:
         _ADMIN_CACHE.popitem(last=False)
@@ -252,7 +264,7 @@ PRIORITY_COLUMNS = ("id, kind, artist_name, song_title, note, status, requested_
 
 @app.get("/api/v1/priority-requests")
 async def list_priority_requests(request: Request, authorization: str | None = Header(default=None)):
-    await require_admin(authorization)
+    await require_priority_user(authorization)
     try:
         async with request.app.state.pool.connection() as conn:
             async with conn.cursor() as cur:
@@ -271,7 +283,7 @@ async def list_priority_requests(request: Request, authorization: str | None = H
 async def add_priority_request(
     request: Request, body: PriorityRequestIn, authorization: str | None = Header(default=None)
 ):
-    admin = await require_admin(authorization)
+    admin = await require_priority_user(authorization)
     bad = re.compile(r"[<>\x00-\x1f]")
     artist = body.artist.strip()
     title = (body.title or "").strip() or None
@@ -310,7 +322,7 @@ async def update_priority_status(
     request: Request, request_id: int, body: PriorityStatusIn, authorization: str | None = Header(default=None)
 ):
     """対応開始で対応日、対応完了で完了日時を記録（対応日が未記録なら同時に記録）。"""
-    await require_admin(authorization)
+    await require_priority_user(authorization)
     if body.status == "in_progress":
         sql = (f"UPDATE ken_priority_requests SET status='in_progress', handled_at=coalesce(handled_at, now()),"
                f" updated_at=now() WHERE id=%s AND status='requested' AND cleared_at IS NULL RETURNING {PRIORITY_COLUMNS}")
@@ -335,7 +347,7 @@ async def update_priority_status(
 @app.post("/api/v1/priority-requests/{request_id}/clear")
 async def clear_priority_request(request: Request, request_id: int, authorization: str | None = Header(default=None)):
     """対応完了のものだけ一覧から消し込む（行は残し cleared_at を記録）。"""
-    await require_admin(authorization)
+    await require_priority_user(authorization)
     try:
         async with request.app.state.pool.connection() as conn:
             async with conn.transaction():

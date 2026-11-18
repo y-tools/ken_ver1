@@ -7,7 +7,8 @@ const page=await browser.newPage({viewport:{width:1440,height:900}});
 const pageErrors=[];
 page.on("pageerror",error=>pageErrors.push(error.message));
 const state={
- artist:{id:101,name:"テスト歌手",version:"2026-11-06T00:00:00+00:00",lastResearchedOn:null},
+ artist:{id:101,name:"テスト歌手",version:"2026-11-06T00:00:00+00:00",lastResearchedOn:null,
+  releasedSongCount:null,releasedSongCountSourceUrl:null},
  songs:[{id:202,title:"テスト曲",version:"2026-11-06T00:00:00+00:00",
          releasePrecision:"unknown",releaseYear:null,releaseMonth:null,releaseDay:null}],
  aliases:[],
@@ -35,6 +36,15 @@ await page.route("https://kenapi.153-127-64-17.sslip.io/api/admin/**",async rout
   const incoming=req.postDataJSON();
   state.artist={...state.artist,lastResearchedOn:incoming.lastResearchedOn,
     version:"2026-11-06T00:00:30+00:00"};
+  return answer(route,{artist:state.artist});
+ }
+ if(path==="/api/admin/artists/101/released-song-count"&&method==="POST"){
+  const incoming=req.postDataJSON();
+  if(incoming.releasedSongCount!==null&&!incoming.releasedSongCountSourceUrl)
+   return answer(route,{detail:"リリース済み楽曲数には出典URLが必要です"},422);
+  state.artist={...state.artist,releasedSongCount:incoming.releasedSongCount,
+    releasedSongCountSourceUrl:incoming.releasedSongCountSourceUrl,
+    version:"2026-11-06T00:00:40+00:00"};
   return answer(route,{artist:state.artist});
  }
  if(path==="/api/admin/artists/101"&&method==="POST"){
@@ -82,6 +92,21 @@ try{
  await page.waitForFunction(()=>document.querySelector("#artistLastResearchedOn")?.value==="2026-11-08");
  assert.equal(state.artist.lastResearchedOn,"2026-11-08");
  console.log("PASS Last-researched artist date save, read back, and no other field mutation");
+ assert.equal(await page.locator("#artistReleasedSongCount").inputValue(),"");
+ await page.locator("#artistReleasedSongCount").fill("120");
+ await page.locator("#artistReleaseCountSourceUrl").fill("https://official.example.com/artist/discography");
+ await page.locator("#artistReleaseCountForm button[type=submit]").click();
+ await page.waitForFunction(()=>document.querySelector("#artistReleasedSongCount")?.value==="120");
+ assert.equal(state.artist.releasedSongCount,120);
+ assert.equal(state.artist.releasedSongCountSourceUrl,"https://official.example.com/artist/discography");
+ assert.equal(await page.locator("#songsCount").textContent(),"1曲");
+ console.log("PASS Verified released-song count is independently saved from catalog song total");
+ await page.locator("#artistReleasedSongCount").fill("");
+ await page.locator("#artistReleaseCountSourceUrl").fill("");
+ await page.locator("#artistReleaseCountForm button[type=submit]").click();
+ await page.waitForFunction(()=>state.artist.releasedSongCount===null);
+ assert.equal(await page.locator("#artistReleasedSongCount").inputValue(),"");
+ console.log("PASS Released-song count can be reset to unverified");
  await page.locator("#songList button").first().click();
  await page.locator("#songPanel").waitFor({state:"visible"});
  await page.locator("#songForm [name=title]").fill("テスト曲・改訂版");

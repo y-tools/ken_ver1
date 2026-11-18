@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261118-priority-v6">
+<link rel="stylesheet" href="./styles.css?v=20261118-bottomrow-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -312,6 +312,7 @@
         <input type="file" id="songImport" accept=".csv,text/csv">
       </label>
     </details>
+    <div class="admin-bottom-row">
     <section class="report-section" id="streamReports" aria-labelledby="reportHeading">
       <div class="report-heading"><div><h2 id="reportHeading">配信レポート</h2><p>配信開始から終了までを1回として記録します。</p></div><span id="reportCount" class="count">0 回</span></div>
       <div id="reportCurrent"></div><div class="report-history" id="reportHistory"></div>
@@ -330,6 +331,7 @@
       <p class="helper" id="priorityFeedback" role="status" aria-live="polite"></p>
       <div class="priority-list" id="priorityList">読み込み中…</div>
     </section>
+    </div>
   </div>
 </main>
 <dialog id="adminLoginDialog" class="request-dialog admin-login-dialog" aria-labelledby="adminLoginTitle">

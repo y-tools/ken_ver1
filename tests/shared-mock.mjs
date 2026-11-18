@@ -11,9 +11,13 @@ function mockSupabase(){
  const client={
   auth:{getUser:async()=>({data:{user:{id:data.userId,email:"test@example.com"}},error:null}),
    signOut:async()=>({error:null})},
-  from:(name)=>({select:()=>({eq:()=>({single:async()=>({data:name==="profiles"?
+  from:(name)=>({select:()=>({in:async()=>({data:[
+     {id:data.userId,display_name:"テスト利用者",role:"owner",login_id:"ownerid",created_at:"2026-11-01T00:00:00Z"},
+     {id:"22222222-2222-4222-8222-222222222222",display_name:"ケン",role:"admin",login_id:"kenmorley",created_at:"2026-11-02T00:00:00Z"}],error:null}),
+   eq:()=>({single:async()=>({data:name==="profiles"?
     {id:data.userId,display_name:"テスト利用者",role:data.role,login_id:window.__KEN_TEST_LOGIN_ID||null}:{version:data.version},error:null})})})}),
   rpc:async(name,params)=>{
+   if(name==="denmoku_owner_admin_list")return {data:null,error:{message:"Could not find the function"}};
    if(name==="denmoku_snapshot")return {data:JSON.parse(JSON.stringify(data)),error:null};
    if(name==="denmoku_public_snapshot")return {data:{
      ...JSON.parse(JSON.stringify(data)),role:"guest",sessions:[],chatNotes:[],
@@ -124,6 +128,10 @@ try{
  // Owner sees the priority request form and list.
  assert.equal(await owner.locator("#priorityRequests").isVisible(),true);
  assert.equal(await owner.locator("#priorityForm").isVisible(),true);
+ // Admin list falls back to profiles when the e-mail RPC is not installed yet.
+ await owner.locator("#ownerAdminListLoad").click();
+ await owner.locator("#ownerAdminListBody table").waitFor({state:"visible"});
+ assert.ok((await owner.locator("#ownerAdminListBody").textContent()).includes("@kenmorley"));
  await owner.locator("#adminCreateId").fill("test_operator");
  await owner.locator("#adminCreatePassword").fill("SecurePass123456");
  await owner.locator("#adminCreatePasswordConfirm").fill("SecurePass123456");

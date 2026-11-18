@@ -559,8 +559,16 @@ function startDbTotals(){
 async function loadOwnerAdminList(){
  const body=$("#ownerAdminListBody");if(!body||!shared?.isOwner?.())return;
  body.hidden=false;body.textContent="読み込み中…";
- const {data,error}=await shared.client.rpc("denmoku_owner_admin_list");
- if(error){body.textContent="取得できませんでした："+String(error.message||error).slice(0,120);return;}
+ let {data,error}=await shared.client.rpc("denmoku_owner_admin_list");
+ let emailNote="";
+ if(error){
+  // メール付きの関数が未設定でも、オーナーが読めるprofilesから一覧を表示する（メールは空欄）
+  const fb=await shared.client.from("profiles").select("id,display_name,role,login_id,created_at").in("role",["owner","admin"]);
+  if(fb.error){body.textContent="取得できませんでした："+String(fb.error.message||fb.error).slice(0,120);return;}
+  data=(fb.data||[]).sort((a,b)=>(a.role==="owner"?0:1)-(b.role==="owner"?0:1)||String(a.created_at).localeCompare(String(b.created_at)))
+   .map(u=>({...u,email:null,last_sign_in_at:null}));
+  emailNote="メールアドレスと最終ログインは、Supabaseに一覧用の関数を追加すると表示されます（現在は未設定）。";
+ }
  const roleLabel={owner:"オーナー",admin:"管理者"};
  const table=document.createElement("table");
  table.innerHTML="<thead><tr><th>名前</th><th>ログインID</th><th>メールアドレス</th><th>パスワード</th><th>権限</th><th>作成日</th><th>最終ログイン</th><th>ユーザーID</th></tr></thead>";
@@ -569,12 +577,13 @@ async function loadOwnerAdminList(){
   const tr=document.createElement("tr");
   const cells=[u.display_name||"—",u.login_id?"@"+u.login_id:"—",u.email||"—","表示不可（暗号化保存）",
    roleLabel[u.role]||u.role,u.created_at?timeLabel(Date.parse(u.created_at)):"—",
-   u.last_sign_in_at?timeLabel(Date.parse(u.last_sign_in_at)):"未ログイン",u.id];
+   u.last_sign_in_at?timeLabel(Date.parse(u.last_sign_in_at)):(emailNote?"—":"未ログイン"),u.id];
   cells.forEach((v,k)=>{const td=document.createElement("td");td.textContent=v;
    if(k===3)td.className="pw";if(k===7)td.className="id";tr.appendChild(td);});
   tbody.appendChild(tr);
  }
  table.appendChild(tbody);body.replaceChildren(table);
+ if(emailNote){const p=document.createElement("p");p.className="helper";p.textContent=emailNote;body.appendChild(p);}
 }
 // ---- 楽曲データベース閲覧（アーティスト検索 → 登録楽曲一覧） ----
 let dbBrowseSeq=0,dbBrowseTimer=null;

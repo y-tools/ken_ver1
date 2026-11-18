@@ -95,6 +95,9 @@ async function loadArtist(id,page=0){
  song=null;$("#songPanel").hidden=true;$("#artistPanel").hidden=false;$("#songListPanel").hidden=false;
  $("#artistName").value=artist.name;$("#artistIdLabel").textContent="ID "+artist.id;
  $("#artistLastResearchedOn").value=artist.lastResearchedOn||"";
+ $("#artistReleasedSongCount").value=artist.releasedSongCount??"";
+ $("#artistReleaseCountSourceUrl").value=artist.releasedSongCountSourceUrl||"";
+ $("#artistRegisteredSongCount").textContent=total.toLocaleString("ja-JP");
  $("#artistLastResearchedOn").max=new Intl.DateTimeFormat("en-CA",
   {timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
  makeAliasList("artist");showSongList(data.songs);
@@ -126,6 +129,21 @@ $("#artistResearchForm").addEventListener("submit",e=>{e.preventDefault();task(a
   {version:artist.version,lastResearchedOn:value});
  await loadArtist(result.artist.id,offset);
  say("最終調査日を保存しました");
+})});
+$("#artistReleaseCountForm").addEventListener("submit",e=>{e.preventDefault();task(async()=>{
+ if(!artist)return;
+ const raw=$("#artistReleasedSongCount").value.trim();
+ const sourceUrl=$("#artistReleaseCountSourceUrl").value.trim();
+ const count=raw===""?null:Number(raw);
+ if(count!==null&&(!Number.isSafeInteger(count)||count<0||count>1000000))
+  throw Error("現在リリース楽曲数は0〜1000000の整数で指定してください");
+ if(count===null&&sourceUrl)throw Error("未確認の楽曲数には出典URLを設定できません");
+ if(count!==null&&!sourceUrl)throw Error("現在リリース楽曲数には根拠の出典URLが必要です");
+ const result=await call("/api/admin/artists/"+artist.id+"/released-song-count",{
+  version:artist.version,releasedSongCount:count,releasedSongCountSourceUrl:sourceUrl||null
+ });
+ await loadArtist(result.artist.id,offset);
+ say("現在リリース楽曲数を保存しました");
 })});
 function updateDateFields(){
  const f=$("#songForm").elements,kind=f.releasePrecision.value;

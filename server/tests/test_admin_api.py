@@ -105,6 +105,60 @@ class EditorTests(unittest.TestCase):
         self.assertEqual(cleared.status_code,200,cleared.text)
         self.assertIsNone(cleared.json()["artist"]["lastResearchedOn"])
 
+        # Released-song total is sourced externally, not inferred from catalog rows.
+        count_detail=self.client.get("/api/admin/artists/"+str(artist_id),headers=headers)
+        self.assertIsNone(count_detail.json()["artist"]["releasedSongCount"])
+        self.assertIsNone(count_detail.json()["artist"]["releasedSongCountSourceUrl"])
+        count_version=count_detail.json()["artist"]["version"]
+        count_url="/api/admin/artists/"+str(artist_id)+"/released-song-count"
+        unauthorized_count=self.client.post(count_url,json={
+            "version":count_version,"releasedSongCount":12,
+            "releasedSongCountSourceUrl":"https://official.example.com/catalog"
+        })
+        self.assertEqual(unauthorized_count.status_code,401)
+        no_source=self.client.post(count_url,headers=headers,json={
+            "version":count_version,"releasedSongCount":12,
+            "releasedSongCountSourceUrl":None
+        })
+        self.assertEqual(no_source.status_code,422)
+        wrong_scheme=self.client.post(count_url,headers=headers,json={
+            "version":count_version,"releasedSongCount":12,
+            "releasedSongCountSourceUrl":"http://official.example.com/catalog"
+        })
+        self.assertEqual(wrong_scheme.status_code,422)
+        negative_count=self.client.post(count_url,headers=headers,json={
+            "version":count_version,"releasedSongCount":-1,
+            "releasedSongCountSourceUrl":"https://official.example.com/catalog"
+        })
+        self.assertEqual(negative_count.status_code,422)
+        updated_count=self.client.post(count_url,headers=headers,json={
+            "version":count_version,"releasedSongCount":12,
+            "releasedSongCountSourceUrl":"https://official.example.com/catalog"
+        })
+        self.assertEqual(updated_count.status_code,200,updated_count.text)
+        self.assertEqual(updated_count.json()["artist"]["releasedSongCount"],12)
+        self.assertEqual(updated_count.json()["artist"]["releasedSongCountSourceUrl"],
+                         "https://official.example.com/catalog")
+        after_count=self.client.get("/api/admin/artists/"+str(artist_id),headers=headers)
+        self.assertEqual(after_count.json()["total"],1)  # Only one catalog row.
+        self.assertEqual(after_count.json()["artist"]["releasedSongCount"],12)
+        stale_count=self.client.post(count_url,headers=headers,json={
+            "version":count_version,"releasedSongCount":13,
+            "releasedSongCountSourceUrl":"https://official.example.com/catalog"
+        })
+        self.assertEqual(stale_count.status_code,409)
+        count_log=self.client.get("/api/admin/audit",
+            params={"entityType":"artist","entityId":artist_id},headers=headers)
+        self.assertTrue(any(x["action"]=="artist_released_song_count_update"
+                            for x in count_log.json()["items"]))
+        cleared_count=self.client.post(count_url,headers=headers,json={
+            "version":updated_count.json()["artist"]["version"],
+            "releasedSongCount":None,"releasedSongCountSourceUrl":None
+        })
+        self.assertEqual(cleared_count.status_code,200,cleared_count.text)
+        self.assertIsNone(cleared_count.json()["artist"]["releasedSongCount"])
+        self.assertIsNone(cleared_count.json()["artist"]["releasedSongCountSourceUrl"])
+
         song=self.client.get("/api/admin/songs/"+str(song_id),headers=headers)
         self.assertEqual(song.status_code,200,song.text)
         result=self.client.post("/api/admin/songs/"+str(song_id),headers=headers,json={

@@ -651,3 +651,21 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 .owner-admin-list th{color:var(--muted);font-weight:800}
 .owner-admin-list td.id{font-family:ui-monospace,monospace;font-size:11px;color:var(--soft)}
 .owner-admin-list .pw{color:var(--muted)}
+
+.priority-table{width:100%;border-collapse:collapse;font-size:12px}
+.priority-table th,.priority-table td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--edge);vertical-align:middle}
+.priority-table th{color:var(--muted);font-weight:800;white-space:nowrap}
+.priority-table td.what{font-weight:800;color:var(--text);overflow-wrap:anywhere}
+.priority-table td.muted{color:var(--muted)}
+.priority-table td.note{color:var(--soft);overflow-wrap:anywhere;max-width:220px}
+.priority-table td.date{white-space:nowrap;color:var(--soft);font-variant-numeric:tabular-nums}
+.priority-table td.actions{white-space:nowrap;text-align:right}
+.priority-table td.actions .button{padding:5px 10px;font-size:12px;margin-left:4px}
+.priority-table .status{font-size:11px;font-weight:900;padding:2px 8px;border-radius:999px;white-space:nowrap;background:#0b6546;color:#cbffe2;border:1px solid #46f1a2}
+.priority-table .status.in_progress{background:#6b4b0e;border-color:#ffc857;color:#ffe9b8}
+.priority-table .status.done{background:#1d3f7a;border-color:#6aa2ff;color:#dbe8ff}
+.priority-table tr.done td.what{color:var(--soft)}
+.priority-table tr.fresh{animation:dbPop .5s ease-out}
+.button.priority-clear{width:30px;height:30px;padding:0!important;border-radius:50%;font-size:16px!important;font-weight:900;background:#3a1620;border:1px solid #ff5d73;color:#ffb3bf}
+.button.priority-clear:hover{background:#ff3b5c;color:#fff}
+@media(max-width:720px){.priority-list{overflow-x:auto}.priority-table{min-width:680px}}

@@ -54,6 +54,25 @@ class PriorityTests(unittest.TestCase):
             items = c.get("/api/v1/priority-requests", headers=admin).json()["items"]
             self.assertTrue(any(i["artist"] == "優先アーティストP" for i in items))
             self.assertEqual(items[0]["requestedBy"], "テスト管理者")
+            sid = r.json()["item"]["id"]
+            self.assertEqual(c.post(f"/api/v1/priority-requests/{sid}/clear", headers=admin).status_code, 409)
+            started = c.post(f"/api/v1/priority-requests/{sid}/status", headers=admin, json={"status": "in_progress"})
+            self.assertEqual(started.status_code, 200, started.text)
+            self.assertIsNotNone(started.json()["item"]["handledAt"])
+            self.assertIsNone(started.json()["item"]["completedAt"])
+            done = c.post(f"/api/v1/priority-requests/{sid}/status", headers=admin, json={"status": "done"})
+            self.assertEqual(done.status_code, 200, done.text)
+            self.assertIsNotNone(done.json()["item"]["completedAt"])
+            # After completion the same song may be requested again.
+            again = c.post("/api/v1/priority-requests", headers=admin,
+                           json={"kind": "song", "artist": "テスト歌手P", "title": "テスト曲P"})
+            self.assertEqual(again.status_code, 201, again.text)
+            cleared = c.post(f"/api/v1/priority-requests/{sid}/clear", headers=admin)
+            self.assertEqual(cleared.status_code, 200, cleared.text)
+            ids = [i["id"] for i in c.get("/api/v1/priority-requests", headers=admin).json()["items"]]
+            self.assertNotIn(sid, ids)
+            self.assertEqual(c.post(f"/api/v1/priority-requests/{sid}/clear",
+                headers={"Authorization": "Bearer listener-token-xxxxxxxxxxxxx"}).status_code, 403)
 
 
 if __name__ == "__main__":

@@ -588,16 +588,41 @@ function renderPriorityList(items,freshId){
  const list=$("#priorityList");if(!list)return;
  $("#priorityCount").textContent=items.length+" 件";
  if(!items.length){list.textContent="まだ優先リクエストはありません";return;}
- const statusLabel={requested:"リクエスト済み",registered:"登録済み",rejected:"見送り"};
- list.replaceChildren(...items.map(it=>{
-  const row=document.createElement("div");row.className="priority-item"+(it.id===freshId?" fresh":"");
-  const kind=document.createElement("span");kind.className="kind "+it.kind;kind.textContent=it.kind==="artist"?"アーティスト":"楽曲";
-  const what=document.createElement("span");what.className="what";what.textContent=it.kind==="artist"?it.artist:it.artist+" / "+it.title;
-  const status=document.createElement("span");status.className="status "+it.status;status.textContent=statusLabel[it.status]||it.status;
-  const meta=document.createElement("span");meta.className="meta";
-  meta.textContent=timeLabel(Date.parse(it.createdAt))+(it.requestedBy?" · "+it.requestedBy:"")+(it.note?" · "+it.note:"");
-  row.append(kind,what,status,meta);return row;
- }));
+ const statusLabel={requested:"リクエスト済み",in_progress:"対応中",done:"対応完了",rejected:"見送り"};
+ const at=v=>v?timeLabel(Date.parse(v)):"—";
+ const table=document.createElement("table");table.className="priority-table";
+ table.innerHTML="<thead><tr><th>状態</th><th>アーティスト</th><th>楽曲名</th><th>メモ</th><th>投稿日</th><th>対応日</th><th>完了日時</th><th></th></tr></thead>";
+ const tbody=document.createElement("tbody");
+ for(const it of items){
+  const tr=document.createElement("tr");tr.className="priority-row "+it.status+(it.id===freshId?" fresh":"");
+  const cell=(text,cls)=>{const td=document.createElement("td");td.textContent=text;if(cls)td.className=cls;tr.appendChild(td);return td;};
+  const st=document.createElement("span");st.className="status "+it.status;st.textContent=statusLabel[it.status]||it.status;
+  const stTd=cell("");stTd.appendChild(st);
+  cell(it.artist,"what");
+  cell(it.kind==="artist"?"（アーティスト全体）":(it.title||"—"),it.kind==="artist"?"muted":"what");
+  cell(it.note||"—","note");
+  cell(at(it.createdAt),"date");cell(at(it.handledAt),"date");cell(at(it.completedAt),"date");
+  const act=cell("","actions");
+  const btn=(label,cls,action,title)=>{const b=document.createElement("button");b.type="button";b.className="button "+cls;
+   b.textContent=label;b.dataset.priorityAction=action;b.dataset.id=String(it.id);if(title){b.title=title;b.setAttribute("aria-label",title);}act.appendChild(b);};
+  if(it.status==="requested")btn("対応開始","subtle","in_progress");
+  if(it.status==="requested"||it.status==="in_progress")btn("完了","primary","done");
+  if(it.status==="done")btn("×","priority-clear","clear","対応完了の「"+it.artist+(it.title?" / "+it.title:"")+"」を一覧から消し込む");
+  tbody.appendChild(tr);
+ }
+ table.appendChild(tbody);list.replaceChildren(table);
+}
+async function priorityAction(event){
+ const b=event.target.closest("button[data-priority-action]");if(!b||priorityBusy)return;
+ const id=Number(b.dataset.id),action=b.dataset.priorityAction,fb=$("#priorityFeedback");
+ priorityBusy=true;b.disabled=true;
+ try{
+  const token=await adminAccessToken();
+  if(action==="clear"){await window.KEN_VPS_SEARCH.priorityClear(token,id);fb.textContent="対応完了のリクエストを消し込みました";}
+  else{await window.KEN_VPS_SEARCH.priorityStatus(token,id,action);fb.textContent=action==="done"?"対応完了にしました":"対応中にしました";}
+  await loadPriorityRequests(action==="clear"?null:id);
+ }catch(e){fb.textContent=String(e.message||e).slice(0,140);b.disabled=false;}
+ finally{priorityBusy=false;}
 }
 async function loadPriorityRequests(freshId){
  if(!shared?.isAdmin?.()||!window.KEN_VPS_SEARCH?.priorityList)return;
@@ -1067,6 +1092,7 @@ async function attach(){
  for(const id of ["#prioritySongArtist","#prioritySongTitle","#priorityArtistName"])$(id)?.addEventListener("input",syncPriorityButtons);
  for(const id of ["#prioritySongForm","#priorityArtistForm"])$(id)?.addEventListener("reset",()=>setTimeout(syncPriorityButtons,0));
  $("#prioritySongForm")?.addEventListener("submit",e=>submitPriority("song",e));
+ $("#priorityList")?.addEventListener("click",priorityAction);
  $("#ownerAdminListLoad")?.addEventListener("click",()=>void loadOwnerAdminList());
  $("#priorityArtistForm")?.addEventListener("submit",e=>submitPriority("artist",e));
  $("#adminSongList").addEventListener("click",e=>{

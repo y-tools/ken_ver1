@@ -76,7 +76,8 @@ _MAX_TRACKED_CLIENTS = 5000
 
 @app.middleware("http")
 async def search_rate_limit(request: Request, call_next):
-    if request.url.path not in ("/api/v1/search", "/api/v1/stats", "/api/v1/priority-requests"):
+    if request.url.path not in ("/api/v1/search", "/api/v1/stats", "/api/v1/priority-requests") and \
+            not request.url.path.startswith("/api/v1/priority-requests/"):
         return await call_next(request)
     ip = request.client.host if request.client else "unknown"
     now = monotonic()
@@ -240,10 +241,13 @@ def _priority_row(r: dict) -> dict:
         "id": r["id"], "kind": r["kind"], "artist": r["artist_name"], "title": r["song_title"],
         "note": r["note"], "status": r["status"], "requestedBy": r["requested_by"],
         "createdAt": r["created_at"].isoformat(),
+        "handledAt": r["handled_at"].isoformat() if r["handled_at"] else None,
+        "completedAt": r["completed_at"].isoformat() if r["completed_at"] else None,
     }
 
 
-PRIORITY_COLUMNS = "id, kind, artist_name, song_title, note, status, requested_by, created_at"
+PRIORITY_COLUMNS = ("id, kind, artist_name, song_title, note, status, requested_by, created_at,"
+                    " handled_at, completed_at")
 
 
 @app.get("/api/v1/priority-requests")
@@ -253,7 +257,8 @@ async def list_priority_requests(request: Request, authorization: str | None = H
         async with request.app.state.pool.connection() as conn:
             async with conn.cursor() as cur:
                 await cur.execute(
-                    f"SELECT {PRIORITY_COLUMNS} FROM ken_priority_requests ORDER BY created_at DESC, id DESC LIMIT 200"
+                    f"SELECT {PRIORITY_COLUMNS} FROM ken_priority_requests WHERE cleared_at IS NULL"
+                    " ORDER BY created_at DESC, id DESC LIMIT 200"
                 )
                 rows = await cur.fetchall()
             await conn.rollback()
@@ -293,6 +298,57 @@ async def add_priority_request(
     if row is None:
         raise HTTPException(status_code=409, detail="同じ内容がすでにリクエスト済みです")
     return {"item": _priority_row(row)}
+
+
+class PriorityStatusIn(BaseModel):
+    status: Literal["in_progress", "done"]
+
+
+@app.post("/api/v1/priority-requests/{request_id}/status")
+async def update_priority_status(
+    request: Request, request_id: int, body: PriorityStatusIn, authorization: str | None = Header(default=None)
+):
+    """対応開始で対応日、対応完了で完了日時を記録（対応日が未記録なら同時に記録）。"""
+    await require_admin(authorization)
+    if body.status == "in_progress":
+        sql = (f"UPDATE ken_priority_requests SET status='in_progress', handled_at=coalesce(handled_at, now()),"
+               f" updated_at=now() WHERE id=%s AND status='requested' AND cleared_at IS NULL RETURNING {PRIORITY_COLUMNS}")
+    else:
+        sql = (f"UPDATE ken_priority_requests SET status='done', handled_at=coalesce(handled_at, now()),"
+               f" completed_at=now(), updated_at=now()"
+               f" WHERE id=%s AND status IN ('requested','in_progress') AND cleared_at IS NULL RETURNING {PRIORITY_COLUMNS}")
+    try:
+        async with request.app.state.pool.connection() as conn:
+            async with conn.transaction():
+                async with conn.cursor() as cur:
+                    await cur.execute(sql, (request_id,))
+                    row = await cur.fetchone()
+    except Exception:
+        raise HTTPException(status_code=503, detail="状態を更新できませんでした")
+    if row is None:
+        raise HTTPException(status_code=409, detail="この状態には変更できません（すでに更新済みの可能性があります）")
+    return {"item": _priority_row(row)}
+
+
+@app.post("/api/v1/priority-requests/{request_id}/clear")
+async def clear_priority_request(request: Request, request_id: int, authorization: str | None = Header(default=None)):
+    """対応完了のものだけ一覧から消し込む（行は残し cleared_at を記録）。"""
+    await require_admin(authorization)
+    try:
+        async with request.app.state.pool.connection() as conn:
+            async with conn.transaction():
+                async with conn.cursor() as cur:
+                    await cur.execute(
+                        "UPDATE ken_priority_requests SET cleared_at=now(), updated_at=now()"
+                        " WHERE id=%s AND status='done' AND cleared_at IS NULL RETURNING id",
+                        (request_id,),
+                    )
+                    row = await cur.fetchone()
+    except Exception:
+        raise HTTPException(status_code=503, detail="消し込みできませんでした")
+    if row is None:
+        raise HTTPException(status_code=409, detail="対応完了のリクエストだけ消し込みできます")
+    return {"ok": True, "id": request_id}
 
 
 @app.get("/api/v1/search")

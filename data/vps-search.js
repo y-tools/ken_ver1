@@ -56,11 +56,11 @@
    return payload;
   }finally{clearTimeout(timer);}
  }
- async function adminCall(method,token,body){
+ async function adminCall(method,token,body,path=""){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),10000);
   try{
-   const response=await fetch(base+"/api/v1/priority-requests",{method,mode:"cors",credentials:"omit",cache:"no-store",
+   const response=await fetch(base+"/api/v1/priority-requests"+path,{method,mode:"cors",credentials:"omit",cache:"no-store",
     headers:{"Accept":"application/json","Authorization":"Bearer "+token,...(body?{"Content-Type":"application/json"}:{})},
     body:body?JSON.stringify(body):undefined,signal:controller.signal});
    let payload=null;try{payload=await response.json();}catch(_){}
@@ -73,5 +73,7 @@
  }
  const priorityList=token=>adminCall("GET",token);
  const priorityAdd=(token,data)=>adminCall("POST",token,data);
- window.KEN_VPS_SEARCH=Object.freeze({search,stats,priorityList,priorityAdd,apiConfigured:true});
+ const priorityStatus=(token,id,status)=>adminCall("POST",token,{status},"/"+encodeURIComponent(id)+"/status");
+ const priorityClear=(token,id)=>adminCall("POST",token,{},"/"+encodeURIComponent(id)+"/clear");
+ window.KEN_VPS_SEARCH=Object.freeze({search,stats,priorityList,priorityAdd,priorityStatus,priorityClear,apiConfigured:true});
 })();

@@ -9,7 +9,8 @@ ALTER TABLE artists DROP CONSTRAINT IF EXISTS artists_released_song_count_valid;
 ALTER TABLE artists ADD CONSTRAINT artists_released_song_count_valid CHECK (
   (released_song_count IS NULL AND released_song_count_source_url IS NULL)
   OR (
-    released_song_count BETWEEN 0 AND 1000000
+    released_song_count IS NOT NULL
+    AND released_song_count BETWEEN 0 AND 1000000
     AND released_song_count_source_url IS NOT NULL
     AND length(released_song_count_source_url) <= 600
     AND released_song_count_source_url LIKE 'https://%'

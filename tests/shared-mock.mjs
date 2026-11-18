@@ -100,7 +100,7 @@ try{
  await admin.locator("#adminRequests").getByText("結合テスト曲").waitFor({state:"visible"});
  // The priority section is only for the KenMorley login ID; this mock admin has another ID.
  assert.equal(await admin.locator("#priorityRequests").isHidden(),true);
- await admin.evaluate(()=>{document.querySelector("#priorityRequests").hidden=false;});
+ await admin.evaluate(()=>{document.querySelector("#priorityRequests").hidden=false;document.querySelector("#priorityForm").hidden=false;});
  const prioritySubmitDisabled=()=>admin.evaluate(()=>document.querySelector("#prioritySubmit").disabled);
  assert.equal(await prioritySubmitDisabled(),true);
  await admin.locator("#priorityTitle").fill("曲だけ");
@@ -121,6 +121,9 @@ try{
  await owner.locator("#adminTitle").click({clickCount:3});
  await owner.locator("#adminView").waitFor({state:"visible"});
  assert.equal(await owner.locator("#ownerInvite").isVisible(),true);
+ // Owner sees KenMorley's priority request list (without the submit form).
+ assert.equal(await owner.locator("#priorityRequests").isVisible(),true);
+ assert.equal(await owner.locator("#priorityForm").isHidden(),true);
  await owner.locator("#adminCreateId").fill("test_operator");
  await owner.locator("#adminCreatePassword").fill("SecurePass123456");
  await owner.locator("#adminCreatePasswordConfirm").fill("SecurePass123456");

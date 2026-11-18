@@ -645,11 +645,18 @@ async function priorityAction(event){
  }catch(e){fb.textContent=String(e.message||e).slice(0,140);b.disabled=false;}
  finally{priorityBusy=false;}
 }
-// Kenの優先リクエストは許可されたログインIDだけに表示（サーバー側でも同じIDで制限）
+// Kenの優先リクエストはオーナーと許可されたログインID（KenMorley）だけに表示（サーバー側でも同条件で制限）
 const PRIORITY_LOGIN_IDS=["kenmorley"];
-function canUsePriority(){
+// 送信フォームはKenMorleyだけ。オーナーはKenMorleyのリクエスト一覧の確認と対応（対応開始・完了・×）を行う
+function canSubmitPriority(){
  const id=String(shared?.profile?.()?.login_id||"").toLowerCase();
  return Boolean(shared?.isAdmin?.()&&id&&PRIORITY_LOGIN_IDS.includes(id));
+}
+function canUsePriority(){
+ if(!shared?.isAdmin?.())return false;
+ if(shared.isOwner?.())return true;
+ const id=String(shared?.profile?.()?.login_id||"").toLowerCase();
+ return Boolean(id&&PRIORITY_LOGIN_IDS.includes(id));
 }
 async function loadPriorityRequests(freshId){
  if(!canUsePriority()||!window.KEN_VPS_SEARCH?.priorityList)return;
@@ -683,6 +690,7 @@ function render(){
  $("#catalogStatus").textContent=catalog.ready?"楽曲DB検索":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  if($("#priorityRequests"))$("#priorityRequests").hidden=!canUsePriority();
+ if($("#priorityForm"))$("#priorityForm").hidden=!canSubmitPriority();
  if(adminMode&&!preview&&shared?.isAdmin?.()){startDbTotals();if(!priorityLoaded&&canUsePriority()){priorityLoaded=true;void loadPriorityRequests();}}
  $("#toListener").hidden=!adminMode || preview;
  if($("#adminNav"))$("#adminNav").hidden=preview||!shared?.isAdmin();

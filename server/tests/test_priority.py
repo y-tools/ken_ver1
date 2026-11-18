@@ -19,8 +19,9 @@ class PriorityTests(unittest.TestCase):
     def setUp(self):
         self._orig = api._supabase_get
         roles = {"admin-token-xxxxxxxxxxxxxxxx": "admin", "listener-token-xxxxxxxxxxxxx": "listener",
-                 "other-admin-token-xxxxxxxxxx": "admin"}
-        logins = {"admin-token-xxxxxxxxxxxxxxxx": "kenmorley", "other-admin-token-xxxxxxxxxx": "someone"}
+                 "other-admin-token-xxxxxxxxxx": "admin", "owner-token-xxxxxxxxxxxxxxxx": "owner"}
+        logins = {"admin-token-xxxxxxxxxxxxxxxx": "kenmorley", "other-admin-token-xxxxxxxxxx": "someone",
+                  "owner-token-xxxxxxxxxxxxxxxx": "ownerid"}
 
         def fake(path, token):
             if path == "/auth/v1/user":
@@ -42,6 +43,8 @@ class PriorityTests(unittest.TestCase):
                 headers={"Authorization": "Bearer listener-token-xxxxxxxxxxxxx"}).status_code, 403)
             self.assertEqual(c.get("/api/v1/priority-requests",
                 headers={"Authorization": "Bearer other-admin-token-xxxxxxxxxx"}).status_code, 403)
+            self.assertEqual(c.get("/api/v1/priority-requests",
+                headers={"Authorization": "Bearer owner-token-xxxxxxxxxxxxxxxx"}).status_code, 200)
             r = c.post("/api/v1/priority-requests", headers=admin,
                        json={"kind": "song", "artist": "テスト歌手P", "title": "テスト曲P"})
             self.assertEqual(r.status_code, 201, r.text)

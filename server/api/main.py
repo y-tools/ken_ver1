@@ -205,7 +205,8 @@ def _supabase_get(path: str, token: str):
 
 async def require_priority_user(authorization: str | None) -> dict:
     admin = await require_admin(authorization)
-    if admin["login_id"] not in PRIORITY_LOGIN_IDS:
+    # オーナーと、許可されたログインID（KenMorley）だけが利用できる
+    if admin["role"] != "owner" and admin["login_id"] not in PRIORITY_LOGIN_IDS:
         raise HTTPException(status_code=403, detail="Kenの優先リクエストは許可されたIDだけが利用できます")
     return admin
 
@@ -234,7 +235,7 @@ async def require_admin(authorization: str | None) -> dict:
     if profile.get("role") not in ("owner", "admin"):
         raise HTTPException(status_code=403, detail="管理者のみ利用できます")
     info = {"uid": uid, "name": str(profile.get("display_name") or "")[:80],
-            "login_id": str(profile.get("login_id") or "").lower()}
+            "login_id": str(profile.get("login_id") or "").lower(), "role": profile.get("role")}
     _ADMIN_CACHE[token] = (now, info)
     while len(_ADMIN_CACHE) > 200:
         _ADMIN_CACHE.popitem(last=False)

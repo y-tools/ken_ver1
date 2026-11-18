@@ -94,3 +94,11 @@ VPS実機容量検証、DBユーザー設定、HTTPS API公開、200万件の移
 - 未来の日付は登録できず、意図的に空欄へ戻せます。履歴は `ken_admin_audit` に保管します。通常の公開検索APIに変更はありません。
 - 実際に調査した TK from 凛として時雨（ID 643167）の最終調査日は **2026-11-08**。他のアーティストの既存レコードはNULLのままです。
 - 初回は `server/sql/003_admin_editor.sql` の後に `server/sql/020_artist_last_researched_on.sql` を実行し、当該アーティストの記録は `server/sql/021_tk_research_date_20261108.sql` に記載。修正・適用前にバックアップと検証を行ってください。
+
+## アーティスト「現在リリース楽曲数」（2026-11-18）
+
+- `artists.released_song_count INTEGER NULL`: 公式にリリース済みの重複しない楽曲の調査上の総数。既存 `songs` テーブルの登録行数とは独立して管理します。再収録・リマスターなど同一曲の重複は原則除外します。
+- `artists.released_song_count_source_url TEXT NULL`: 上記件数を裏付けるHTTPS出典URL。数値登録時は必須です。
+- **未確認はNULL**。0は「確認されたリリース曲が0曲」を意味するため、推測で0にしません。既存19組などの未調査件数は一括推定しません。
+- アーティスト編集画面で表示・更新・空欄戻しが可能。更新は認証済み `POST /api/admin/artists/{id}/released-song-count` で楽観ロックと監査記録を行います。`GET /api/admin/artists/{id}` の `artist.releasedSongCount` で読み出します。
+- `server/sql/022_artist_released_song_count.sql` を `020` の後に適用。適用前にVPSデータベースをバックアップし、フロントエンドとAPIを揃えてデプロイします。

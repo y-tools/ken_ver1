@@ -306,6 +306,11 @@ class ArtistReleasedSongCountUpdate(BaseModel):
     releasedSongCount: int | None = Field(ge=0, le=1_000_000)
     releasedSongCountSourceUrl: str | None = Field(default=None, max_length=600)
 
+    @field_validator("releasedSongCountSourceUrl")
+    @classmethod
+    def verify_source_url(cls, value: str | None):
+        return clean_url(value)
+
     @model_validator(mode="after")
     def verify_released_song_count(self):
         # A researched count is distinct from the number of catalog rows.

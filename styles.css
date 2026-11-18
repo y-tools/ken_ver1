@@ -686,3 +686,24 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 .admin-bottom-row .priority-list{overflow-x:auto}
 .admin-bottom-row .priority-table{min-width:860px}
 @media(max-width:900px){.admin-bottom-row:has(> #priorityRequests:not([hidden])){grid-template-columns:minmax(0,1fr)}}
+
+/* DB件数を大きく表示 */
+.db-totals .db-stat{padding:6px 14px;font-size:13px}
+.db-totals .db-stat strong{font-size:24px;line-height:1;margin:0 2px}
+.db-totals .db-stat-icon{font-size:16px}
+.db-stat-button{cursor:pointer;color:var(--soft);font:inherit;font-size:13px}
+.db-stat-button:hover,.db-stat-button:focus-visible{border-color:#69ffb8;box-shadow:0 0 12px #5fffb855;outline:none}
+.db-stat-hint{font-size:12px;opacity:.75;margin-left:2px}
+/* データベース閲覧ポップアップ */
+.db-browser-dialog{width:min(720px,calc(100vw - 24px))}
+.db-browser-search{margin:4px 0 8px}
+.db-browser-artists{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;max-height:55dvh;overflow-y:auto}
+.db-browser-artist{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;background:var(--bg2);border:1px solid var(--edge);border-radius:12px;padding:10px 12px;color:var(--text);font:inherit;font-weight:800;cursor:pointer}
+.db-browser-artist:hover,.db-browser-artist:focus-visible{border-color:#69ffb8;outline:none}
+.db-browser-artist small{color:var(--muted);font-weight:700;white-space:nowrap}
+.db-browser-artist span{overflow-wrap:anywhere}
+.db-browser-songhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.db-browser-songhead h3{margin:0;font-size:18px;overflow-wrap:anywhere}
+.db-browser-songs{margin:0;padding-left:2.4em;max-height:58dvh;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.db-browser-songs li{padding:6px 8px;border-bottom:1px solid var(--edge);color:var(--text);overflow-wrap:anywhere}
+.db-browser-songs li small{color:var(--muted);margin-left:8px;font-variant-numeric:tabular-nums}

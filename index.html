@@ -7,16 +7,16 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261118-bottomrow-v1">
+<link rel="stylesheet" href="./styles.css?v=20261118-dbbrowse-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
 
 <script src="./data/karaoke-coverage.js?v=20261106-karaoke-v2" defer></script>
-<script src="./data/vps-search.js?v=20261118-priority-v9" defer></script>
+<script src="./data/vps-search.js?v=20261118-dbbrowse-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./app.js?v=20261118-priority-v9" defer></script>
+<script src="./app.js?v=20261118-dbbrowse-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -184,7 +184,7 @@
         <span class="helper" id="onlineUsersStatus" role="status">サーバーに接続しています</span>
         <div class="db-totals" id="dbTotals" aria-live="polite" title="VPSの楽曲データベースの登録数（15秒ごとに更新）">
           <span class="db-live"><span class="db-live-dot" aria-hidden="true"></span><span class="db-live-label">DB LIVE</span></span>
-          <span class="db-stat"><span class="db-stat-icon" aria-hidden="true">🎤</span>アーティスト <strong id="dbArtistCount">—</strong>組</span>
+          <button type="button" class="db-stat db-stat-button" id="dbBrowserOpen" aria-haspopup="dialog" aria-controls="dbBrowserDialog" title="アーティストを検索して登録楽曲を見る"><span class="db-stat-icon" aria-hidden="true">🎤</span>アーティスト <strong id="dbArtistCount">—</strong>組<span class="db-stat-hint" aria-hidden="true">🔍</span></button>
           <span class="db-stat"><span class="db-stat-icon" aria-hidden="true">🎵</span>楽曲 <strong id="dbSongCount">—</strong>曲</span>
         </div>
       </div>
@@ -392,6 +392,27 @@
   <a href="https://www.wikidata.org/" target="_blank" rel="noopener noreferrer">Wikidata（CC0）</a>
   <span>掲載曲はカラオケ配信・利用許諾を保証するものではありません。</span>
 </footer>
+ <dialog id="dbBrowserDialog" class="request-dialog db-browser-dialog" aria-labelledby="dbBrowserTitle">
+  <div class="dialog-head">
+    <div><h2 id="dbBrowserTitle">楽曲データベース閲覧</h2><p>アーティスト名で検索し、押すと登録されている楽曲の一覧を表示します（閲覧のみ）。</p></div>
+    <button type="button" id="dbBrowserClose" class="button subtle" aria-label="データベース閲覧を閉じる">閉じる</button>
+  </div>
+  <div id="dbBrowserArtistView">
+    <div class="searchbox db-browser-search">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+      <input type="search" id="dbBrowserQuery" placeholder="アーティスト名・かな・ローマ字" autocomplete="off" aria-label="アーティスト名で検索">
+    </div>
+    <p class="helper" id="dbBrowserStatus" role="status" aria-live="polite"></p>
+    <div class="db-browser-artists" id="dbBrowserArtists"></div>
+  </div>
+  <div id="dbBrowserSongView" hidden>
+    <div class="db-browser-songhead">
+      <button type="button" class="button subtle" id="dbBrowserBack">← アーティスト一覧へ</button>
+      <h3 id="dbBrowserArtistName"></h3><span class="count" id="dbBrowserSongCount"></span>
+    </div>
+    <ol class="db-browser-songs" id="dbBrowserSongs"></ol>
+  </div>
+ </dialog>
 <div class="toast" id="toast" role="status" hidden></div>
 </body>
 </html>

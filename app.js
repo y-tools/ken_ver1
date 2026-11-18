@@ -576,6 +576,49 @@ async function loadOwnerAdminList(){
  }
  table.appendChild(tbody);body.replaceChildren(table);
 }
+// ---- 楽曲データベース閲覧（アーティスト検索 → 登録楽曲一覧） ----
+let dbBrowseSeq=0,dbBrowseTimer=null;
+function openDbBrowser(){
+ const dlg=$("#dbBrowserDialog");if(!dlg||!window.KEN_VPS_SEARCH?.browseArtists)return;
+ $("#dbBrowserSongView").hidden=true;$("#dbBrowserArtistView").hidden=false;
+ if(typeof dlg.showModal==="function")dlg.showModal();else dlg.setAttribute("open","");
+ $("#dbBrowserQuery").focus();
+ void loadDbArtists();
+}
+function closeDbBrowser(){const dlg=$("#dbBrowserDialog");if(typeof dlg.close==="function")dlg.close();else dlg.removeAttribute("open");}
+async function loadDbArtists(){
+ const seq=++dbBrowseSeq,q=$("#dbBrowserQuery").value.trim(),status=$("#dbBrowserStatus"),box=$("#dbBrowserArtists");
+ status.textContent="検索しています…";
+ try{
+  const data=await window.KEN_VPS_SEARCH.browseArtists(q);
+  if(seq!==dbBrowseSeq)return;
+  const items=data.items||[];
+  status.textContent=items.length?(q?"「"+q+"」に一致するアーティスト "+items.length+"組":"登録アーティスト "+items.length+"組")+"（押すと楽曲一覧）":"一致するアーティストがいません";
+  box.replaceChildren(...items.map(a=>{
+   const b=document.createElement("button");b.type="button";b.className="db-browser-artist";b.dataset.artistId=String(a.id);
+   const name=document.createElement("span");name.textContent=a.name;
+   const cnt=document.createElement("small");cnt.textContent=Number(a.songCount).toLocaleString("ja-JP")+"曲";
+   b.append(name,cnt);return b;
+  }));
+ }catch(e){if(seq===dbBrowseSeq)status.textContent="読み込めませんでした："+String(e.message||e).slice(0,100);}
+}
+async function showDbArtistSongs(id){
+ $("#dbBrowserArtistView").hidden=true;$("#dbBrowserSongView").hidden=false;
+ $("#dbBrowserArtistName").textContent="読み込み中…";$("#dbBrowserSongCount").textContent="";
+ const list=$("#dbBrowserSongs");list.replaceChildren();
+ try{
+  const data=await window.KEN_VPS_SEARCH.browseSongs(id);
+  $("#dbBrowserArtistName").textContent=data.artist.name;
+  $("#dbBrowserSongCount").textContent=data.items.length.toLocaleString("ja-JP")+" 曲";
+  list.replaceChildren(...data.items.map(song=>{
+   const li=document.createElement("li");li.textContent=song.title;
+   if(song.releaseDate){const d=document.createElement("small");d.textContent=song.releaseDate;li.appendChild(d);}
+   return li;
+  }));
+  if(!data.items.length){const li=document.createElement("li");li.textContent="登録されている楽曲はありません";list.appendChild(li);}
+ }catch(e){$("#dbBrowserArtistName").textContent="読み込めませんでした："+String(e.message||e).slice(0,100);}
+ $("#dbBrowserBack").focus();
+}
 // ---- Kenの優先リクエスト (VPS DB; admin token verified server-side) ----
 let priorityLoaded=false,priorityBusy=false;
 async function adminAccessToken(){
@@ -1100,6 +1143,11 @@ async function attach(){
  $("#priorityForm")?.addEventListener("reset",()=>setTimeout(syncPrioritySubmit,0));
  $("#priorityForm")?.addEventListener("submit",submitPriority);
  $("#priorityList")?.addEventListener("click",priorityAction);
+ $("#dbBrowserOpen")?.addEventListener("click",openDbBrowser);
+ $("#dbBrowserClose")?.addEventListener("click",closeDbBrowser);
+ $("#dbBrowserQuery")?.addEventListener("input",()=>{clearTimeout(dbBrowseTimer);dbBrowseTimer=setTimeout(loadDbArtists,200);});
+ $("#dbBrowserArtists")?.addEventListener("click",e=>{const b=e.target.closest("[data-artist-id]");if(b)void showDbArtistSongs(Number(b.dataset.artistId));});
+ $("#dbBrowserBack")?.addEventListener("click",()=>{$("#dbBrowserSongView").hidden=true;$("#dbBrowserArtistView").hidden=false;$("#dbBrowserQuery").focus();});
  $("#ownerAdminListLoad")?.addEventListener("click",()=>void loadOwnerAdminList());
  $("#priorityArtistForm")?.addEventListener("submit",e=>submitPriority("artist",e));
  $("#adminSongList").addEventListener("click",e=>{

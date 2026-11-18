@@ -74,5 +74,18 @@
  const priorityList=token=>adminCall("GET",token);
  const priorityAdd=(token,data)=>adminCall("POST",token,data);
  const priorityClear=(token,id)=>adminCall("POST",token,{},"/"+encodeURIComponent(id)+"/clear");
- window.KEN_VPS_SEARCH=Object.freeze({search,stats,priorityList,priorityAdd,priorityClear,apiConfigured:true});
+ async function getJson(path){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),8000);
+  try{
+   const response=await fetch(base+path,{method:"GET",mode:"cors",credentials:"omit",cache:"no-store",
+    headers:{"Accept":"application/json"},signal:controller.signal});
+   let payload=null;try{payload=await response.json();}catch(_){}
+   if(!response.ok)throw Error(typeof payload?.detail==="string"?payload.detail:"サーバーエラー（"+response.status+"）");
+   return payload;
+  }finally{clearTimeout(timer);}
+ }
+ const browseArtists=q=>getJson("/api/v1/artists?q="+encodeURIComponent(q||"")+"&limit=200");
+ const browseSongs=id=>getJson("/api/v1/artists/"+encodeURIComponent(id)+"/songs");
+ window.KEN_VPS_SEARCH=Object.freeze({search,stats,browseArtists,browseSongs,priorityList,priorityAdd,priorityClear,apiConfigured:true});
 })();

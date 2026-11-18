@@ -76,8 +76,8 @@ _MAX_TRACKED_CLIENTS = 5000
 
 @app.middleware("http")
 async def search_rate_limit(request: Request, call_next):
-    if request.url.path not in ("/api/v1/search", "/api/v1/stats", "/api/v1/priority-requests") and \
-            not request.url.path.startswith("/api/v1/priority-requests/"):
+    if request.url.path not in ("/api/v1/search", "/api/v1/stats", "/api/v1/priority-requests", "/api/v1/artists") and \
+            not request.url.path.startswith(("/api/v1/priority-requests/", "/api/v1/artists/")):
         return await call_next(request)
     ip = request.client.host if request.client else "unknown"
     now = monotonic()
@@ -340,6 +340,72 @@ async def clear_priority_request(request: Request, request_id: int, authorizatio
     if row is None:
         raise HTTPException(status_code=409, detail="対応完了のリクエストだけ消し込みできます")
     return {"ok": True, "id": request_id}
+
+
+# ---------------------------------------------------------------------------
+# データベース閲覧（読み取り専用）: アーティスト検索 → 登録楽曲一覧
+BROWSE_ARTISTS = """
+SELECT a.id, a.name, (SELECT COUNT(*) FROM songs s WHERE s.primary_artist_id=a.id) AS song_count,
+       CASE WHEN a.name_key LIKE %s ESCAPE '!' THEN 0 ELSE 1 END AS rank
+FROM artists a
+WHERE %s = '' OR a.name_key LIKE %s ESCAPE '!'
+   OR EXISTS (SELECT 1 FROM artist_names n WHERE n.artist_id=a.id AND n.search_key LIKE %s ESCAPE '!')
+ORDER BY rank, a.name_key, a.id
+LIMIT %s
+"""
+
+
+@app.get("/api/v1/artists")
+async def browse_artists(request: Request, q: str = Query(default="", max_length=120),
+                         limit: int = Query(100, ge=1, le=300)):
+    term = norm(q)
+    escaped = term.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+    prefix, pattern = escaped + "%", "%" + escaped + "%"
+    try:
+        async with request.app.state.pool.connection() as conn:
+            async with conn.transaction():
+                async with conn.cursor() as cur:
+                    await cur.execute("SET LOCAL statement_timeout = '2500ms'")
+                    await cur.execute(BROWSE_ARTISTS, (prefix, term, pattern, pattern, limit))
+                    rows = await cur.fetchall()
+    except Exception:
+        raise HTTPException(status_code=503, detail="アーティストを読み込めませんでした")
+    return {"items": [{"id": r["id"], "name": r["name"], "songCount": int(r["song_count"])} for r in rows]}
+
+
+@app.get("/api/v1/artists/{artist_id}/songs")
+async def browse_artist_songs(request: Request, artist_id: int):
+    try:
+        async with request.app.state.pool.connection() as conn:
+            async with conn.transaction():
+                async with conn.cursor() as cur:
+                    await cur.execute("SET LOCAL statement_timeout = '2500ms'")
+                    await cur.execute("SELECT id, name FROM artists WHERE id=%s", (artist_id,))
+                    artist = await cur.fetchone()
+                    if artist is None:
+                        raise HTTPException(status_code=404, detail="アーティストが見つかりません")
+                    await cur.execute(
+                        """SELECT id, title, release_year, release_month, release_day, release_precision
+                           FROM songs WHERE primary_artist_id=%s ORDER BY title_key, id LIMIT 2000""",
+                        (artist_id,),
+                    )
+                    rows = await cur.fetchall()
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=503, detail="楽曲を読み込めませんでした")
+    def release(r):
+        p = r["release_precision"]
+        if p == "unknown" or r["release_year"] is None:
+            return None
+        parts = [str(r["release_year"])]
+        if p in ("month", "day"):
+            parts.append(f'{r["release_month"]:02d}')
+        if p == "day":
+            parts.append(f'{r["release_day"]:02d}')
+        return "-".join(parts)
+    return {"artist": {"id": artist["id"], "name": artist["name"]},
+            "items": [{"id": r["id"], "title": r["title"], "releaseDate": release(r)} for r in rows]}
 
 
 @app.get("/api/v1/search")

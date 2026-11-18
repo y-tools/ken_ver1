@@ -78,6 +78,17 @@ class SearchTests(unittest.TestCase):
             self.assertEqual(stats.status_code, 200, stats.text)
             self.assertGreaterEqual(stats.json()["songCount"], 1)
             self.assertGreaterEqual(stats.json()["artistCount"], 1)
+            artists = client.get("/api/v1/artists", params={"q": "とうご"})
+            self.assertEqual(artists.status_code, 200, artists.text)
+            found = [x for x in artists.json()["items"] if x["name"] == "統合テスト歌手"]
+            self.assertTrue(found and found[0]["songCount"] >= 1)
+            self.assertTrue(any(x["name"] == "統合テスト歌手" for x in
+                                client.get("/api/v1/artists", params={"q": "tougo"}).json()["items"]))
+            self.assertGreaterEqual(len(client.get("/api/v1/artists").json()["items"]), 2)
+            songs = client.get(f"/api/v1/artists/{found[0]['id']}/songs")
+            self.assertEqual(songs.status_code, 200, songs.text)
+            self.assertIn("統合テスト曲", [x["title"] for x in songs.json()["items"]])
+            self.assertEqual(client.get("/api/v1/artists/999999999/songs").status_code, 404)
             invalid = client.get("/api/v1/search", params={"q": "a", "mode": "title"})
             self.assertEqual(invalid.status_code, 422)
 

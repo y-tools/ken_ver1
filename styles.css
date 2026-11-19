@@ -711,3 +711,53 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 .priority-table .priority-note-toggle{padding:4px 10px!important;font-size:12px!important;white-space:nowrap}
 .priority-table tr.priority-note-row td{background:var(--bg2);color:var(--text);padding:10px 14px;white-space:pre-wrap;overflow-wrap:anywhere;border-left:3px solid #69ffb8}
 .priority-table tr.priority-note-row strong{color:var(--soft);margin-right:6px}
+
+/* Owner-only consolidated controls: click outer summary, then either inner panel. */
+.owner-tools{margin-bottom:17px;overflow:hidden}
+.owner-tools-summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 18px;font-weight:900;font-size:19px}
+.owner-tools-summary::-webkit-details-marker,.owner-tools-panel>summary::-webkit-details-marker{display:none}
+.owner-tools-summary::before,.owner-tools-panel>summary::before{content:"▸";display:inline-block;color:var(--yellow);margin-right:3px;transition:transform .16s}
+.owner-tools[open]>.owner-tools-summary::before,.owner-tools-panel[open]>summary::before{transform:rotate(90deg)}
+.owner-tools-summary span{flex:1;min-width:0}
+.owner-tools-summary small{font-size:12px;font-weight:600;color:var(--soft)}
+.owner-tools[open]>.owner-tools-summary{border-bottom:1px solid var(--edge)}
+.owner-tools-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:14px;padding:16px}
+.owner-tools-panel{min-width:0;border:1px solid var(--edge);border-radius:12px;background:var(--bg2);overflow:hidden}
+.owner-tools-panel>summary{display:flex;align-items:center;gap:10px;cursor:pointer;padding:13px 14px;font-size:15px;font-weight:900}
+.owner-tools-panel[open]>summary{border-bottom:1px solid var(--edge)}
+.owner-tools-panel-body{padding:14px}
+.owner-tools-panel-body>.form-row{align-items:end}
+.owner-tools-panel-body .owner-create-id{min-width:0}
+.owner-tools-panel .owner-admin-list{max-height:480px;overflow:auto}
+.owner-tools-panel .owner-admin-list table{min-width:750px}
+.owner-tools-panel>summary:hover,.owner-tools-summary:hover{background:rgba(142,186,255,.08)}
+.owner-tools-panel>summary:focus-visible,.owner-tools-summary:focus-visible{outline:3px solid var(--yellow);outline-offset:-3px}
+@media(max-width:900px){.owner-tools-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:520px){.owner-tools-summary{flex-wrap:wrap}.owner-tools-summary small{width:100%}}
+
+/* Owner/Ken-only full-width singable-song browser, below reports and priority. */
+.private-ready-section{margin-top:18px;min-width:0}
+.private-ready-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;align-items:start;margin-top:15px}
+.private-ready-search,.private-ready-results{min-width:0;border:1px solid var(--edge);border-radius:14px;background:var(--bg2);padding:16px}
+.private-ready-search{display:grid;gap:12px}
+.private-ready-search h3,.private-ready-results h3{font-size:16px;font-weight:900;line-height:1.5;margin:0}
+.private-ready-search .field{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--soft);font-weight:800}
+.private-ready-search :is(input,select){width:100%;min-width:0;padding:10px 12px;border:1px solid var(--edge);border-radius:10px;background:var(--bg);color:var(--text)}
+.private-ready-kana-header{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.private-ready-kana-header h4{font-size:13px;font-weight:900;margin:0}
+.private-ready-kana-clear{font-size:11px!important;padding:6px 9px!important;min-height:34px}
+.private-ready-kana-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.private-ready-kana-button{display:grid;place-items:center;min-width:0;min-height:39px;background:var(--raised);border:1px solid var(--edge);border-radius:8px;color:var(--text);font-weight:800;cursor:pointer}
+.private-ready-kana-button:hover{border-color:var(--green)}
+.private-ready-kana-button.is-active,.private-ready-kana-button[aria-pressed=true]{background:var(--green);border-color:var(--green);color:var(--bg);font-weight:900}
+.private-ready-kana-button:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.private-ready-search>.helper{font-size:11px;line-height:1.55;margin:0}
+.private-ready-reset{width:100%;min-height:39px}
+.private-ready-results{min-height:360px}
+.private-ready-result-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.private-ready-list{display:flex;flex-direction:column;gap:8px;max-height:680px;overflow-y:auto}
+.private-ready-song{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 14px;padding:12px 14px;border:1px solid var(--edge);border-radius:10px;background:var(--raised)}
+.private-ready-song-title{font-size:14px;font-weight:900;color:var(--text);overflow-wrap:anywhere}
+.private-ready-song-artist{font-size:12px;color:var(--soft);overflow-wrap:anywhere}
+@media(max-width:820px){.private-ready-layout{grid-template-columns:minmax(0,1fr)}.private-ready-list{max-height:560px}}
+@media(max-width:520px){.private-ready-song{flex-direction:column;align-items:flex-start}}

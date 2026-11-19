@@ -680,12 +680,15 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 .priority-form-single .button{align-self:flex-start;min-width:220px}
 
 /* 配信レポートとKenの優先リクエストを1:1で横並び（優先リクエスト非表示のIDではレポートが全幅） */
-.admin-bottom-row{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-top:16px;align-items:start}
+.admin-bottom-row{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;margin-top:16px;align-items:stretch}
 .admin-bottom-row:has(> #priorityRequests:not([hidden])){grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-.admin-bottom-row > .report-section,.admin-bottom-row > .priority-section{margin-top:0;min-width:0}
+.admin-bottom-row > .report-section,.admin-bottom-row > .priority-section{margin-top:0;min-width:0;min-height:100%;height:100%;box-sizing:border-box}
 .admin-bottom-row .priority-list{overflow-x:auto}
 .admin-bottom-row .priority-table{min-width:860px}
-@media(max-width:900px){.admin-bottom-row:has(> #priorityRequests:not([hidden])){grid-template-columns:minmax(0,1fr)}}
+@media(max-width:900px){
+ .admin-bottom-row:has(> #priorityRequests:not([hidden])){grid-template-columns:minmax(0,1fr)}
+ .admin-bottom-row > .report-section,.admin-bottom-row > .priority-section{height:auto;min-height:0}
+}
 
 /* DB件数を大きく表示 */
 .db-totals .db-stat{padding:6px 14px;font-size:13px}

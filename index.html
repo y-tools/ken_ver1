@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261119-owner-ready-v3">
+<link rel="stylesheet" href="./styles.css?v=20261119-owner-ready-v4">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -16,7 +16,7 @@
 <script src="./data/vps-search.js?v=20261118-dbbrowse-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./js/private-ready.js?v=20261119-owner-ready-v3" defer></script>
+<script src="./js/private-ready.js?v=20261119-owner-ready-v4" defer></script>
 <script src="./app.js?v=20261119-owner-ready-v1" defer></script>
 </head>
 <body>
@@ -353,7 +353,7 @@
         <span class="count" id="privateReadyCount" aria-live="polite">0 曲</span>
       </div>
       <div class="private-ready-switch-row">
-        <button type="button" id="privateReadyModeCycle" class="private-ready-cycle-button" aria-label="表示モードを切り替え">⇄ モード切り替え</button>
+        <span class="private-ready-switch-label">モード切り替え</span>
         <div class="private-ready-mode-switch" role="tablist" aria-label="歌える曲の操作を切り替え">
           <button type="button" id="privateReadyModeAdd" class="private-ready-mode-button" role="tab" aria-selected="false" aria-controls="privateReadyDatabaseControls">データベースから曲を追加</button>
           <button type="button" id="privateReadyModeFilter" class="private-ready-mode-button is-active" role="tab" aria-selected="true" aria-controls="privateReadyFilterControls">歌える曲を絞り込む</button>
@@ -371,7 +371,20 @@
               <label class="field" for="privateReadyDbArtistQuery">アーティスト名
                 <input type="search" id="privateReadyDbArtistQuery" placeholder="アーティスト名・かな・ローマ字（2文字以上）" autocomplete="off">
               </label>
-              <button type="submit" class="button primary private-ready-db-submit" id="privateReadyDbSearch">データベースを検索</button>
+              <div class="private-ready-kana-header">
+              <h4>50音から絞り込む</h4>
+              <button class="button subtle private-ready-kana-clear" id="privateReadyDbKanaClear" type="button">50音を解除</button>
+            </div>
+            <label class="field" for="privateReadyDbKanaTarget">50音の絞り込み対象
+              <select id="privateReadyDbKanaTarget">
+                <option value="title">曲名の先頭</option>
+                <option value="artist">アーティスト名の先頭</option>
+              </select>
+            </label>
+            <div id="privateReadyDbKanaGrid" class="private-ready-kana-grid" role="group" aria-label="データベース検索の50音ボタン"></div>
+            <p class="helper">50音は検索結果の読み・表記の先頭で絞り込みます。検索には曲名かアーティスト名を2文字以上入力してください。</p>
+            <button type="submit" class="button primary private-ready-db-submit" id="privateReadyDbSearch">データベースを検索</button>
+            <button type="button" class="button subtle private-ready-db-reset" id="privateReadyDbReset">検索条件をすべてクリア</button>
             </form>
             <p class="helper" id="privateReadyDbStatus" role="status" aria-live="polite">曲名かアーティスト名を2文字以上入力して検索してください。</p>
           </div>

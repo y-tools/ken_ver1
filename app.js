@@ -737,6 +737,10 @@ function render(){
  $("#catalogStatus").textContent=catalog.ready?"楽曲DB検索":catalog.error?"カタログ読込失敗":"曲カタログ読込中";
  if(!preview){$("#listenerView").hidden=adminMode;$("#adminView").hidden=!adminMode;}
  if($("#priorityRequests"))$("#priorityRequests").hidden=!canUsePriority();
+ const privateReadyVisible=canUsePriority()&&adminMode&&!preview;
+ if($("#privateReadySection"))$("#privateReadySection").hidden=!privateReadyVisible;
+ if(privateReadyVisible)window.KEN_READY_BROWSER?.render(state.songs);
+ else window.KEN_READY_BROWSER?.clear();
 
  if(adminMode&&!preview&&shared?.isAdmin?.()){startDbTotals();if(!priorityLoaded&&canUsePriority()){priorityLoaded=true;void loadPriorityRequests();}}
  $("#toListener").hidden=!adminMode || preview;
@@ -1059,8 +1063,10 @@ async function attach(){
     $("#logoutButton").addEventListener("click",()=>void shared.signOut());
   }
   adminMode=params.get("admin")==="1"&&shared.isAdmin();
-  if($("#ownerInvite"))$("#ownerInvite").hidden=!shared.isOwner();
-  if($("#ownerAdminList"))$("#ownerAdminList").hidden=!shared.isOwner();
+  if($("#ownerTools"))$("#ownerTools").hidden=!shared.isOwner();
+  $("#ownerAdminList")?.addEventListener("toggle",event=>{
+   if(event.target.open&&shared.isOwner())void loadOwnerAdminList();
+  });
   if($("#inviteAdminForm"))$("#inviteAdminForm").addEventListener("submit",async event=>{
     event.preventDefault();
     if(!shared.isOwner())return;
@@ -1070,7 +1076,10 @@ async function attach(){
     const {data,error}=await shared.client.functions.invoke("invite-admin",{body:{email}});
     feedback.textContent=error?"招待に失敗しました: "+error.message:
       (data?.error?"招待に失敗しました: "+data.error:"管理者招待メールを送信しました");
-    if(!error&&!data?.error)$("#inviteAdminEmail").value="";
+    if(!error&&!data?.error){
+      $("#inviteAdminEmail").value="";
+      if($("#ownerAdminList")?.open)void loadOwnerAdminList();
+     }
   });
   if($("#createAdminIdForm"))$("#createAdminIdForm").addEventListener("submit",async event=>{
     event.preventDefault();
@@ -1099,6 +1108,7 @@ async function attach(){
       feedback.textContent="管理者「"+data.login_id+"」を作成しました。IDとパスワードを本人へ安全に共有してください。";
       $("#adminCreateId").value="";
       $("#adminCreateDisplayName").value="";
+      if($("#ownerAdminList")?.open)void loadOwnerAdminList();
     }catch(e){
       feedback.textContent="管理者作成に失敗しました: "+String(e?.message||"不明なエラー").slice(0,130);
     }finally{

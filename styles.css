@@ -768,8 +768,9 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 .owner-tools-grid>.owner-tools-panel{align-self:stretch;box-sizing:border-box}
 #ownerAdminList[open]>.owner-tools-panel-body{min-height:340px}
 #ownerAdminList .owner-admin-list{width:100%;overflow:auto}
-.private-ready-switch-row{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px;align-items:stretch;margin-top:16px}
-.private-ready-mode-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;min-width:0}
+.private-ready-switch-row{display:flex;flex-wrap:nowrap;align-items:center;gap:12px;margin-top:16px;overflow-x:auto;padding:2px 0 4px}
+.private-ready-switch-label{flex:0 0 auto;white-space:nowrap;color:var(--soft);font-size:14px;font-weight:900}
+.private-ready-mode-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;flex:1 0 280px;min-width:280px}
 .private-ready-cycle-button{display:flex;align-items:center;justify-content:center;min-height:48px;white-space:nowrap;padding:10px 15px;border-radius:11px;border:1px solid #678bab;background:linear-gradient(125deg,#253b54,#1e3147);color:#f1f9ff;font:inherit;font-size:13px;font-weight:900;cursor:pointer}
 .private-ready-cycle-button:hover{background:#355779;border-color:#9dcfff}
 .private-ready-cycle-button:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
@@ -788,10 +789,14 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 .private-ready-add-button:disabled{cursor:default;opacity:.62}
 #privateReadyActionFeedback:not(:empty){margin-top:12px}
 @media(max-width:540px){
- .private-ready-switch-row{grid-template-columns:minmax(0,1fr)}
- .private-ready-mode-switch{grid-template-columns:repeat(2,minmax(0,1fr))}
- .private-ready-mode-button{min-height:46px;font-size:12px}
- .private-ready-cycle-button{min-height:39px}
+ .private-ready-switch-row{gap:7px}
+ .private-ready-switch-label{font-size:11px}
+ .private-ready-mode-switch{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;flex-basis:250px;min-width:250px}
+ .private-ready-mode-button{min-height:46px;font-size:12px;padding:7px 6px}
  .private-ready-db-song{align-items:stretch}
  .private-ready-add-button{width:100%}
 }
+
+/* Database addition mode uses the same 50-on grid style as the ready filter. */
+#privateReadyDbForm .private-ready-kana-grid{margin-top:1px}
+#privateReadyDbForm .private-ready-db-reset{min-height:39px}

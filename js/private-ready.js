@@ -171,6 +171,7 @@
   if(existing?.status==="ready"){draw();return;}
   const shared=window.KEN_SHARED;
   if(!shared?.action)return;
+  if(!window.confirm("「"+song.artist+" / "+song.title+"」を共有の「歌える曲」に追加します。実際のデータに保存されます。よろしいですか？"))return;
   const releaseYear=String(song.releaseDate||"").match(/^\d{4}/)?.[0]||null;
   const payload={id:existing?.id||null,title:song.title,artist:song.artist,status:"ready",
    year:existing?.year??releaseYear,memo:existing?.memo||""};

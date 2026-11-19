@@ -103,6 +103,11 @@
  function draw(){if(!permitted())return; if(mode==="add")renderDatabase();else renderFilter();}
  function selectMode(next){
   if(next!=="add"&&next!=="filter")return;
+  if(mode==="add"&&next==="filter"&&dbState==="loading"){
+   dbSeq++;
+   dbState="start";
+   databaseResults=[];
+  }
   mode=next;
   const isAdd=mode==="add";
   $("#privateReadyDatabaseControls").hidden=!isAdd;
@@ -171,6 +176,10 @@
   if(existing?.status==="ready"){draw();return;}
   const shared=window.KEN_SHARED;
   if(!shared?.action)return;
+  if(new URLSearchParams(location.search).get("ui-preview")==="1"){
+   $("#privateReadyActionFeedback").textContent="確認用画面では保存しません。本番反映後に追加できます。";
+   return;
+  }
   if(!window.confirm("「"+song.artist+" / "+song.title+"」を共有の「歌える曲」に追加します。実際のデータに保存されます。よろしいですか？"))return;
   const releaseYear=String(song.releaseDate||"").match(/^\d{4}/)?.[0]||null;
   const payload={id:existing?.id||null,title:song.title,artist:song.artist,status:"ready",
@@ -217,6 +226,12 @@
    event.preventDefault();clearTimeout(dbTimer);void databaseSearch();
   });
   $("#privateReadyList").addEventListener("click",event=>void addReady(event));
+  if(new URLSearchParams(location.search).get("ui-preview")==="1"){
+   const info=document.createElement("p");
+   info.className="helper";
+   info.textContent="これは確認用の画面です。追加操作をしても実データには保存されません。";
+   $("#privateReadyDbForm").after(info);
+  }
   selectMode("filter");
  }
  function render(songs){

@@ -16,7 +16,7 @@
   "ぁ":"あ","ぃ":"い","ぅ":"う","ぇ":"え","ぉ":"お",
   "っ":"つ","ゃ":"や","ゅ":"ゆ","ょ":"よ","ゎ":"わ"};
  const MAX_DB_RESULTS=80;
- let allSongs=[],ready=[],databaseResults=[],selectedKana="",mode="filter";
+ let allSongs=[],ready=[],databaseResults=[],selectedKana="",selectedDbKana="",mode="filter";
  let initialized=false,dbSeq=0,dbTimer=null,dbState="start",adding=false;
  function permitted(){
   const shared=window.KEN_SHARED;
@@ -75,16 +75,22 @@
  function renderDatabase(){
   if(!$("#privateReadyList"))return;
   const readyKeys=new Set(ready.map(key));
+  const kanaTarget=$("#privateReadyDbKanaTarget").value==="artist"?"artist":"title";
+  const visibleResults=selectedDbKana
+   ?databaseResults.filter(song=>values(song,kanaTarget).some(v=>kanaKey(v)===selectedDbKana))
+   :databaseResults;
   const list=$("#privateReadyList"),fragment=document.createDocumentFragment();
   $("#privateReadyCount").textContent=ready.length.toLocaleString("ja-JP")+" 曲";
   $("#privateReadyResultCount").textContent=
    dbState==="loading"?"データベースを検索中…":
    dbState==="start"?"曲名かアーティスト名で検索":
+   selectedDbKana?"50音「"+selectedDbKana+"」 "+visibleResults.length+" / "+databaseResults.length+" 曲":
    "検索結果 "+databaseResults.length+" 曲";
   if(dbState==="start")fragment.appendChild(empty("曲名かアーティスト名を2文字以上入力してください。"));
   else if(dbState==="loading")fragment.appendChild(empty("データベースを検索しています…"));
-  else if(!databaseResults.length)fragment.appendChild(empty("一致する楽曲がありません。検索条件を変えてください。"));
-  for(const song of databaseResults){
+  else if(!visibleResults.length)fragment.appendChild(empty(
+   databaseResults.length?"指定した50音に一致する曲はありません。":"一致する楽曲がありません。検索条件を変えてください。"));
+  for(const song of visibleResults){
    const item=document.createElement("div");
    item.className="private-ready-song private-ready-db-song";item.setAttribute("role","listitem");
    const info=document.createElement("div");info.className="private-ready-db-song-info";
@@ -99,6 +105,11 @@
    item.append(info,b);fragment.appendChild(item);
   }
   list.replaceChildren(fragment);
+  for(const b of $("#privateReadyDbKanaGrid").querySelectorAll("[data-private-kana]")){
+   const active=b.dataset.privateKana===selectedDbKana;
+   b.classList.toggle("is-active",active);
+   b.setAttribute("aria-pressed",String(active));
+  }
  }
  function draw(){if(!permitted())return; if(mode==="add")renderDatabase();else renderFilter();}
  function selectMode(next){
@@ -198,17 +209,25 @@
  function init(){
   if(initialized||!$("#privateReadyKanaGrid"))return;
   initialized=true;
-  const grid=$("#privateReadyKanaGrid"),frag=document.createDocumentFragment();
-  for(const char of kanaRows.join("")){
-   const b=document.createElement("button");b.type="button";b.className="private-ready-kana-button";
-   b.dataset.privateKana=char;b.textContent=char;
-   b.setAttribute("aria-pressed","false");b.setAttribute("aria-label",char+"で絞り込む");
-   frag.appendChild(b);
+  function setupKanaGrid(selector,update){
+   const grid=$(selector),frag=document.createDocumentFragment();
+   for(const char of kanaRows.join("")){
+    const b=document.createElement("button");b.type="button";b.className="private-ready-kana-button";
+    b.dataset.privateKana=char;b.textContent=char;
+    b.setAttribute("aria-pressed","false");b.setAttribute("aria-label",char+"で絞り込む");
+    frag.appendChild(b);
+   }
+   grid.replaceChildren(frag);
+   grid.addEventListener("click",event=>{
+    const b=event.target.closest("[data-private-kana]");if(!b)return;
+    update(b.dataset.privateKana);draw();
+   });
   }
-  grid.replaceChildren(frag);
-  grid.addEventListener("click",event=>{
-   const b=event.target.closest("[data-private-kana]");if(!b)return;
-   selectedKana=selectedKana===b.dataset.privateKana?"":b.dataset.privateKana;draw();
+  setupKanaGrid("#privateReadyKanaGrid",char=>{
+   selectedKana=selectedKana===char?"":char;
+  });
+  setupKanaGrid("#privateReadyDbKanaGrid",char=>{
+   selectedDbKana=selectedDbKana===char?"":char;
   });
   for(const id of ["privateReadyTitleQuery","privateReadyArtistQuery"])
    $("#"+id).addEventListener("input",draw);
@@ -218,9 +237,19 @@
    $("#privateReadyTitleQuery").value="";$("#privateReadyArtistQuery").value="";
    $("#privateReadyKanaTarget").value="title";selectedKana="";draw();
   });
-  $("#privateReadyModeCycle").addEventListener("click",()=>selectMode(mode==="add"?"filter":"add"));
   $("#privateReadyModeAdd").addEventListener("click",()=>selectMode("add"));
   $("#privateReadyModeFilter").addEventListener("click",()=>selectMode("filter"));
+  $("#privateReadyDbKanaTarget").addEventListener("change",draw);
+  $("#privateReadyDbKanaClear").addEventListener("click",()=>{selectedDbKana="";draw();});
+  $("#privateReadyDbReset").addEventListener("click",()=>{
+   $("#privateReadyDbTitleQuery").value="";
+   $("#privateReadyDbArtistQuery").value="";
+   $("#privateReadyDbKanaTarget").value="title";
+   selectedDbKana="";dbSeq++;clearTimeout(dbTimer);
+   dbState="start";databaseResults=[];
+   $("#privateReadyDbStatus").textContent="曲名かアーティスト名を2文字以上入力して検索してください。";
+   draw();
+  });
   $("#privateReadyDbTitleQuery").addEventListener("input",scheduleDatabaseSearch);
   $("#privateReadyDbArtistQuery").addEventListener("input",scheduleDatabaseSearch);
   $("#privateReadyDbForm").addEventListener("submit",event=>{

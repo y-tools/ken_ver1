@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261119-owner-ready-v2">
+<link rel="stylesheet" href="./styles.css?v=20261119-owner-ready-v3">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -16,7 +16,7 @@
 <script src="./data/vps-search.js?v=20261118-dbbrowse-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./js/private-ready.js?v=20261119-owner-ready-v2" defer></script>
+<script src="./js/private-ready.js?v=20261119-owner-ready-v3" defer></script>
 <script src="./app.js?v=20261119-owner-ready-v1" defer></script>
 </head>
 <body>
@@ -352,9 +352,12 @@
         </div>
         <span class="count" id="privateReadyCount" aria-live="polite">0 曲</span>
       </div>
-      <div class="private-ready-mode-switch" role="tablist" aria-label="歌える曲の操作を切り替え">
-        <button type="button" id="privateReadyModeAdd" class="private-ready-mode-button" role="tab" aria-selected="false" aria-controls="privateReadyDatabaseControls">データベースから曲を追加</button>
-        <button type="button" id="privateReadyModeFilter" class="private-ready-mode-button is-active" role="tab" aria-selected="true" aria-controls="privateReadyFilterControls">歌える曲を絞り込む</button>
+      <div class="private-ready-switch-row">
+        <button type="button" id="privateReadyModeCycle" class="private-ready-cycle-button" aria-label="表示モードを切り替え">⇄ モード切り替え</button>
+        <div class="private-ready-mode-switch" role="tablist" aria-label="歌える曲の操作を切り替え">
+          <button type="button" id="privateReadyModeAdd" class="private-ready-mode-button" role="tab" aria-selected="false" aria-controls="privateReadyDatabaseControls">データベースから曲を追加</button>
+          <button type="button" id="privateReadyModeFilter" class="private-ready-mode-button is-active" role="tab" aria-selected="true" aria-controls="privateReadyFilterControls">歌える曲を絞り込む</button>
+        </div>
       </div>
       <div class="private-ready-layout">
         <section class="private-ready-search" aria-label="楽曲検索">

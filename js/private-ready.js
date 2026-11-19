@@ -144,14 +144,16 @@
   const seq=++dbSeq;
   if(!requests.length){
    databaseResults=[];dbState="start";
-   $("#privateReadyDbStatus").textContent="曲名かアーティスト名を2文字以上入力してください。";
+   $("#privateReadyDbStatus").textContent="曲名かアーティスト名を2文字以上入力すると、自動で検索されます。";
    draw();return;
   }
   dbState="loading";
   $("#privateReadyDbStatus").textContent="検索しています…";draw();
   const responses=await Promise.allSettled(requests.map(async request=>
    window.KEN_VPS_SEARCH.search(request.q,request.side,50)));
-  if(seq!==dbSeq||mode!=="add")return;
+  if(seq!==dbSeq||mode!=="add"||
+     $("#privateReadyDbTitleQuery").value.trim()!==titleQ||
+     $("#privateReadyDbArtistQuery").value.trim()!==artistQ)return;
   const found=new Map(),failed=responses.filter(r=>r.status==="rejected");
   for(const response of responses){
    if(response.status!=="fulfilled")continue;
@@ -176,8 +178,18 @@
   draw();
  }
  function scheduleDatabaseSearch(){
+  // Invalidate old requests as soon as the user types, not after the debounce.
+  dbSeq++;
   clearTimeout(dbTimer);
-  dbTimer=setTimeout(()=>void databaseSearch(),300);
+  if(mode!=="add")return;
+  const title=$("#privateReadyDbTitleQuery").value.trim();
+  const artist=$("#privateReadyDbArtistQuery").value.trim();
+  if(Array.from(title).length<2&&Array.from(artist).length<2){
+   databaseResults=[];dbState="start";
+   $("#privateReadyDbStatus").textContent="曲名かアーティスト名を2文字以上入力すると、自動で検索されます。";
+   draw();return;
+  }
+  dbTimer=setTimeout(()=>void databaseSearch(),220);
  }
  async function addReady(event){
   const btn=event.target.closest("[data-ready-add]");if(!btn||adding||mode!=="add"||!permitted())return;
@@ -247,12 +259,13 @@
    $("#privateReadyDbKanaTarget").value="title";
    selectedDbKana="";dbSeq++;clearTimeout(dbTimer);
    dbState="start";databaseResults=[];
-   $("#privateReadyDbStatus").textContent="曲名かアーティスト名を2文字以上入力して検索してください。";
+   $("#privateReadyDbStatus").textContent="曲名かアーティスト名を2文字以上入力すると、自動で検索されます。";
    draw();
   });
   $("#privateReadyDbTitleQuery").addEventListener("input",scheduleDatabaseSearch);
   $("#privateReadyDbArtistQuery").addEventListener("input",scheduleDatabaseSearch);
   $("#privateReadyDbForm").addEventListener("submit",event=>{
+   // Enter is an optional shortcut; no submit button is necessary.
    event.preventDefault();clearTimeout(dbTimer);void databaseSearch();
   });
   $("#privateReadyList").addEventListener("click",event=>void addReady(event));

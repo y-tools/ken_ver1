@@ -218,6 +218,7 @@
    $("#privateReadyTitleQuery").value="";$("#privateReadyArtistQuery").value="";
    $("#privateReadyKanaTarget").value="title";selectedKana="";draw();
   });
+  $("#privateReadyModeCycle").addEventListener("click",()=>selectMode(mode==="add"?"filter":"add"));
   $("#privateReadyModeAdd").addEventListener("click",()=>selectMode("add"));
   $("#privateReadyModeFilter").addEventListener("click",()=>selectMode("filter"));
   $("#privateReadyDbTitleQuery").addEventListener("input",scheduleDatabaseSearch);

@@ -16,7 +16,7 @@
 <script src="./data/vps-search.js?v=20261118-dbbrowse-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./js/private-ready.js?v=20261119-owner-ready-v6" defer></script>
+<script src="./js/private-ready.js?v=20261119-artist-first-search-v7" defer></script>
 <script src="./app.js?v=20261119-owner-ready-v1" defer></script>
 </head>
 <body>
@@ -365,11 +365,11 @@
           <div id="privateReadyDatabaseControls" class="private-ready-controls" role="tabpanel" aria-labelledby="privateReadyModeAdd" hidden>
             <p class="helper">VPSの楽曲データベースを検索し、結果から「歌える曲」に登録できます。登録済みの曲は重複追加しません。</p>
             <form id="privateReadyDbForm" class="private-ready-db-form" role="search">
-              <label class="field" for="privateReadyDbTitleQuery">曲名
-                <input type="search" id="privateReadyDbTitleQuery" placeholder="曲名・かな・ローマ字（2文字以上）" autocomplete="off">
-              </label>
               <label class="field" for="privateReadyDbArtistQuery">アーティスト名
                 <input type="search" id="privateReadyDbArtistQuery" placeholder="アーティスト名・かな・ローマ字（2文字以上）" autocomplete="off">
+              </label>
+              <label class="field" for="privateReadyDbTitleQuery">曲名
+                <input type="search" id="privateReadyDbTitleQuery" placeholder="曲名・かな・ローマ字（2文字以上）" autocomplete="off">
               </label>
               <div class="private-ready-kana-header">
               <h4>50音から絞り込む</h4>
@@ -377,22 +377,22 @@
             </div>
             <label class="field" for="privateReadyDbKanaTarget">50音の絞り込み対象
               <select id="privateReadyDbKanaTarget">
-                <option value="title">曲名の先頭</option>
                 <option value="artist">アーティスト名の先頭</option>
+                <option value="title">曲名の先頭</option>
               </select>
             </label>
             <div id="privateReadyDbKanaGrid" class="private-ready-kana-grid" role="group" aria-label="データベース検索の50音ボタン"></div>
-            <p class="helper">50音は検索結果の読み・表記の先頭で絞り込みます。曲名またはアーティスト名を2文字以上入力すると自動検索します。</p>
+            <p class="helper">50音は検索結果の読み・表記の先頭で絞り込みます。アーティスト名または曲名を2文字以上入力すると自動検索します。</p>
             <button type="button" class="button subtle private-ready-db-reset" id="privateReadyDbReset">検索条件をすべてクリア</button>
             </form>
-            <p class="helper" id="privateReadyDbStatus" role="status" aria-live="polite">曲名かアーティスト名を2文字以上入力すると、自動で検索結果が表示されます。</p>
+            <p class="helper" id="privateReadyDbStatus" role="status" aria-live="polite">アーティスト名か曲名を2文字以上入力すると、自動で検索結果が表示されます。</p>
           </div>
           <div id="privateReadyFilterControls" class="private-ready-controls" role="tabpanel" aria-labelledby="privateReadyModeFilter">
-            <label class="field" for="privateReadyTitleQuery">曲名
-              <input type="search" id="privateReadyTitleQuery" placeholder="曲名・かなで検索" autocomplete="off">
-            </label>
             <label class="field" for="privateReadyArtistQuery">アーティスト名
               <input type="search" id="privateReadyArtistQuery" placeholder="アーティスト名・かなで検索" autocomplete="off">
+            </label>
+            <label class="field" for="privateReadyTitleQuery">曲名
+              <input type="search" id="privateReadyTitleQuery" placeholder="曲名・かなで検索" autocomplete="off">
             </label>
             <div class="private-ready-kana-header">
               <h4>50音で絞り込む</h4>
@@ -400,8 +400,8 @@
             </div>
             <label class="field" for="privateReadyKanaTarget">50音の絞り込み対象
               <select id="privateReadyKanaTarget">
-                <option value="title">曲名の先頭</option>
                 <option value="artist">アーティスト名の先頭</option>
+                <option value="title">曲名の先頭</option>
               </select>
             </label>
             <div id="privateReadyKanaGrid" class="private-ready-kana-grid" role="group" aria-label="50音ボタン"></div>

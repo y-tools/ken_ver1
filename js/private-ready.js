@@ -83,10 +83,10 @@
   $("#privateReadyCount").textContent=ready.length.toLocaleString("ja-JP")+" 曲";
   $("#privateReadyResultCount").textContent=
    dbState==="loading"?"データベースを検索中…":
-   dbState==="start"?"曲名かアーティスト名で検索":
+   dbState==="start"?"アーティスト名か曲名で検索":
    selectedDbKana?"50音「"+selectedDbKana+"」 "+visibleResults.length+" / "+databaseResults.length+" 曲":
    "検索結果 "+databaseResults.length+" 曲";
-  if(dbState==="start")fragment.appendChild(empty("曲名かアーティスト名を2文字以上入力してください。"));
+  if(dbState==="start")fragment.appendChild(empty("アーティスト名か曲名を2文字以上入力してください。"));
   else if(dbState==="loading")fragment.appendChild(empty("データベースを検索しています…"));
   else if(!visibleResults.length)fragment.appendChild(empty(
    databaseResults.length?"指定した50音に一致する曲はありません。":"一致する楽曲がありません。検索条件を変えてください。"));
@@ -144,7 +144,7 @@
   const seq=++dbSeq;
   if(!requests.length){
    databaseResults=[];dbState="start";
-   $("#privateReadyDbStatus").textContent="曲名かアーティスト名を2文字以上入力すると、自動で検索されます。";
+   $("#privateReadyDbStatus").textContent="アーティスト名か曲名を2文字以上入力すると、自動で検索されます。";
    draw();return;
   }
   dbState="loading";
@@ -186,7 +186,7 @@
   const artist=$("#privateReadyDbArtistQuery").value.trim();
   if(Array.from(title).length<2&&Array.from(artist).length<2){
    databaseResults=[];dbState="start";
-   $("#privateReadyDbStatus").textContent="曲名かアーティスト名を2文字以上入力すると、自動で検索されます。";
+   $("#privateReadyDbStatus").textContent="アーティスト名か曲名を2文字以上入力すると、自動で検索されます。";
    draw();return;
   }
   dbTimer=setTimeout(()=>void databaseSearch(),220);
@@ -247,7 +247,7 @@
   $("#privateReadyKanaClear").addEventListener("click",()=>{selectedKana="";draw();});
   $("#privateReadyReset").addEventListener("click",()=>{
    $("#privateReadyTitleQuery").value="";$("#privateReadyArtistQuery").value="";
-   $("#privateReadyKanaTarget").value="title";selectedKana="";draw();
+   $("#privateReadyKanaTarget").value="artist";selectedKana="";draw();
   });
   $("#privateReadyModeAdd").addEventListener("click",()=>selectMode("add"));
   $("#privateReadyModeFilter").addEventListener("click",()=>selectMode("filter"));
@@ -256,10 +256,10 @@
   $("#privateReadyDbReset").addEventListener("click",()=>{
    $("#privateReadyDbTitleQuery").value="";
    $("#privateReadyDbArtistQuery").value="";
-   $("#privateReadyDbKanaTarget").value="title";
+   $("#privateReadyDbKanaTarget").value="artist";
    selectedDbKana="";dbSeq++;clearTimeout(dbTimer);
    dbState="start";databaseResults=[];
-   $("#privateReadyDbStatus").textContent="曲名かアーティスト名を2文字以上入力すると、自動で検索されます。";
+   $("#privateReadyDbStatus").textContent="アーティスト名か曲名を2文字以上入力すると、自動で検索されます。";
    draw();
   });
   $("#privateReadyDbTitleQuery").addEventListener("input",scheduleDatabaseSearch);

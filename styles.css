@@ -762,6 +762,12 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 .private-ready-song{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 14px;padding:12px 14px;border:1px solid var(--edge);border-radius:10px;background:var(--raised)}
 .private-ready-song-title{font-size:14px;font-weight:900;color:var(--text);overflow-wrap:anywhere}
 .private-ready-song-artist{font-size:12px;color:var(--soft);overflow-wrap:anywhere}
+/* Explicitly stack singable-song entries: artist on line 1, title on line 2. */
+#privateReadyList .private-ready-song:not(.private-ready-db-song){flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:5px}
+#privateReadyList .private-ready-song:not(.private-ready-db-song) .private-ready-song-artist{order:0;width:100%;text-align:left}
+#privateReadyList .private-ready-song:not(.private-ready-db-song) .private-ready-song-title{order:1;width:100%;text-align:left}
+#privateReadyList .private-ready-db-song-info .private-ready-song-artist{order:0}
+#privateReadyList .private-ready-db-song-info .private-ready-song-title{order:1}
 @media(max-width:820px){.private-ready-layout{grid-template-columns:minmax(0,1fr)}.private-ready-list{max-height:560px}}
 @media(max-width:520px){.private-ready-song{flex-direction:column;align-items:flex-start}}
 

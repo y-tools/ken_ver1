@@ -130,8 +130,12 @@
     </div>
   </div>
   <div id="adminView" hidden>
-    <section id="ownerInvite" class="home-card" hidden>
-      <h3>オーナー専用：管理者招待</h3>
+    <details id="ownerTools" class="home-card owner-tools" hidden>
+      <summary class="owner-tools-summary"><span>オーナー専用</span><small>管理者の追加・一覧を開く</small></summary>
+      <div class="owner-tools-grid">
+      <details id="ownerInvite" class="owner-tools-panel">
+        <summary>管理者を追加</summary>
+        <div class="owner-tools-panel-body">
       <p>メールアドレスで管理者を招待します。招待権限はサーバー側でも確認されます。</p>
       <form id="inviteAdminForm" class="form-row">
         <label class="field">招待するメールアドレス<input id="inviteAdminEmail" type="email" autocomplete="off" required maxlength="254"></label>
@@ -163,12 +167,18 @@
         <p class="helper" id="adminCreateFeedback" role="status" aria-live="polite"></p>
         <p class="helper">※ メールを登録しないため、メールによるパスワード再設定は利用できません。パスワードはこの画面に保存されません。</p>
       </div>
-    </section>
-    <section id="ownerAdminList" class="home-card" hidden>
-      <div class="report-heading"><div><h3>オーナー専用：現在の管理者一覧</h3><p>ID・ログインID・メールアドレス・権限を確認できます。パスワードは暗号化して保存されるため表示できません。</p></div>
-        <button type="button" class="button" id="ownerAdminListLoad">一覧を開く／更新</button></div>
-      <div id="ownerAdminListBody" class="owner-admin-list" hidden></div>
-    </section>
+        </div>
+      </details>
+        <details id="ownerAdminList" class="owner-tools-panel">
+          <summary>管理者一覧</summary>
+          <div class="owner-tools-panel-body">
+            <p class="helper">現在の管理者のID・ログインID・メールアドレス・権限を表示します。パスワードは表示できません。</p>
+            <button type="button" class="button" id="ownerAdminListLoad">一覧を更新</button>
+            <div id="ownerAdminListBody" class="owner-admin-list" aria-live="polite" hidden></div>
+          </div>
+        </details>
+      </div>
+    </details>
     <div class="admin-heading" style="margin-top:17px">
       <div><div class="admin-title-line"><h2>管理画面</h2><span id="adminOnAir" class="onair-indicator" hidden><span class="onair-dot"></span>ON AIR</span></div><p>左からリスナー・歌唱待機楽曲・リクエスト・空き枠の4列です。</p></div>
       <div class="stream-controls">
@@ -332,6 +342,47 @@
       <div class="priority-list" id="priorityList">読み込み中…</div>
     </section>
     </div>
+
+    <section id="privateReadySection" class="home-card private-ready-section" aria-labelledby="privateReadyHeading" hidden>
+      <div class="report-heading">
+        <div>
+          <h2 id="privateReadyHeading">歌える曲一覧</h2>
+          <p>オーナー・Ken専用の検索・絞り込み画面です。共有データに「歌える曲」として登録された楽曲を表示します。</p>
+        </div>
+        <span class="count" id="privateReadyCount" aria-live="polite">0 曲</span>
+      </div>
+      <div class="private-ready-layout">
+        <section class="private-ready-search" aria-label="歌える曲を検索・絞り込み">
+          <h3>楽曲検索・絞り込み</h3>
+          <label class="field" for="privateReadyTitleQuery">曲名
+            <input type="search" id="privateReadyTitleQuery" placeholder="曲名・かなで検索" autocomplete="off">
+          </label>
+          <label class="field" for="privateReadyArtistQuery">アーティスト名
+            <input type="search" id="privateReadyArtistQuery" placeholder="アーティスト名・かなで検索" autocomplete="off">
+          </label>
+          <div class="private-ready-kana-header">
+            <h4>50音で絞り込む</h4>
+            <button class="button subtle private-ready-kana-clear" id="privateReadyKanaClear" type="button">50音を解除</button>
+          </div>
+          <label class="field" for="privateReadyKanaTarget">50音の絞り込み対象
+            <select id="privateReadyKanaTarget">
+              <option value="title">曲名の先頭</option>
+              <option value="artist">アーティスト名の先頭</option>
+            </select>
+          </label>
+          <div id="privateReadyKanaGrid" class="private-ready-kana-grid" role="group" aria-label="50音ボタン"></div>
+          <p class="helper">50音は登録されている表記・読みの先頭で絞り込みます。漢字・英字の読みが未登録の曲は対象外になることがあります。</p>
+          <button type="button" class="button private-ready-reset" id="privateReadyReset">検索条件をすべてクリア</button>
+        </section>
+        <section class="private-ready-results" aria-labelledby="privateReadyListHeading">
+          <div class="private-ready-result-head">
+            <h3 id="privateReadyListHeading">現在の歌える曲</h3>
+            <span id="privateReadyResultCount" class="helper" aria-live="polite">読み込み中</span>
+          </div>
+          <div id="privateReadyList" class="private-ready-list" role="list" aria-live="polite"></div>
+        </section>
+      </div>
+    </section>
   </div>
 </main>
 <dialog id="adminLoginDialog" class="request-dialog admin-login-dialog" aria-labelledby="adminLoginTitle">

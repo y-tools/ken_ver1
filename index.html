@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261119-owner-ready-v4">
+<link rel="stylesheet" href="./styles.css?v=20261119-owner-ready-v5">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -16,7 +16,7 @@
 <script src="./data/vps-search.js?v=20261118-dbbrowse-v1" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
-<script src="./js/private-ready.js?v=20261119-owner-ready-v4" defer></script>
+<script src="./js/private-ready.js?v=20261119-owner-ready-v5" defer></script>
 <script src="./app.js?v=20261119-owner-ready-v1" defer></script>
 </head>
 <body>
@@ -382,11 +382,10 @@
               </select>
             </label>
             <div id="privateReadyDbKanaGrid" class="private-ready-kana-grid" role="group" aria-label="データベース検索の50音ボタン"></div>
-            <p class="helper">50音は検索結果の読み・表記の先頭で絞り込みます。検索には曲名かアーティスト名を2文字以上入力してください。</p>
-            <button type="submit" class="button primary private-ready-db-submit" id="privateReadyDbSearch">データベースを検索</button>
+            <p class="helper">50音は検索結果の読み・表記の先頭で絞り込みます。曲名またはアーティスト名を2文字以上入力すると自動検索します。</p>
             <button type="button" class="button subtle private-ready-db-reset" id="privateReadyDbReset">検索条件をすべてクリア</button>
             </form>
-            <p class="helper" id="privateReadyDbStatus" role="status" aria-live="polite">曲名かアーティスト名を2文字以上入力して検索してください。</p>
+            <p class="helper" id="privateReadyDbStatus" role="status" aria-live="polite">曲名かアーティスト名を2文字以上入力すると、自動で検索結果が表示されます。</p>
           </div>
           <div id="privateReadyFilterControls" class="private-ready-controls" role="tabpanel" aria-labelledby="privateReadyModeFilter">
             <label class="field" for="privateReadyTitleQuery">曲名

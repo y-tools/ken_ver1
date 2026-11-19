@@ -63,7 +63,7 @@
    titleNode.textContent=song.title;
    const artistNode=document.createElement("span");artistNode.className="private-ready-song-artist";
    artistNode.textContent=song.artist;
-   item.append(titleNode,artistNode);fragment.appendChild(item);
+   item.append(artistNode,titleNode);fragment.appendChild(item);
   }
   list.replaceChildren(fragment);
   for(const b of $("#privateReadyKanaGrid").querySelectorAll("[data-private-kana]")){
@@ -96,7 +96,7 @@
    const info=document.createElement("div");info.className="private-ready-db-song-info";
    const title=document.createElement("strong");title.className="private-ready-song-title";title.textContent=song.title;
    const artist=document.createElement("span");artist.className="private-ready-song-artist";artist.textContent=song.artist;
-   info.append(title,artist);
+   info.append(artist,title);
    const b=document.createElement("button");b.type="button";b.className="button primary private-ready-add-button";
    b.dataset.readyAdd=key(song);
    const exists=readyKeys.has(key(song));

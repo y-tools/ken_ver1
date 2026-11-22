@@ -87,9 +87,12 @@ assert.match(layout,/id="signedInUser" hidden/);
 assert.match(layout,/id="catalogStatus" aria-live="polite" hidden/);
 assert.doesNotMatch(layout,/id="loginNav"/);
 for (const id of ["waiting-section","today-history-section","practice-section","ready-section"]) {
-  assert.match(layout,new RegExp(`id="${id}"[\\s\\S]*?class="coming-soon-message"`));
+  assert.match(layout,new RegExp(`id="${id}"`));
 }
-assert.equal((layout.match(/class="coming-soon-message"/g)||[]).length,4);
+assert.doesNotMatch(layout,/coming-soon/i);
+for (const id of ["waitingList","todaySingingList","practiceList","readyList"]) {
+  assert.doesNotMatch(layout,new RegExp(`id="${id}"[^>]*hidden`));
+}
 assert.match(mainApp,/function renderReadySongs/);
 assert.match(mainApp,/if\(clickCount>=3\)/);
 assert.match(mainApp,/},750\)/);
@@ -143,4 +146,4 @@ assert.match(app,/function openAdminLoginDialog/);
 assert.match(app,/auth\.setSession/);
 assert.match(app,/functions\.invoke\("login-with-id"/);
 assert.match(read("supabase/migrations/202611110015_complete_matching_waiters.sql"),/denmoku_complete_matching_waiters/);
-console.log("PASS Coming Soon, song requester grouping, admin login popup and horizontal admin controls");
+console.log("PASS listener 02-05 lists visible, song requester grouping, admin login popup and horizontal admin controls");

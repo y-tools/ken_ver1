@@ -219,8 +219,7 @@ try{
   null,{timeout:12000}
  );
  assert.equal(await admin.page.locator("#adminWaiting .admin-song-entry").count(),1);
- assert.equal(await listener.page.locator("#waitingList").isVisible(),false);
- assert.equal(await listener.page.locator("#waiting-section .coming-soon-message").textContent(),"Coming Soon");
+ assert.equal(await listener.page.locator("#waitingList").isVisible(),true);
  server.requests=server.requests.filter(r=>r.id!=="duplicate-request");
  server.requests[0].status="new";
  server.version++;
@@ -240,10 +239,9 @@ try{
   null,{timeout:12000}
  );
  assert.equal(await listener.page.locator("#readyList .song-row").count(),1);
- assert.equal(await listener.page.locator("#readyList").isVisible(),false);
- assert.equal(await listener.page.locator("#ready-section .coming-soon-message").textContent(),"Coming Soon");
+ assert.equal(await listener.page.locator("#readyList").isVisible(),true);
  assert.equal(await admin.page.locator("#adminSongList").textContent().then(t=>t.includes("unravel")),true);
- console.log("PASS 05 list data syncs but remains hidden behind Coming Soon for listeners");
+ console.log("PASS 05 list data syncs and is visible to listeners");
  console.log("PASS managed song list updates between independent admins");
 
  // The active song block must show an actual search link with the new label.

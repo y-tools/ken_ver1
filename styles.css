@@ -799,3 +799,8 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 /* Database addition mode uses the same 50-on grid style as the ready filter. */
 #privateReadyDbForm .private-ready-kana-grid{margin-top:1px}
 #privateReadyDbForm .private-ready-db-reset{min-height:39px}
+
+/* 歌っちゃ王のみで検索（01 楽曲検索の切り替え） */
+.utachaoh-toggle{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0 2px;font-weight:700;cursor:pointer;user-select:none}
+.utachaoh-toggle input{width:20px;height:20px;accent-color:#e8455a;cursor:pointer}
+.utachaoh-toggle-note{font-weight:400;font-size:12px;opacity:.75}

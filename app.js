@@ -158,11 +158,13 @@ function matchesBothFields(song,titleTerm,artistTerm){
 }
 function renderSearch(){
  const sequence=++extendedSearchSequence;
+ // 「歌っちゃ王のみで検索」がONのときは js/utachaoh.js が結果欄を担当する
+ if(document.getElementById("utachaohOnly")?.checked){window.__utachaohSearch?.();return;}
  const titleQuery=$("#searchInput").value.trim();
  const artistQuery=$("#searchArtistInput").value.trim();
  const titleTerm=norm(titleQuery),artistTerm=norm(artistQuery);
  const hasQuery=Boolean(titleTerm||artistTerm);
- const unchanged=()=>sequence===extendedSearchSequence&&
+ const unchanged=()=>sequence===extendedSearchSequence&&!document.getElementById("utachaohOnly")?.checked&&
   $("#searchInput").value.trim()===titleQuery&&
   $("#searchArtistInput").value.trim()===artistQuery;
  const ready=state.songs.filter(s=>s.status==="ready");

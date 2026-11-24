@@ -78,7 +78,7 @@ _MAX_TRACKED_CLIENTS = 5000
 @app.middleware("http")
 async def search_rate_limit(request: Request, call_next):
     if request.url.path not in ("/api/v1/search", "/api/v1/stats", "/api/v1/priority-requests", "/api/v1/artists") and \
-            not request.url.path.startswith(("/api/v1/priority-requests/", "/api/v1/artists/")):
+            not request.url.path.startswith(("/api/v1/priority-requests/", "/api/v1/artists/", "/api/v1/utachaoh/")):
         return await call_next(request)
     ip = request.client.host if request.client else "unknown"
     now = monotonic()
@@ -482,3 +482,75 @@ async def search(
             },
         })
     return {"items": items, "query": q, "mode": mode}
+
+
+# ---- 歌っちゃ王（YouTube @uta-cha-oh）専用DB: 1行=動画1本。既存の楽曲DBとは別系統 ----
+UTACHAOH_SEARCH = """
+SELECT youtube_id, video_title, video_type,
+       artist_name, artist_hiragana, artist_katakana, artist_english, artist_reading_verification,
+       song_title, song_hiragana, song_katakana, song_english, song_reading_verification,
+       (CASE WHEN %(a)s = '' THEN 0 WHEN artist_search_key LIKE %(ap)s ESCAPE '!' OR artist_search_key LIKE %(ab)s ESCAPE '!' THEN 0 ELSE 1 END
+        + CASE WHEN %(t)s = '' THEN 0 WHEN song_search_key LIKE %(tp)s ESCAPE '!' OR song_search_key LIKE %(tb)s ESCAPE '!' THEN 0 ELSE 1 END) AS rank
+FROM utachaoh_videos
+WHERE (%(a)s = '' OR artist_search_key LIKE %(am)s ESCAPE '!')
+  AND (%(t)s = '' OR song_search_key LIKE %(tm)s ESCAPE '!')
+ORDER BY rank, artist_name, song_title, channel_order
+LIMIT %(limit)s
+"""
+
+
+def _like(term: str) -> str:
+    return term.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+
+
+@app.get("/api/v1/utachaoh/search")
+async def utachaoh_search(
+    request: Request,
+    artist: str = Query("", max_length=120),
+    title: str = Query("", max_length=120),
+    limit: int = Query(50, ge=1, le=100),
+):
+    a, t = norm(artist), norm(title)
+    if not a and not t:
+        return {"items": [], "artist": artist, "title": title}
+    ea, et = _like(a), _like(t)
+    params = {"a": a, "t": t, "limit": limit,
+              "ap": ea + "%", "ab": "%|" + ea + "%", "am": "%" + ea + "%",
+              "tp": et + "%", "tb": "%|" + et + "%", "tm": "%" + et + "%"}
+    try:
+        async with request.app.state.pool.connection() as conn:
+            async with conn.transaction():
+                async with conn.cursor() as cur:
+                    await cur.execute("SET LOCAL statement_timeout = '2500ms'")
+                    await cur.execute("SET LOCAL default_transaction_read_only = on")
+                    await cur.execute(UTACHAOH_SEARCH, params)
+                    rows = await cur.fetchall()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Search temporarily unavailable")
+    items = []
+    for r in rows:
+        items.append({
+            "youtubeId": r["youtube_id"],
+            "url": "https://www.youtube.com/watch?v=" + r["youtube_id"],
+            "videoTitle": r["video_title"],
+            "videoType": r["video_type"],
+            "artist": {"name": r["artist_name"], "hiragana": r["artist_hiragana"],
+                       "katakana": r["artist_katakana"], "english": r["artist_english"],
+                       "verification": r["artist_reading_verification"]},
+            "song": {"title": r["song_title"], "hiragana": r["song_hiragana"],
+                     "katakana": r["song_katakana"], "english": r["song_english"],
+                     "verification": r["song_reading_verification"]},
+        })
+    return {"items": items, "artist": artist, "title": title}
+
+
+@app.get("/api/v1/utachaoh/stats")
+async def utachaoh_stats(request: Request):
+    try:
+        async with request.app.state.pool.connection() as conn:
+            async with conn.cursor() as cur:
+                await cur.execute("SELECT COUNT(*) AS n, COUNT(DISTINCT artist_name) AS a FROM utachaoh_videos")
+                r = await cur.fetchone()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Stats temporarily unavailable")
+    return {"videoCount": r["n"], "artistCount": r["a"]}

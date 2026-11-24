@@ -24,6 +24,16 @@ PC画面は左から：リスナー画面プレビュー、歌唱待機曲（歌
 
 **「さらに調べる」**は、曲名・アーティストについて楽曲情報、概要、公式歌詞掲載URLを調査するための**プロンプトを生成する機能**です。ChatGPTを新しいタブで開き、内容を貼り付けて利用します。ChatGPTへの自動送信・iframe埋め込み・API問い合わせは行いません。Google歌詞URL検索も別タブで開きます。
 
+## 歌っちゃ王検索（2026-11-24）
+
+ホーム画面「01 楽曲検索」の「歌っちゃ王のみで検索」にチェックを入れると、YouTube「カラオケ歌っちゃ王」（@uta-cha-oh）の全動画（19,662本）をアーティスト名・曲名で検索し、YouTubeのURL付きで表示します。
+
+- 既存の楽曲DB（artists / songs）とは**別のデータベース**です。VPS PostgreSQL の `utachaoh_videos` テーブル（1行＝動画1本）に保存します（`server/sql/026_utachaoh_videos.sql`）。
+- アーティスト・楽曲それぞれに「名前／ひらがな／カタカナ／英語」を持ちます。読みはKenのデンモク楽曲DBにあるものを流用し、無いものは自動推定（pykakasi）です。自動推定は `*_reading_verification='estimated'` で区別します。
+- 取り込みは `server/import_utachaoh.py`（動画一覧CSVから。人が確認済みの読みは上書きしません）。
+- API：`GET /api/v1/utachaoh/search?artist=&title=&limit=`（AND検索・部分一致）、`GET /api/v1/utachaoh/stats`。
+- 画面：`js/utachaoh.js`。
+
 ## 検索カタログ（2026-11-09 TK限定）
 
 **現在の楽曲データベースには「TK from 凛として時雨」のみを登録しています。**

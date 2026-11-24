@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261119-ready-artist-stack-v7">
+<link rel="stylesheet" href="./styles.css?v=20261124-utachaoh-toggle-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -17,7 +17,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
 <script src="./js/private-ready.js?v=20261119-artist-first-search-v7" defer></script>
-<script src="./app.js?v=20261119-owner-ready-v1" defer></script>
+<script src="./app.js?v=20261124-utachaoh-toggle-v1" defer></script>
+<script src="./js/utachaoh.js?v=20261124-utachaoh-toggle-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -85,6 +86,7 @@
             </div>
           </div>
         </div>
+        <label class="utachaoh-toggle" for="utachaohOnly"><input type="checkbox" id="utachaohOnly"> 歌っちゃ王のみで検索<span class="utachaoh-toggle-note">（YouTube「カラオケ歌っちゃ王」の動画をURL付きで表示）</span></label>
         <div class="helper" id="searchHelper" aria-live="polite">曲カタログを読み込み中です…</div>
         <div class="result-list" id="searchResults"></div>
       </section>

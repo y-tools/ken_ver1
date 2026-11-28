@@ -110,8 +110,9 @@ function formatSongReadings(song){
 }
 function displayRow(s,actions="",status=""){
  const tag=status?'<span class="tag '+(status==="ready"?"ready":"")+'">'+(status==="ready"?"歌える曲":"カタログ")+'</span>':"";
+ // リスナー画面では「読み・英語表記」と「DAM / JOYSOUND」の欄を表示しない（検索には引き続き使う）
  return '<div class="song-row"><div class="song-info"><div class="song-artist">'+esc(s.artist)+(s.year?' · '+esc(s.year):'')+'</div><div class="song-title">'+esc(s.title)+'</div>'+ (tag?'<div class="song-meta">'+tag+'</div>':"")+
- formatSongReadings(s)+(window.KEN_KARAOKE?.render(s)||"")+'</div>'+ (actions?'<div class="song-actions">'+actions+'</div>':"")+'</div>';
+ '</div>'+ (actions?'<div class="song-actions">'+actions+'</div>':"")+'</div>';
 }
 function openFreeformRequestDialog(){
  const dialog=$("#freeformRequestDialog");
@@ -170,7 +171,7 @@ function renderSearch(){
  const ready=state.songs.filter(s=>s.status==="ready");
  const statusLookup=new Map(state.songs.map(s=>[readyKey(s.title,s.artist),s.status]));
  $("#searchHelper").textContent=catalog.ready
-  ? "楽曲データベースから検索します。曲名・アーティスト名は片方だけでも両方でも検索できます（2文字以上で全登録曲を検索）。"
+  ? "楽曲データベースから検索します。曲名・アーティスト名は片方だけでも両方でも検索できます（1文字から全登録曲を検索）。"
   : catalog.error?"内蔵カタログを読み込めませんでした（データベース検索は継続します）。":"内蔵カタログを読み込み中です…";
  const list=[],indices=new Map();
  const add=song=>{
@@ -217,7 +218,7 @@ function renderSearch(){
  if(!hasQuery)return;
  // Prefer the narrower query in remote systems, but also run the other query
  // so alternate spellings and different prefix indexes are not silently lost.
- const remoteQueries=queries.filter(x=>Array.from(x.term).length>=2);
+ const remoteQueries=queries.filter(x=>Array.from(x.term).length>=1);
  const mergeVps=payload=>{
   if(!unchanged()||!Array.isArray(payload?.items))return;
   for(const row of payload.items){

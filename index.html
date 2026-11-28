@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261124-utachaoh-toggle-v1">
+<link rel="stylesheet" href="./styles.css?v=20261128-toolsrow-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -19,7 +19,7 @@
 <script src="./js/private-ready.js?v=20261119-artist-first-search-v7" defer></script>
 <script src="./app.js?v=20261128-adminreq-v1" defer></script>
 <script src="./js/utachaoh.js?v=20261128-request-v1" defer></script>
-<script src="./js/admin-request.js?v=20261128-adminreq-v1" defer></script>
+<script src="./js/admin-request.js?v=20261128-adminreq-v2" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -242,6 +242,7 @@
         </div>
       </section>
     </div>
+    <div class="admin-tools-row">
     <details class="admin-tools">
       <summary>共有配信設定・楽曲リストの登録</summary>
       <p class="helper">Ver.2では旧端末のリクエスト・履歴・カラオケ確認記録を引き継がず、認証成功後に旧ブラウザ保存分を削除します。</p>
@@ -318,6 +319,27 @@
         <input type="file" id="songImport" accept=".csv,text/csv">
       </label>
     </details>
+    <section id="adminRequestSection" class="home-card admin-request-section" aria-labelledby="adminRequestHeading">
+      <div class="report-heading">
+        <div>
+          <h2 id="adminRequestHeading">管理者リクエスト送信</h2>
+          <p>管理画面からリクエストを送る専用の欄です。送った曲は「リクエスト楽曲」に入ります。リクエスト者の名前は表示されません。配信中のみ送信できます。</p>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="field">アーティスト名<input type="search" id="adminReqArtist" maxlength="120" autocomplete="off" placeholder="アーティスト名・かな（1文字から）"></label>
+        <label class="field">曲名<input type="search" id="adminReqTitle" maxlength="120" autocomplete="off" placeholder="曲名・かな（1文字から）"></label>
+      </div>
+      <label class="utachaoh-toggle" for="adminReqUtachaoh"><input type="checkbox" id="adminReqUtachaoh"> 歌っちゃ王のみで検索<span class="utachaoh-toggle-note">（YouTube「カラオケ歌っちゃ王」の動画から探す）</span></label>
+      <div class="song-form-actions">
+        <button type="button" class="button primary" id="adminReqDirect" disabled>自由入力で送信</button>
+        <button type="button" class="button subtle" id="adminReqClear">入力をクリア</button>
+      </div>
+      <p class="helper">自由入力：アーティスト名と曲名を両方入れて「自由入力で送信」を押すと、検索結果に無い曲も入力したとおりに送れます。</p>
+      <p class="helper" id="adminReqStatus" role="status" aria-live="polite"></p>
+      <div id="adminReqResults" class="result-list"></div>
+    </section>
+    </div>
     <div class="admin-bottom-row">
     <section class="report-section" id="streamReports" aria-labelledby="reportHeading">
       <div class="report-heading"><div><h2 id="reportHeading">配信レポート</h2><p>配信開始から終了までを1回として記録します。</p></div><span id="reportCount" class="count">0 回</span></div>
@@ -413,26 +435,6 @@
           <p id="privateReadyActionFeedback" class="helper" role="status" aria-live="polite"></p>
         </section>
       </div>
-    </section>
-
-    <section id="adminRequestSection" class="home-card admin-request-section" aria-labelledby="adminRequestHeading">
-      <div class="report-heading">
-        <div>
-          <h2 id="adminRequestHeading">管理者リクエスト送信</h2>
-          <p>管理画面からリクエストを送る専用の欄です。送った曲は「リクエスト楽曲」に入ります。リクエスト者の名前は表示されません。配信中のみ送信できます。</p>
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="field">アーティスト名<input type="search" id="adminReqArtist" maxlength="120" autocomplete="off" placeholder="アーティスト名・かな（1文字から）"></label>
-        <label class="field">曲名<input type="search" id="adminReqTitle" maxlength="120" autocomplete="off" placeholder="曲名・かな（1文字から）"></label>
-      </div>
-      <label class="utachaoh-toggle" for="adminReqUtachaoh"><input type="checkbox" id="adminReqUtachaoh"> 歌っちゃ王のみで検索<span class="utachaoh-toggle-note">（YouTube「カラオケ歌っちゃ王」の動画から探す）</span></label>
-      <div class="song-form-actions">
-        <button type="button" class="button" id="adminReqDirect" disabled>入力した内容で送信</button>
-        <button type="button" class="button subtle" id="adminReqClear">入力をクリア</button>
-      </div>
-      <p class="helper" id="adminReqStatus" role="status" aria-live="polite"></p>
-      <div id="adminReqResults" class="result-list"></div>
     </section>
   </div>
 </main>

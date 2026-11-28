@@ -825,3 +825,10 @@ body.embed-mode #listenerView #today-history-section :is(.today-sung-meta,.today
 .admin-tools-row .admin-request-section .form-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
 .admin-tools-row #adminReqResults{max-height:520px;overflow-y:auto;display:grid;gap:8px}
 @media (max-width:900px){.admin-tools-row{grid-template-columns:minmax(0,1fr)}}
+
+/* 入れ替え：管理者リクエスト送信は4列目（右端）、チャット / ChatGPT は共有配信設定の右 */
+.admin-tools-row > .chat-tools-panel{height:560px;margin-top:0;min-width:0}
+.admin-request-body{display:flex;flex-direction:column;gap:8px}
+.admin-request-body .field input{width:100%;box-sizing:border-box}
+.admin-request-body .song-form-actions{display:flex;flex-wrap:wrap;gap:6px}
+.admin-request-body #adminReqResults{display:grid;gap:6px}

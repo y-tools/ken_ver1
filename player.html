@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>歌っちゃ王 プレイヤー｜Kenのデンモク</title>
+<style>
+  html,body{margin:0;height:100%;background:#0b1120;color:#e8eefc;font-family:system-ui,sans-serif}
+  .wrap{display:flex;flex-direction:column;height:100%}
+  .bar{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 12px;font-size:13px}
+  .bar a{color:#9fd0ff}
+  iframe{flex:1;width:100%;border:0}
+  .msg{padding:24px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><span>歌っちゃ王（自動では再生しません。再生ボタンを押してください）</span><a id="ytLink" href="https://www.youtube.com/" target="_blank" rel="noopener">YouTubeで開く</a></div>
+  <div id="player" class="msg">読み込み中…</div>
+</div>
+<script>
+(() => {
+  "use strict";
+  // 歌っちゃ王の動画を自動再生せずに表示する（YouTubeの埋め込みプレイヤー）
+  const id = new URLSearchParams(location.search).get("v") || "";
+  const box = document.getElementById("player");
+  if (!/^[A-Za-z0-9_-]{11}$/.test(id)) { box.textContent = "動画が指定されていません。"; return; }
+  document.getElementById("ytLink").href = "https://www.youtube.com/watch?v=" + id;
+  const f = document.createElement("iframe");
+  f.src = "https://www.youtube.com/embed/" + id + "?autoplay=0&rel=0";
+  f.title = "歌っちゃ王";
+  f.allow = "encrypted-media; picture-in-picture; fullscreen";
+  f.referrerPolicy = "strict-origin-when-cross-origin";
+  f.allowFullscreen = true;
+  box.replaceWith(f);
+})();
+</script>
+</body>
+</html>

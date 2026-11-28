@@ -27,6 +27,10 @@ const catalog = {rows:[],idx:[],ready:false,error:false};
 
 let adminMode=false;
 let editingId=null;
+// 管理画面の「管理者リクエスト送信」から送った曲はこの名前で記録し、リクエスト者を表示しない
+const ADMIN_REQUEST_NICK="__admin__";
+const isAdminRequestNick=n=>String(n||"").trim()===ADMIN_REQUEST_NICK;
+const requesterText=n=>isAdminRequestNick(n)?"":(String(n||"").trim()||"匿名");
 let selected=null;
 
 let isSending=false;
@@ -267,7 +271,7 @@ function renderTodayHistory(){
  $("#todaySingingList").innerHTML=records.length?records.map((r,i)=>
   '<div class="queue-row"><div class="queue-no">'+(i+1)+'</div><div class="queue-info">'+
   '<div class="song-artist">'+esc(r.artist)+'</div><div class="song-title">'+esc(r.title)+'</div>'+
-  '<div class="today-sung-meta">リクエスト者：'+esc(r.nickname||"匿名")+'</div>'+
+  (requesterText(r.nickname)?'<div class="today-sung-meta">リクエスト者：'+esc(requesterText(r.nickname))+'</div>':'')+
   '<div class="today-sung-time">歌唱終了：'+esc(clockLabel(r.completedAt))+'</div>'+
   '</div></div>').join(""):'<div class="empty">本日歌唱を完了した曲はまだありません。</div>';
 }
@@ -307,8 +311,9 @@ function lyricsAction(song){
 }
 function requestItem(r,controls=""){
  const when=r.createdAt?new Date(r.createdAt).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
- const requester="リクエスト者："+(r.nickname||"匿名");
- const byline=requester+(when?" ｜ "+when:"");
+ const who=requesterText(r.nickname);
+ const requester=who?"リクエスト者："+who:"";
+ const byline=requester+(requester&&when?" ｜ ":"")+(when||"");
  const message=r.message?'<details class="admin-song-message"><summary>メッセージを見る</summary><p>'+esc(r.message)+'</p></details>':"";
  return '<div class="song-row admin-song-entry"><div class="song-info">'+
   '<div class="song-artist" title="'+esc(r.artist)+'">'+esc(r.artist)+'</div>'+
@@ -322,7 +327,9 @@ function queueSongKey(title,artist){
  return String(title||"").trim().toLowerCase()+"\u0000"+String(artist||"").trim().toLowerCase();
 }
 function requesterNames(rows){
- return [...new Set(rows.map(r=>String(r.nickname||"匿名").trim()||"匿名"))].join("・");
+ // 管理者リクエストの名前は入れない（全部が管理者リクエストなら空文字）
+ const names=[...new Set(rows.map(r=>requesterText(r.nickname)).filter(Boolean))].join("・");
+ return names||ADMIN_REQUEST_NICK;
 }
 function waitingGroups(includeSinging=false){
  const current=singingRequest(), activeKey=current?queueSongKey(current.title,current.artist):null;
@@ -343,7 +350,7 @@ function renderSinging(){
   queueSongKey(r.title,r.artist)===queueSongKey(original.title,original.artist)):[];
  const singing=original?{...original,nickname:requesterNames([original,...related])}:null;
  $("#singingNow").innerHTML=singing
-  ? '<div class="singing-song-artist">'+esc(singing.artist)+'</div><div class="singing-song-title">'+esc(singing.title)+'</div><div class="singing-song-requester">リクエスト者：'+esc(singing.nickname||"匿名")+'</div><div class="singing-lyrics-row">'+lyricsAction(singing)+'</div>'
+  ? '<div class="singing-song-artist">'+esc(singing.artist)+'</div><div class="singing-song-title">'+esc(singing.title)+'</div>'+(requesterText(singing.nickname)?'<div class="singing-song-requester">リクエスト者：'+esc(requesterText(singing.nickname))+'</div>':'')+'<div class="singing-lyrics-row">'+lyricsAction(singing)+'</div>'
   : '<div class="singing-empty">現在、歌唱中の曲はありません。</div>';
  $("#adminSinging").innerHTML=singing?requestItem(singing,
   '<button type="button" class="button primary" data-do="done" data-id="'+esc(singing.id)+'">歌唱完了</button>'+
@@ -358,7 +365,7 @@ function renderQueue(){
   ...g.first,nickname:requesterNames(g.rows),groupSize:g.rows.length
  }));
  $("#waitingCount").textContent=waiting.length;
- $("#waitingList").innerHTML=waiting.length?waiting.map((r,i)=>'<div class="queue-row"><div class="queue-no">'+(i+1)+'</div><div class="queue-info"><div class="song-artist">'+esc(r.artist)+'</div><div class="song-title">'+esc(r.title)+'</div><div class="queue-person">リクエスト者：'+esc(r.nickname||"匿名")+'</div></div></div>').join("")
+ $("#waitingList").innerHTML=waiting.length?waiting.map((r,i)=>'<div class="queue-row"><div class="queue-no">'+(i+1)+'</div><div class="queue-info"><div class="song-artist">'+esc(r.artist)+'</div><div class="song-title">'+esc(r.title)+'</div>'+(requesterText(r.nickname)?'<div class="queue-person">リクエスト者：'+esc(requesterText(r.nickname))+'</div>':'')+'</div></div>').join("")
   :'<div class="empty">現在の待機曲はありません。</div>';
  $("#adminWaitingCount").textContent=waiting.length;
  $("#adminWaiting").innerHTML=waiting.length?waiting.map(r=>requestItem(r,
@@ -458,7 +465,7 @@ function renderReports(){
   const added=events.filter(e=>e.type==="practice_added"||e.type==="ready_added");
   const renderList=(items,kind)=>items.length?items.map(e=>{
    const title=esc(e.artist||"")+' / <strong>'+esc(e.title||"未登録")+'</strong>';
-   if(kind==="received")return '<li><time>'+esc(clockLabel(e.at))+'</time>'+title+'<small>リクエスト者 '+esc(e.nickname||"匿名")+'</small></li>';
+   if(kind==="received")return '<li><time>'+esc(clockLabel(e.at))+'</time>'+title+(requesterText(e.nickname)?'<small>リクエスト者 '+esc(requesterText(e.nickname))+'</small>':'')+'</li>';
    if(kind==="performed"){
     const end=ends.find(x=>x.requestId===e.requestId&&x.at>=e.at&&(x.startedAt==null||x.startedAt===e.at));
     return '<li>'+title+'<small>'+esc(clockLabel(e.at))+' 〜 '+esc(end?clockLabel(end.at):session.endedAt?"終了記録なし":"歌唱中")+(end?'（'+esc(formatDuration(end.at-e.at))+'）':"")+'</small></li>';
@@ -791,7 +798,7 @@ async function submitFreeformRequest(event){
  if(state.streamLive!==true){feedback.textContent="配信終了中はリクエストを送れません。";return;}
  const title=$("#freeRequestTitle").value.trim(),artist=$("#freeRequestArtist").value.trim(),
   nickname=$("#freeRequestName").value.trim(),message=$("#freeRequestMessage").value.trim();
- if(!title||!artist||!nickname||title.length>120||artist.length>120||nickname.length>40||message.length>200){
+ if(!title||!artist||!nickname||isAdminRequestNick(nickname)||title.length>120||artist.length>120||nickname.length>40||message.length>200){
   feedback.textContent="曲名・アーティスト名・お名前を確認してください。";return;
  }
  freeformSubmitting=true;$("#freeRequestSubmit").disabled=true;
@@ -825,7 +832,7 @@ async function requestSubmit(event){
  event.preventDefault();if(isSending)return;
  if(!state.streamLive){toast("配信終了中のため、リクエストを受け付けていません");return;}
  const title=$("#reqTitle").value.trim(),artist=$("#reqArtist").value.trim(),nickname=$("#reqName").value.trim();
- if(!title||!artist||!nickname){toast("曲名・アーティスト・お名前を入力してください");return;}
+ if(!title||!artist||!nickname||isAdminRequestNick(nickname)){toast("曲名・アーティスト・お名前を入力してください");return;}
  if(title.length>120||artist.length>120||nickname.length>40){toast("入力文字数を確認してください");return;}
  isSending=true;
  if(shared){

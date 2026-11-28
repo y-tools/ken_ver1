@@ -17,8 +17,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <script src="./js/shared.js?v=20261111-v2-tk" defer></script>
 <script src="./js/private-ready.js?v=20261119-artist-first-search-v7" defer></script>
-<script src="./app.js?v=20261128-listener-v1" defer></script>
+<script src="./app.js?v=20261128-adminreq-v1" defer></script>
 <script src="./js/utachaoh.js?v=20261128-request-v1" defer></script>
+<script src="./js/admin-request.js?v=20261128-adminreq-v1" defer></script>
 </head>
 <body>
 <header class="site-header" id="siteHeader">
@@ -412,6 +413,26 @@
           <p id="privateReadyActionFeedback" class="helper" role="status" aria-live="polite"></p>
         </section>
       </div>
+    </section>
+
+    <section id="adminRequestSection" class="home-card admin-request-section" aria-labelledby="adminRequestHeading">
+      <div class="report-heading">
+        <div>
+          <h2 id="adminRequestHeading">管理者リクエスト送信</h2>
+          <p>管理画面からリクエストを送る専用の欄です。送った曲は「リクエスト楽曲」に入ります。リクエスト者の名前は表示されません。配信中のみ送信できます。</p>
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="field">アーティスト名<input type="search" id="adminReqArtist" maxlength="120" autocomplete="off" placeholder="アーティスト名・かな（1文字から）"></label>
+        <label class="field">曲名<input type="search" id="adminReqTitle" maxlength="120" autocomplete="off" placeholder="曲名・かな（1文字から）"></label>
+      </div>
+      <label class="utachaoh-toggle" for="adminReqUtachaoh"><input type="checkbox" id="adminReqUtachaoh"> 歌っちゃ王のみで検索<span class="utachaoh-toggle-note">（YouTube「カラオケ歌っちゃ王」の動画から探す）</span></label>
+      <div class="song-form-actions">
+        <button type="button" class="button" id="adminReqDirect" disabled>入力した内容で送信</button>
+        <button type="button" class="button subtle" id="adminReqClear">入力をクリア</button>
+      </div>
+      <p class="helper" id="adminReqStatus" role="status" aria-live="polite"></p>
+      <div id="adminReqResults" class="result-list"></div>
     </section>
   </div>
 </main>

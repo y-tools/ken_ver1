@@ -7,7 +7,7 @@
 <title>Kenのデンモク</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+1:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./styles.css?v=20261128-toolsrow-v1">
+<link rel="stylesheet" href="./styles.css?v=20261128-swap-v1">
 <script src="./config.js?v=20261106-vps-live-v2" defer></script>
 
 
@@ -213,32 +213,20 @@
           <div id="adminRequests" class="queue-list"></div>
         </div>
       </section>
-      <section class="admin-panel chat-tools-panel" aria-label="チャットとChatGPT調査">
-        <div class="admin-panel-head"><h3>チャット / ChatGPT</h3><small>04 / 右端</small></div>
-        <div class="split-tools">
-          <section class="tool-chat" aria-label="チャット画面">
-            <div class="tool-subheading"><h4>チャット画面</h4><small>調査指示・メモ履歴</small></div>
-            <div id="adminChatHistory" class="tool-chat-history" role="log" aria-live="polite"></div>
-            <form id="adminChatForm" class="tool-chat-form">
-              <label for="adminChatInput" class="visually-hidden">メッセージを入力</label>
-              <textarea id="adminChatInput" rows="2" maxlength="1500" placeholder="調査メモを入力"></textarea>
-              <button type="submit" class="button">メモを追加</button>
-            </form>
-            <p class="tool-notice">ここは端末内のメモ欄です。ChatGPTの回答は自動表示されません。</p>
-          </section>
-          <section class="tool-gpt" aria-label="ChatGPTを開くブラウザ連携">
-            <div class="tool-subheading"><h4>ChatGPTブラウザ</h4><small>別タブ連携</small></div>
-            <div class="browser-address"><span aria-hidden="true">🔒</span> chatgpt.com</div>
-            <p class="tool-notice">ChatGPTはサイト内表示が制限されるため、調査指示を作成して別タブで開きます。</p>
-            <label for="gptResearchPrompt" class="tool-field-label">送信用の調査指示</label>
-            <textarea id="gptResearchPrompt" rows="5" readonly placeholder="「さらに調べる」を押すと指示が表示されます。"></textarea>
-            <div class="tool-gpt-actions">
-              <button type="button" class="button" id="gptCopy">指示をコピー</button>
-              <a class="button primary" id="gptOpen" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPTを開く</a>
-              <a class="button subtle" id="lyricsSearch" href="https://www.google.com/" target="_blank" rel="noopener noreferrer">歌詞URLを検索</a>
-            </div>
-            <p class="tool-notice">指示が入力されない場合は「指示をコピー」してChatGPTに貼り付けてください。</p>
-          </section>
+      <section class="admin-panel admin-request-panel" id="adminRequestSection" aria-labelledby="adminRequestHeading">
+        <div class="admin-panel-head"><h3 id="adminRequestHeading">管理者リクエスト送信</h3><small>04 / 右端</small></div>
+        <div class="admin-panel-body admin-request-body">
+          <p class="helper">送った曲は「リクエスト楽曲」に入ります。リクエスト者の名前は表示されません。配信中のみ送信できます。</p>
+          <label class="field">アーティスト名<input type="search" id="adminReqArtist" maxlength="120" autocomplete="off" placeholder="アーティスト名・かな（1文字から）"></label>
+          <label class="field">曲名<input type="search" id="adminReqTitle" maxlength="120" autocomplete="off" placeholder="曲名・かな（1文字から）"></label>
+          <label class="utachaoh-toggle" for="adminReqUtachaoh"><input type="checkbox" id="adminReqUtachaoh"> 歌っちゃ王のみで検索</label>
+          <div class="song-form-actions">
+            <button type="button" class="button primary" id="adminReqDirect" disabled>自由入力で送信</button>
+            <button type="button" class="button subtle" id="adminReqClear">入力をクリア</button>
+          </div>
+          <p class="helper">自由入力：アーティスト名と曲名を両方入れて「自由入力で送信」を押すと、検索結果に無い曲も入力したとおりに送れます。</p>
+          <p class="helper" id="adminReqStatus" role="status" aria-live="polite"></p>
+          <div id="adminReqResults" class="result-list"></div>
         </div>
       </section>
     </div>
@@ -319,25 +307,33 @@
         <input type="file" id="songImport" accept=".csv,text/csv">
       </label>
     </details>
-    <section id="adminRequestSection" class="home-card admin-request-section" aria-labelledby="adminRequestHeading">
-      <div class="report-heading">
-        <div>
-          <h2 id="adminRequestHeading">管理者リクエスト送信</h2>
-          <p>管理画面からリクエストを送る専用の欄です。送った曲は「リクエスト楽曲」に入ります。リクエスト者の名前は表示されません。配信中のみ送信できます。</p>
-        </div>
+    <section class="admin-panel chat-tools-panel" aria-label="チャットとChatGPT調査">
+      <div class="admin-panel-head"><h3>チャット / ChatGPT</h3><small>共有配信設定の右</small></div>
+      <div class="split-tools">
+        <section class="tool-chat" aria-label="チャット画面">
+          <div class="tool-subheading"><h4>チャット画面</h4><small>調査指示・メモ履歴</small></div>
+          <div id="adminChatHistory" class="tool-chat-history" role="log" aria-live="polite"></div>
+          <form id="adminChatForm" class="tool-chat-form">
+            <label for="adminChatInput" class="visually-hidden">メッセージを入力</label>
+            <textarea id="adminChatInput" rows="2" maxlength="1500" placeholder="調査メモを入力"></textarea>
+            <button type="submit" class="button">メモを追加</button>
+          </form>
+          <p class="tool-notice">ここは端末内のメモ欄です。ChatGPTの回答は自動表示されません。</p>
+        </section>
+        <section class="tool-gpt" aria-label="ChatGPTを開くブラウザ連携">
+          <div class="tool-subheading"><h4>ChatGPTブラウザ</h4><small>別タブ連携</small></div>
+          <div class="browser-address"><span aria-hidden="true">🔒</span> chatgpt.com</div>
+          <p class="tool-notice">ChatGPTはサイト内表示が制限されるため、調査指示を作成して別タブで開きます。</p>
+          <label for="gptResearchPrompt" class="tool-field-label">送信用の調査指示</label>
+          <textarea id="gptResearchPrompt" rows="5" readonly placeholder="「さらに調べる」を押すと指示が表示されます。"></textarea>
+          <div class="tool-gpt-actions">
+            <button type="button" class="button" id="gptCopy">指示をコピー</button>
+            <a class="button primary" id="gptOpen" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">ChatGPTを開く</a>
+            <a class="button subtle" id="lyricsSearch" href="https://www.google.com/" target="_blank" rel="noopener noreferrer">歌詞URLを検索</a>
+          </div>
+          <p class="tool-notice">指示が入力されない場合は「指示をコピー」してChatGPTに貼り付けてください。</p>
+        </section>
       </div>
-      <div class="form-row">
-        <label class="field">アーティスト名<input type="search" id="adminReqArtist" maxlength="120" autocomplete="off" placeholder="アーティスト名・かな（1文字から）"></label>
-        <label class="field">曲名<input type="search" id="adminReqTitle" maxlength="120" autocomplete="off" placeholder="曲名・かな（1文字から）"></label>
-      </div>
-      <label class="utachaoh-toggle" for="adminReqUtachaoh"><input type="checkbox" id="adminReqUtachaoh"> 歌っちゃ王のみで検索<span class="utachaoh-toggle-note">（YouTube「カラオケ歌っちゃ王」の動画から探す）</span></label>
-      <div class="song-form-actions">
-        <button type="button" class="button primary" id="adminReqDirect" disabled>自由入力で送信</button>
-        <button type="button" class="button subtle" id="adminReqClear">入力をクリア</button>
-      </div>
-      <p class="helper">自由入力：アーティスト名と曲名を両方入れて「自由入力で送信」を押すと、検索結果に無い曲も入力したとおりに送れます。</p>
-      <p class="helper" id="adminReqStatus" role="status" aria-live="polite"></p>
-      <div id="adminReqResults" class="result-list"></div>
     </section>
     </div>
     <div class="admin-bottom-row">

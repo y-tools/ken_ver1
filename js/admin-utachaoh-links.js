@@ -29,7 +29,7 @@
       .then((data) => {
         const items = Array.isArray(data?.items) ? data.items : [];
         const hit = items.find((it) => norm(it.artist?.name) === norm(artist) && norm(it.song?.title) === norm(title));
-        return hit && /^[A-Za-z0-9_-]{11}$/.test(hit.youtubeId || "") ? "https://www.youtube.com/embed/" + hit.youtubeId + "?autoplay=0" : "";
+        return hit && /^[A-Za-z0-9_-]{11}$/.test(hit.youtubeId || "") ? new URL("./player.html?v=" + hit.youtubeId, location.href).href : "";
       })
       .catch(() => { cache.delete(key); return ""; });
     cache.set(key, p);

@@ -30,7 +30,7 @@
   let lastKey = "";
 
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const safeUrl = (id) => /^[A-Za-z0-9_-]{11}$/.test(id) ? "https://www.youtube.com/embed/" + id + "?autoplay=0" : "";
+  const safeUrl = (id) => /^[A-Za-z0-9_-]{11}$/.test(id) ? new URL("./player.html?v=" + id, location.href).href : "";
   const readings = (o, mainName) => {
     const seen = new Set([String(mainName || "")]);
     return [o?.hiragana, o?.katakana, o?.english].filter((v) => v && !seen.has(v) && seen.add(v)).join(" / ");

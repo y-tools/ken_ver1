@@ -49,23 +49,30 @@
     helper.textContent = items.length >= LIMIT
       ? `歌っちゃ王：${LIMIT} 件以上見つかりました（上位 ${LIMIT} 件を表示）。条件を足すと絞り込めます。`
       : `歌っちゃ王：${items.length} 件見つかりました。`;
+    // リクエストボタンは app.js の共通処理（data-select-index → リクエスト画面）を使う
+    const live = !document.getElementById("sendRequest")?.disabled;
+    const picks = [];
     results.innerHTML = items.map((it) => {
       const url = safeUrl(it.youtubeId);
       const artistName = it.artist?.name || "（アーティスト不明）";
       const songName = it.song?.title || it.videoTitle;
-      const aRead = readings(it.artist, it.artist?.name);
-      const sRead = readings(it.song, it.song?.title);
+      // リスナー画面では読み・英語表記は表示しない（検索には引き続き使う）
+      let requestButton = "";
+      if (it.artist?.name && songName) {
+        const i = picks.push({ title: songName, artist: it.artist.name, source: "catalog" }) - 1;
+        requestButton = `<button class="button primary" data-select-index="${i}" type="button"${live ? "" : ' disabled title="配信中のみリクエスト受付"'}>リクエスト</button>`;
+      }
       return `<div class="song-row utachaoh-row">
   <div class="song-info">
-    <div class="song-artist">${esc(artistName)}${aRead ? ` <span class="song-meta" style="display:inline">${esc(aRead)}</span>` : ""}</div>
+    <div class="song-artist">${esc(artistName)}</div>
     <div class="song-title">${esc(songName)}</div>
-    ${sRead ? `<div class="song-meta">${esc(sRead)}</div>` : ""}
     <div class="song-meta">${it.videoType ? `［${esc(it.videoType)}］` : ""}${esc(it.videoTitle)}</div>
     ${url ? `<div class="song-meta"><a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a></div>` : ""}
   </div>
-  <div class="song-actions">${url ? `<a class="button primary" href="${url}" target="_blank" rel="noopener noreferrer">YouTubeで開く</a>` : ""}</div>
+  <div class="song-actions">${requestButton}${url ? `<a class="button" href="${url}" target="_blank" rel="noopener noreferrer">YouTubeで開く</a>` : ""}</div>
 </div>`;
     }).join("");
+    window.__searchResults = picks;
   }
 
   async function run(force = true) {

@@ -95,7 +95,7 @@
       const where = toggle.checked ? "歌っちゃ王" : "楽曲データベース";
       draw(items, items.length
         ? `${where}：${items.length}${items.length >= LIMIT ? "件以上（上位" + LIMIT + "件を表示）" : "件"}見つかりました。`
-        : `${where}で見つかりませんでした。下の「入力した内容で送信」も使えます。`);
+        : `${where}で見つかりませんでした。アーティスト名と曲名を入れて「自由入力で送信」で送れます。`);
     } catch (e) {
       if (id !== seq) return;
       draw([], String(e?.message || "検索できませんでした"));

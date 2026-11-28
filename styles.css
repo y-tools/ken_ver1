@@ -835,3 +835,7 @@ body.embed-mode #listenerView #today-history-section :is(.today-sung-meta,.today
 
 /* 管理画面の4列（通常リスナー画面〜管理者リクエスト送信）の縦の長さを1.5倍に */
 @media(min-width:1200px){.admin-columns{height:calc((100dvh - 312px) * 1.5);min-height:630px}}
+
+/* 管理画面：「取り消し・GPT検索・歌詞検索・歌っちゃ王」を1行に横並び */
+.admin-panel-body .admin-song-entry .classify-box > .song-actions{grid-template-columns:repeat(4,minmax(0,1fr))}
+#adminSinging .admin-song-entry > .song-actions > :nth-child(-n+2){grid-column:span 2}

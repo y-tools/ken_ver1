@@ -79,7 +79,7 @@
       title: it.song?.title || it.videoTitle,
       artist: it.artist.name,
       sub: (it.videoType ? `［${it.videoType}］` : "") + (it.videoTitle || ""),
-      url: /^[A-Za-z0-9_-]{11}$/.test(it.youtubeId || "") ? "https://www.youtube.com/embed/" + it.youtubeId + "?autoplay=0" : "",
+      url: /^[A-Za-z0-9_-]{11}$/.test(it.youtubeId || "") ? new URL("./player.html?v=" + it.youtubeId, location.href).href : "",
     }));
   }
 

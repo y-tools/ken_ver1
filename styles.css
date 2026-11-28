@@ -832,3 +832,6 @@ body.embed-mode #listenerView #today-history-section :is(.today-sung-meta,.today
 .admin-request-body .field input{width:100%;box-sizing:border-box}
 .admin-request-body .song-form-actions{display:flex;flex-wrap:wrap;gap:6px}
 .admin-request-body #adminReqResults{display:grid;gap:6px}
+
+/* 管理画面の4列（通常リスナー画面〜管理者リクエスト送信）の縦の長さを1.5倍に */
+@media(min-width:1200px){.admin-columns{height:calc((100dvh - 312px) * 1.5);min-height:630px}}

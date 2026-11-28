@@ -804,3 +804,24 @@ body.admin-active .stream-controls > *{flex:0 0 auto;white-space:nowrap}
 .utachaoh-toggle{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0 2px;font-weight:700;cursor:pointer;user-select:none}
 .utachaoh-toggle input{width:20px;height:20px;accent-color:#e8455a;cursor:pointer}
 .utachaoh-toggle-note{font-weight:400;font-size:12px;opacity:.75}
+
+/* 03 本日の歌唱履歴：1曲を1行に横並び（アーティスト・曲名・リクエスト者・終了時刻）で、薄く表示する */
+#listenerView #today-history-section .queue-list{gap:6px}
+#listenerView #today-history-section .queue-row,
+body.embed-mode #listenerView #today-history-section .queue-row{display:flex;align-items:center;gap:8px;min-height:0;padding:8px 11px;opacity:.55}
+#listenerView #today-history-section .queue-no{flex:0 0 22px;height:22px;font-size:11px;border-radius:7px}
+#listenerView #today-history-section .queue-info{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:10px;row-gap:2px;min-width:0}
+#listenerView #today-history-section .queue-info>div{margin:0}
+#listenerView #today-history-section .song-artist,
+body.embed-mode #listenerView #today-history-section .song-artist{font-size:13px}
+#listenerView #today-history-section .song-title,
+body.embed-mode #listenerView #today-history-section .song-title{font-size:14px}
+#listenerView #today-history-section :is(.today-sung-meta,.today-sung-time),
+body.embed-mode #listenerView #today-history-section :is(.today-sung-meta,.today-sung-time){font-size:12px;line-height:1.4}
+
+/* 管理画面：共有配信設定（左・1/2）と管理者リクエスト送信（右・1/2）を横並び */
+.admin-tools-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:15px;align-items:start}
+.admin-tools-row > .admin-tools,.admin-tools-row > .admin-request-section{margin-top:0;min-width:0;box-sizing:border-box}
+.admin-tools-row .admin-request-section .form-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.admin-tools-row #adminReqResults{max-height:520px;overflow-y:auto;display:grid;gap:8px}
+@media (max-width:900px){.admin-tools-row{grid-template-columns:minmax(0,1fr)}}

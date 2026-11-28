@@ -16,7 +16,7 @@
  }catch(error){console.warn("Ken song API configuration is invalid",error);return;}
  const cache=new Map();
  async function search(query,mode="title",limit=30){
-  if(query.trim().length<2)return {items:[]};
+  if(query.trim().length<1)return {items:[]};
   const key=mode+"\t"+query.trim().normalize("NFKC");
   if(cache.has(key))return cache.get(key);
   const url=new URL(base+"/api/v1/search");
